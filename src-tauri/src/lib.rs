@@ -1,5 +1,14 @@
-use tauri::{Builder, Manager, State};
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Builder, Manager, State};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
+use symphonia::core::codecs::DecoderOptions;
+use symphonia::core::formats::{FormatOptions, Track };
+use symphonia::core::meta::MetadataOptions;
+
+
+use std::fs::File;
+use std::io::BufReader;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 struct AudioState {
@@ -15,29 +24,35 @@ fn greet(name: &str) -> String {
 fn build_stream(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
-    signal: Arc<Mutex<impl FnMut() -> f32 + Send + 'static>>,
+    cursor: Arc<Mutex<usize>>,
+    samples: Vec<f32>
 ) -> Result<cpal::Stream, cpal::BuildStreamError>
 {
     let channels = config.channels as usize;
 
     device.build_output_stream(
         config,
-        move |data: &mut [f32], _| {
-            let mut osc = signal.lock().unwrap();
+        move |output: &mut [f32], _| {
+            let mut pos = cursor.lock().unwrap();
 
-            for frame in data.chunks_mut(channels) {
-                // We get latest oscillator value (which increments each call)
-                let raw_sample = osc();
-                // println!("raw_sample: {}", raw_sample);
-                
-                // Process signal
+            for frame in output.chunks_mut(channels) {
+                // Run out of samples? Turn volume to 0
+                if *pos >= samples.len() {
+                    for ch in frame {
+                        *ch = 0.0;
+                    }
+                    continue;
+                }
 
-                // Convert to CPAL output sample type.
-                let sample = raw_sample;
-
-                // Overwrite the output signal with our sample
-                for out in frame {
-                    *out = sample;
+                //
+                for ch in 0..channels {
+                    let sample = if *pos < samples.len() {
+                        samples[*pos]
+                    } else {
+                        0.0
+                    };
+                    frame[ch] = sample;
+                    *pos += 1;
                 }
             }
         },
@@ -47,26 +62,100 @@ fn build_stream(
 }
 
 #[tauri::command]
-fn play_audio(state: State<'_, Mutex<AudioState>>) {
+fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) {
     println!("playing audio from Rust");
     let mut state = state.lock().unwrap();
-    
-    
-    // Simple sine wave oscillator.
-    let freq = 440.0;
-    let mut phase = 0.0f32;
 
-    let sample_rate = state.config.sample_rate().0 as f32;
-    let signal = move || {
-        let value = (2.0 * PI * phase).sin();
-        phase = (phase + freq / sample_rate) % 1.0;
-        value
-    };
+    let file_name = "ff8-magic.mp3";
+    let resource_path = app.path().resolve("audio", BaseDirectory::Resource).expect("Couldn't get migrations folder");
+    let audio_path = resource_path.join(file_name);
 
-    let shared = Arc::new(Mutex::new(signal));
+    // Open reader and probe MP3.
+    let file = File::open(audio_path).expect("Couldn't load file");
+    // let reader = BufReader::new(file);
+    let mss = symphonia::core::io::MediaSourceStream::new(Box::new(file), Default::default());
+    let mut hint = symphonia::core::probe::Hint::new();
+    hint.with_extension("mp3");
+    let probed = symphonia::default::get_probe().format(
+        &hint,
+        mss,
+        &FormatOptions::default(),
+        &MetadataOptions::default(),
+    ).expect("Failed to probe audio format");
+
+    
+    let mut format = probed.format;
+
+    // Select the first audio track.
+    let track = format
+        .tracks()
+        .iter()
+        .find(|t| t.codec_params.sample_rate.is_some())
+        .expect("no audio track");
+
+    let track_id = track.id;
+
+    // Create a decoder.
+    let mut decoder = symphonia::default::get_codecs().make(
+        &track.codec_params,
+        &DecoderOptions::default(),
+    ).expect("Couldn't create decoder");
+
+    // Decode the ENTIRE MP3 ahead of time into f32 interleaved PCM.
+    // For streaming large files, switch to a ring buffer; but for simplicity,
+    // decode into memory.
+    let mut samples: Vec<f32> = Vec::new();
+
+    
+    loop {
+        let packet = match format.next_packet() {
+            Ok(p) => p,
+            Err(symphonia::core::errors::Error::IoError(_)) => break,
+            Err(err) => {
+                eprintln!("Error decoding packet: {err}");
+                break;
+            },
+        };
+
+        if packet.track_id() != track_id {
+            continue;
+        }
+
+        let decoded = decoder.decode(&packet).expect("Couldn't decode audio");
+
+        match decoded {
+            AudioBufferRef::F32(buf) => {
+                samples.extend_from_slice(buf.chan(0));
+                if buf.spec().channels.count() > 1 {
+                    // Interleave for multi-channel.
+                    for frame in 0..buf.frames() {
+                        for ch in 0..buf.spec().channels.count() {
+                            samples.push(*buf.chan(ch).get(frame).expect("frame not found"));
+                        }
+                    }
+                }
+            }
+            AudioBufferRef::S16(buf) => {
+                for frame in 0..buf.frames() {
+                    for ch in 0..buf.spec().channels.count() {
+                        samples.push(buf.chan(ch)[frame] as f32 / i16::MAX as f32);
+                    }
+                }
+            }
+            other => {
+                return eprintln!(
+                    "Unsupported sample format: {:?}",
+                    other.spec()
+                );
+            }
+        }
+    }
+    
+    // Shared audio buffer cursor for CPAL.
+    let cursor = Arc::new(Mutex::new(0usize));
 
     let stream = match state.config.sample_format() {
-        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), shared),
+        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), cursor, samples),
         cpal::SampleFormat::I16 =>  todo!(),
         cpal::SampleFormat::U16 => todo!(),
         cpal::SampleFormat::I8 => todo!(),
