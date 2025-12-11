@@ -9,6 +9,8 @@ use symphonia::core::meta::MetadataOptions;
 
 use std::fs::File;
 use std::io::BufReader;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 struct AudioState {
@@ -25,7 +27,8 @@ fn build_stream(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     cursor: Arc<Mutex<usize>>,
-    samples: Vec<f32>
+    samples: Vec<f32>,
+    finish_flag: Arc<AtomicBool>,
 ) -> Result<cpal::Stream, cpal::BuildStreamError>
 {
     let channels = config.channels as usize;
@@ -38,13 +41,16 @@ fn build_stream(
             for frame in output.chunks_mut(channels) {
                 // Run out of samples? Turn volume to 0
                 if *pos >= samples.len() {
+                    // Mark audio as finished playing
+                    finish_flag.store(true, Ordering::Relaxed);
+
                     for ch in frame {
                         *ch = 0.0;
                     }
                     continue;
                 }
 
-                //
+                // Replace output channel with sample data
                 for ch in 0..channels {
                     let sample = if *pos < samples.len() {
                         samples[*pos]
@@ -52,6 +58,7 @@ fn build_stream(
                         0.0
                     };
                     frame[ch] = sample;
+                    // Increment our sample array index counter
                     *pos += 1;
                 }
             }
@@ -62,7 +69,7 @@ fn build_stream(
 }
 
 #[tauri::command]
-fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) {
+async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
     println!("playing audio from Rust");
     let mut state = state.lock().unwrap();
 
@@ -143,19 +150,22 @@ fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) {
                 }
             }
             other => {
-                return eprintln!(
+                eprintln!(
                     "Unsupported sample format: {:?}",
                     other.spec()
                 );
+                return Err(false)
             }
         }
     }
     
     // Shared audio buffer cursor for CPAL.
     let cursor = Arc::new(Mutex::new(0usize));
+    let finished = Arc::new(AtomicBool::new(false));
+    let finished_cb = Arc::clone(&finished);
 
     let stream = match state.config.sample_format() {
-        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), cursor, samples),
+        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), cursor, samples, finished_cb),
         cpal::SampleFormat::I16 =>  todo!(),
         cpal::SampleFormat::U16 => todo!(),
         cpal::SampleFormat::I8 => todo!(),
@@ -172,7 +182,15 @@ fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) {
     stream.play().expect("Couldn't play");
 
     // Keep the thread alive while streaming audio.
-    std::thread::park();
+    // std::thread::park();
+
+    while !finished.load(Ordering::Relaxed) {
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
+    println!("finished playing audio");
+
+    Ok(true)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
