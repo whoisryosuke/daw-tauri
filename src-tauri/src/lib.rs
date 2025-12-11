@@ -132,19 +132,21 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
 
         match decoded {
             AudioBufferRef::F32(buf) => {
-                samples.extend_from_slice(buf.chan(0));
-                if buf.spec().channels.count() > 1 {
-                    // Interleave for multi-channel.
-                    for frame in 0..buf.frames() {
-                        for ch in 0..buf.spec().channels.count() {
-                            samples.push(*buf.chan(ch).get(frame).expect("frame not found"));
-                        }
+                let channels = buf.spec().channels.count();
+                let frames = buf.frames();
+
+                for frame in 0..frames {
+                    for ch in 0..channels {
+                        samples.push(buf.chan(ch)[frame]);
                     }
                 }
             }
             AudioBufferRef::S16(buf) => {
-                for frame in 0..buf.frames() {
-                    for ch in 0..buf.spec().channels.count() {
+                let channels = buf.spec().channels.count();
+                let frames = buf.frames();
+
+                for frame in 0..frames {
+                    for ch in 0..channels {
                         samples.push(buf.chan(ch)[frame] as f32 / i16::MAX as f32);
                     }
                 }
