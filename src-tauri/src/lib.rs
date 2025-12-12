@@ -1,3 +1,5 @@
+mod audio_engine;
+
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
