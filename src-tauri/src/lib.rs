@@ -1,5 +1,5 @@
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Builder, Manager, State};
+use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
 use symphonia::core::codecs::DecoderOptions;
@@ -7,11 +7,14 @@ use symphonia::core::formats::{FormatOptions, Track };
 use symphonia::core::meta::MetadataOptions;
 
 
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
+
+const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
 struct AudioState {
     device: cpal::Device,
@@ -29,6 +32,7 @@ fn build_stream(
     cursor: Arc<Mutex<usize>>,
     samples: Vec<f32>,
     finish_flag: Arc<AtomicBool>,
+    mut waveform_data: Arc<Mutex<VecDeque<f32>>>
 ) -> Result<cpal::Stream, cpal::BuildStreamError>
 {
     let channels = config.channels as usize;
@@ -50,16 +54,39 @@ fn build_stream(
                     continue;
                 }
 
+                // Calculate mono sample by averaging all channels for this frame
+                // Audio data is interleaved, so every other index we need to average
+                let mono_sample = if channels > 1 {
+                    let mut sum = 0.0;
+                    for ch in 0..channels {
+                        if *pos + ch < samples.len() {
+                            sum += samples[*pos + ch];
+                        }
+                    }
+                    sum / channels as f32
+                } else {
+                    samples[*pos]
+                };
+
+                // Send waveform data
+                {
+                    let mut waveform_data = waveform_data.lock().unwrap();
+                    if waveform_data.len() >= WAVEFORM_SAMPLE_NUM {
+                        waveform_data.pop_front();
+                    }
+                    waveform_data.push_back(mono_sample);
+                }
+
                 // Replace output channel with sample data
                 for ch in 0..channels {
-                    let sample = if *pos < samples.len() {
-                        samples[*pos]
+                    if *pos < samples.len() {
+                        // Override output with our sample
+                        frame[ch] = samples[*pos];
+                        // Increment our sample array index counter
+                        *pos += 1;
                     } else {
-                        0.0
-                    };
-                    frame[ch] = sample;
-                    // Increment our sample array index counter
-                    *pos += 1;
+                        frame[ch] = 0.0;
+                    }
                 }
             }
         },
@@ -140,6 +167,8 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
                         samples.push(buf.chan(ch)[frame]);
                     }
                 }
+
+
             }
             AudioBufferRef::S16(buf) => {
                 let channels = buf.spec().channels.count();
@@ -165,9 +194,10 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
     let cursor = Arc::new(Mutex::new(0usize));
     let finished = Arc::new(AtomicBool::new(false));
     let finished_cb = Arc::clone(&finished);
+    let waveform_data: Arc<Mutex<VecDeque<f32>>> = Arc::new(Mutex::new(VecDeque::with_capacity(WAVEFORM_SAMPLE_NUM)));
 
     let stream = match state.config.sample_format() {
-        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), cursor, samples, finished_cb),
+        cpal::SampleFormat::F32 => build_stream(&state.device, &state.config.clone().into(), cursor, samples, finished_cb, waveform_data.clone()),
         cpal::SampleFormat::I16 =>  todo!(),
         cpal::SampleFormat::U16 => todo!(),
         cpal::SampleFormat::I8 => todo!(),
@@ -187,6 +217,13 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
     // std::thread::park();
 
     while !finished.load(Ordering::Relaxed) {
+        // Send samples to frontend
+        if let Ok(waveform_data) = waveform_data.lock() {
+            if let Err(e) = app.emit("audio-waveform-time", &*waveform_data) {
+                eprintln!("Failed to emit event: {}", e);
+            }
+        }
+
         std::thread::sleep(Duration::from_millis(100));
     }
 
