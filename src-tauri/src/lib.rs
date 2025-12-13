@@ -1,4 +1,6 @@
 mod audio_engine;
+mod audio_node;
+mod audio_player;
 
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
@@ -17,6 +19,8 @@ use std::time::Duration;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 use crate::audio_engine::AudioEngine;
+use crate::audio_node::AudioNode;
+use crate::audio_player::AudioPlayer;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -125,7 +129,15 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
         }
     }
     
-    state.engine.playback_buffer.set_buffer(samples);
+    let audio_node = AudioNode::new(samples);
+    let mut audio_player = AudioPlayer::new();
+    audio_player.add_node(audio_node);
+
+    while !audio_player.finished {
+        let sample = audio_player.get_sample();
+        state.engine.push_sample(sample);
+    }
+    
 
     Ok(true)
 }
