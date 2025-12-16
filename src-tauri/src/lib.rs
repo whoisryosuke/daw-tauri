@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
-use crate::audio_engine::AudioEngine;
+use crate::audio_engine::{AudioBuffer, AudioEngine};
 use crate::audio_node::AudioNode;
 use crate::audio_player::AudioPlayer;
 
@@ -28,8 +28,8 @@ type AudioSamples = HashMap<String, Vec<f32>>;
 
 struct AudioState {
     engine: AudioEngine,
-    player: AudioPlayer,
-    samples: AudioSamples,
+    // player: AudioPlayer,
+    // samples: AudioSamples,
 }
 
 fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
@@ -132,18 +132,18 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
-#[tauri::command]
-async fn load_sample_file(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
-   println!("loading audio from Rust");
-    let mut state = state.lock().unwrap();
+// #[tauri::command]
+// async fn load_sample_file(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
+//    println!("loading audio from Rust");
+//     let mut state = state.lock().unwrap();
 
-    let file_name = "ff8-magic.mp3";
-    let samples = load_sample_data_from_disk(&app, file_name);
+//     let file_name = "ff8-magic.mp3";
+//     let samples = load_sample_data_from_disk(&app, file_name);
 
-    state.samples.insert(file_name.to_string(), samples);
+//     state.samples.insert(file_name.to_string(), samples);
 
-    Ok(true)
-}
+//     Ok(true)
+// }
 
 
 #[tauri::command(async)]
@@ -152,20 +152,8 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
     let mut state = state.lock().unwrap();
 
     // Get samples from cache
-    let file_name = "ff8-magic.mp3";
-    let samples_result = state.samples.get(file_name);
-
-    // Play audio if we got samples
-    if let Some(samples) = samples_result {
-        println!("playing audio from Rust");
-        let audio_node = AudioNode::new(samples.to_vec());
-        state.player.add_node(audio_node);
-
-        while !state.player.finished {
-            let sample = state.player.get_sample();
-            state.engine.push_sample(sample);
-        }
-    }
+    let file_name = "ff8-magic.mp3".to_string();
+    state.engine.play(file_name);
 
     Ok(true)
 }
@@ -177,21 +165,21 @@ pub fn run() {
 
             
             // Set up audio backend (aka CPAL)
-            let engine = AudioEngine::new();
+            let mut engine = AudioEngine::new();
             
             // Setup additional global state
-            let audio_player = AudioPlayer::new();
-            let mut samples: AudioSamples = HashMap::new();
+            // let audio_player = AudioPlayer::new();
+            // let mut samples: AudioSamples = HashMap::new();
 
             // DEBUG: Load a test sample
             let file_name = "ff8-magic.mp3";
             let sample_data = load_sample_data_from_disk(app.handle(), file_name);
-            samples.insert(file_name.to_string(), sample_data);
-
+            engine.asset_store.insert(file_name.to_string(), AudioBuffer::new(sample_data, 0));
+            
             app.manage(Mutex::new(AudioState {
                 engine,
-                player: audio_player,
-                samples,
+                // player: audio_player,
+                // samples,
             }));
 
             Ok(())

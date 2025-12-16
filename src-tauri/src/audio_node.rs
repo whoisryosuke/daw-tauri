@@ -1,3 +1,4 @@
+
 pub struct AudioNode {
     data: Vec<f32>,
     position: usize,
@@ -16,10 +17,10 @@ impl AudioNode {
             finished
         }
     }
-    pub fn get_sample(&mut self) -> f32 {
+    pub fn get_sample(&mut self) -> Option<f32> {
         // Finished? Return no noise
         if self.finished {
-            return 0.0
+            return None
         }
 
         // Make a copy in case it changes somehow - might be unnecessary
@@ -35,6 +36,6 @@ impl AudioNode {
         }
         
         // Return current sample
-        self.data[index]
+        Some(self.data[index])
     }
 }

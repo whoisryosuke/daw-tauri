@@ -30,11 +30,11 @@ impl AudioPlayer {
         let mut sum: f32 = 0.0;
         // let length = self.nodes.len() as f32;
         for node in self.nodes.iter_mut() {
-            let sample = node.get_sample();
+            let sample = node.get_sample().unwrap_or(0.0);
             
             // Since we're adding all samples together, we reduce volume a bit
             // I do it by a set 50% here, but may need to scale based on num of nodes
-            sum += sample / 0.5;
+            sum += sample * 0.5;
         }
         return sum;
     }
