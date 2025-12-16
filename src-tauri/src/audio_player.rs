@@ -15,6 +15,7 @@ impl AudioPlayer {
 
     pub fn add_node(&mut self, node: AudioNode) {
         self.nodes.push(node);
+        self.finished = false;
     }
 
     pub fn get_sample(&mut self) -> f32 {

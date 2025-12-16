@@ -11,7 +11,7 @@ use symphonia::core::formats::{FormatOptions, Track };
 use symphonia::core::meta::MetadataOptions;
 
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -24,22 +24,16 @@ use crate::audio_player::AudioPlayer;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
+type AudioSamples = HashMap<String, Vec<f32>>;
+
 struct AudioState {
     engine: AudioEngine,
+    player: AudioPlayer,
+    samples: AudioSamples,
 }
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
 
-
-#[tauri::command]
-async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
-    println!("playing audio from Rust");
-    let mut state = state.lock().unwrap();
-
-    let file_name = "ff8-magic.mp3";
     let resource_path = app.path().resolve("audio", BaseDirectory::Resource).expect("Couldn't get migrations folder");
     let audio_path = resource_path.join(file_name);
 
@@ -124,20 +118,54 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
                     "Unsupported sample format: {:?}",
                     other.spec()
                 );
-                return Err(false)
+                return Vec::new()
             }
         }
     }
-    
-    let audio_node = AudioNode::new(samples);
-    let mut audio_player = AudioPlayer::new();
-    audio_player.add_node(audio_node);
 
-    while !audio_player.finished {
-        let sample = audio_player.get_sample();
-        state.engine.push_sample(sample);
+    samples
+
+}
+
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+async fn load_sample_file(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
+   println!("loading audio from Rust");
+    let mut state = state.lock().unwrap();
+
+    let file_name = "ff8-magic.mp3";
+    let samples = load_sample_data_from_disk(&app, file_name);
+
+    state.samples.insert(file_name.to_string(), samples);
+
+    Ok(true)
+}
+
+
+#[tauri::command(async)]
+async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
+    println!("loading audio from Rust");
+    let mut state = state.lock().unwrap();
+
+    // Get samples from cache
+    let file_name = "ff8-magic.mp3";
+    let samples_result = state.samples.get(file_name);
+
+    // Play audio if we got samples
+    if let Some(samples) = samples_result {
+        println!("playing audio from Rust");
+        let audio_node = AudioNode::new(samples.to_vec());
+        state.player.add_node(audio_node);
+
+        while !state.player.finished {
+            let sample = state.player.get_sample();
+            state.engine.push_sample(sample);
+        }
     }
-    
 
     Ok(true)
 }
@@ -146,12 +174,24 @@ async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Resu
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+
             
-            // Set up CPAL.
+            // Set up audio backend (aka CPAL)
             let engine = AudioEngine::new();
+            
+            // Setup additional global state
+            let audio_player = AudioPlayer::new();
+            let mut samples: AudioSamples = HashMap::new();
+
+            // DEBUG: Load a test sample
+            let file_name = "ff8-magic.mp3";
+            let sample_data = load_sample_data_from_disk(app.handle(), file_name);
+            samples.insert(file_name.to_string(), sample_data);
 
             app.manage(Mutex::new(AudioState {
                 engine,
+                player: audio_player,
+                samples,
             }));
 
             Ok(())
