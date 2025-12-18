@@ -1,13 +1,25 @@
-use std::{collections::HashMap, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed}}, thread, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed},
+        Arc, Mutex,
+    },
+    thread,
+    time::Duration,
+};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crossbeam::channel::{Receiver, Sender};
-use ringbuf::{Cons, HeapCons, HeapProd, HeapRb, Prod, SharedRb, storage::Heap, traits::{Consumer, Observer, Producer, Split}, wrap::caching::Caching};
+use ringbuf::{
+    storage::Heap,
+    traits::{Consumer, Observer, Producer, Split},
+    wrap::caching::Caching,
+    Cons, HeapCons, HeapProd, HeapRb, Prod, SharedRb,
+};
 use symphonia::core::sample;
 use tauri::{AppHandle, Emitter};
 
 use crate::audio_node::AudioNode;
-
 
 const SAMPLE_BUFFER_SIZE: usize = 48_000;
 
@@ -33,20 +45,16 @@ impl Mixer {
             match command {
                 AudioCommand::Play(buffer) => {
                     self.nodes.push(AudioNode::new(buffer));
-                },
-                AudioCommand::Pause => {
-
-                },
+                }
+                AudioCommand::Pause => {}
             }
         }
-            
+
         // Read from ring buffer
         // Loop over the output and override with new audio
         for frame in output.chunks_mut(channels) {
-            
             // Replace output channel with sample data
             for ch in 0..channels {
-                
                 let mut mix = 0.0;
                 // Override output with our sample
                 self.nodes.retain_mut(|node| {
@@ -63,8 +71,6 @@ impl Mixer {
                 waveform_producer.try_send(mix);
             }
         }
-
-
     }
 }
 
@@ -74,10 +80,10 @@ pub struct AudioBuffer {
 }
 
 impl AudioBuffer {
-    pub fn new(samples: Vec<f32>, sample_rate: i32) -> Self{
+    pub fn new(samples: Vec<f32>, sample_rate: i32) -> Self {
         Self {
-            samples: Arc::new(samples), 
-            sample_rate
+            samples: Arc::new(samples),
+            sample_rate,
         }
     }
 }
@@ -90,24 +96,25 @@ pub struct AssetStore {
 
 impl AssetStore {
     pub fn new(buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>) -> Self {
-        Self {
-            buffers
-        }
+        Self { buffers }
     }
     pub fn insert(&mut self, id: AssetId, buffer: AudioBuffer) {
         let buffer_lock = self.buffers.lock();
         match buffer_lock {
             Ok(mut buffers) => {
                 buffers.insert(id, Arc::new(buffer));
-            },
+            }
             Err(error) => {
                 eprintln!("{}", error);
-            },
+            }
         }
     }
     pub fn get_buffer_by_id(&self, id: AssetId) -> Option<Arc<AudioBuffer>> {
         let buffer = {
-            let asset_store = self.buffers.lock().expect("Couldn't lock asset store buffer");
+            let asset_store = self
+                .buffers
+                .lock()
+                .expect("Couldn't lock asset store buffer");
             asset_store.get(&id).cloned()
         };
         buffer
@@ -123,18 +130,12 @@ pub struct AudioEngineMessaging {
     producer: Sender<AudioCommand>,
 }
 impl AudioEngineMessaging {
-    pub fn new(
-        app: AppHandle,
-    producer: Sender<AudioCommand>,
-    waveform: Receiver<f32>,) -> Self {
-
+    pub fn new(app: AppHandle, producer: Sender<AudioCommand>, waveform: Receiver<f32>) -> Self {
         Self::spawn_waveform_thread(app, waveform);
 
-        Self{ 
-            producer
-        }
+        Self { producer }
     }
-    
+
     pub fn play(&self, buffer: Option<Arc<AudioBuffer>>) {
         if let Some(buffer) = buffer {
             // The AudioBuffer here has "samples" that are also wrapped in `Arc`
@@ -154,19 +155,16 @@ impl AudioEngineMessaging {
         println!("command result: {:?}", result);
     }
 
-    pub fn spawn_waveform_thread(
-    app: AppHandle,
-    waveform: Receiver<f32>) {
+    pub fn spawn_waveform_thread(app: AppHandle, waveform: Receiver<f32>) {
         thread::spawn(move || {
             let mut waveform_buffer = Vec::with_capacity(512);
 
             loop {
-
                 // Handle commands
                 while let Ok(waveform_data) = waveform.try_recv() {
                     waveform_buffer.push(waveform_data);
                 }
-                
+
                 if !waveform_buffer.is_empty() {
                     let _ = app.emit("waveform", waveform_buffer.clone());
                     waveform_buffer.clear();
@@ -175,7 +173,6 @@ impl AudioEngineMessaging {
             }
         });
     }
-
 }
 
 pub struct AudioEngine {
@@ -183,9 +180,8 @@ pub struct AudioEngine {
      * The audio stream. This has to stay alive to ensure sound continues playing.
      */
     stream: cpal::Stream,
-    
+
     config: cpal::SupportedStreamConfig,
-    
 }
 
 impl AudioEngine {
@@ -196,21 +192,29 @@ impl AudioEngine {
             .default_output_device()
             .expect("no output device available");
 
-        let config = device.default_output_config().expect("Couldn't load config");
+        let config = device
+            .default_output_config()
+            .expect("Couldn't load config");
         // Create a mixer
         let mut mixer = Mixer { nodes: Vec::new() };
-       
+
         let channels = config.channels() as usize;
-        
+
         let stream = match config.sample_format() {
-            cpal::SampleFormat::F32 => device.build_output_stream(&config.clone().into(), move |output: &mut [f32], _| {
-                // Run the mixer which runs any commands and 
-                // combines samples into one signal,
-                // then overrides the output signal with it
-                mixer.process(output, channels, &mut consumer, &mut waveform_producer);
-            },
-        |err| eprintln!("couldn't build audio stream: {err}"), None).expect("couldn't build audio stream"),
-            cpal::SampleFormat::I16 =>  todo!(),
+            cpal::SampleFormat::F32 => device
+                .build_output_stream(
+                    &config.clone().into(),
+                    move |output: &mut [f32], _| {
+                        // Run the mixer which runs any commands and
+                        // combines samples into one signal,
+                        // then overrides the output signal with it
+                        mixer.process(output, channels, &mut consumer, &mut waveform_producer);
+                    },
+                    |err| eprintln!("couldn't build audio stream: {err}"),
+                    None,
+                )
+                .expect("couldn't build audio stream"),
+            cpal::SampleFormat::I16 => todo!(),
             cpal::SampleFormat::U16 => todo!(),
             cpal::SampleFormat::I8 => todo!(),
             cpal::SampleFormat::I24 => todo!(),
@@ -223,13 +227,8 @@ impl AudioEngine {
             _ => todo!(),
         };
 
-
         stream.play().expect("Couldn't play");
 
-        Self {
-            config,
-            stream,
-        }
+        Self { config, stream }
     }
-
 }

@@ -1,25 +1,29 @@
 mod audio_engine;
 mod audio_node;
 
-use ringbuf::HeapRb;
-use ringbuf::traits::Split;
-use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use ringbuf::traits::Split;
+use ringbuf::HeapRb;
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
 use symphonia::core::codecs::DecoderOptions;
-use symphonia::core::formats::{FormatOptions, Track };
+use symphonia::core::formats::{FormatOptions, Track};
 use symphonia::core::meta::MetadataOptions;
-
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
 use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-use std::{f32::consts::PI, sync::{Arc, Mutex}};
+use std::{
+    f32::consts::PI,
+    sync::{Arc, Mutex},
+};
 
-use crate::audio_engine::{AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging};
+use crate::audio_engine::{
+    AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
+};
 use crate::audio_node::AudioNode;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
@@ -32,8 +36,10 @@ struct AudioState {
 }
 
 fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
-
-    let resource_path = app.path().resolve("audio", BaseDirectory::Resource).expect("Couldn't get migrations folder");
+    let resource_path = app
+        .path()
+        .resolve("audio", BaseDirectory::Resource)
+        .expect("Couldn't get migrations folder");
     let audio_path = resource_path.join(file_name);
 
     // Open reader and probe MP3.
@@ -42,14 +48,15 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
     let mss = symphonia::core::io::MediaSourceStream::new(Box::new(file), Default::default());
     let mut hint = symphonia::core::probe::Hint::new();
     hint.with_extension("mp3");
-    let probed = symphonia::default::get_probe().format(
-        &hint,
-        mss,
-        &FormatOptions::default(),
-        &MetadataOptions::default(),
-    ).expect("Failed to probe audio format");
+    let probed = symphonia::default::get_probe()
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
+        .expect("Failed to probe audio format");
 
-    
     let mut format = probed.format;
 
     // Select the first audio track.
@@ -62,17 +69,15 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
     let track_id = track.id;
 
     // Create a decoder.
-    let mut decoder = symphonia::default::get_codecs().make(
-        &track.codec_params,
-        &DecoderOptions::default(),
-    ).expect("Couldn't create decoder");
+    let mut decoder = symphonia::default::get_codecs()
+        .make(&track.codec_params, &DecoderOptions::default())
+        .expect("Couldn't create decoder");
 
     // Decode the ENTIRE MP3 ahead of time into f32 interleaved PCM.
     // For streaming large files, switch to a ring buffer; but for simplicity,
     // decode into memory.
     let mut samples: Vec<f32> = Vec::new();
 
-    
     loop {
         let packet = match format.next_packet() {
             Ok(p) => p,
@@ -80,7 +85,7 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
             Err(err) => {
                 eprintln!("Error decoding packet: {err}");
                 break;
-            },
+            }
         };
 
         if packet.track_id() != track_id {
@@ -99,8 +104,6 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
                         samples.push(buf.chan(ch)[frame]);
                     }
                 }
-
-
             }
             AudioBufferRef::S16(buf) => {
                 let channels = buf.spec().channels.count();
@@ -113,17 +116,13 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
                 }
             }
             other => {
-                eprintln!(
-                    "Unsupported sample format: {:?}",
-                    other.spec()
-                );
-                return Vec::new()
+                eprintln!("Unsupported sample format: {:?}", other.spec());
+                return Vec::new();
             }
         }
     }
 
     samples
-
 }
 
 #[tauri::command]
@@ -144,9 +143,11 @@ fn greet(name: &str) -> String {
 //     Ok(true)
 // }
 
-
 #[tauri::command(async)]
-async fn play_audio(messaging: State<'_, AudioEngineMessaging>, asset_store: State<'_, AssetStore>) -> Result<bool, bool> {
+async fn play_audio(
+    messaging: State<'_, AudioEngineMessaging>,
+    asset_store: State<'_, AssetStore>,
+) -> Result<bool, bool> {
     println!("loading audio from Rust");
 
     // Get samples from cache
@@ -161,19 +162,19 @@ async fn play_audio(messaging: State<'_, AudioEngineMessaging>, asset_store: Sta
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-
             // Allocate a ring buffer to hold commands for the audio stream
             let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
             let (waveform_producer, waveform_consumer) = crossbeam::channel::bounded::<f32>(128);
-            
+
             // Set up audio backend (aka CPAL)
             let engine = AudioEngine::new(consumer, waveform_producer);
             app.manage(engine);
 
             // Create the messaging layer between UI and AudioEngine
-            let messaging = AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer);
+            let messaging =
+                AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer);
             app.manage(messaging);
-            
+
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
@@ -184,11 +185,10 @@ pub fn run() {
             asset_store.insert(file_name.to_string(), AudioBuffer::new(sample_data, 0));
 
             // let asset_store_ref = Arc::new(asset_store);
-            
+
             app.manage(asset_store);
 
             println!("app setup success");
-            
 
             Ok(())
         })
