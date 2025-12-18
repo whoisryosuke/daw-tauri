@@ -1,4 +1,5 @@
 import { Flex, IconButton } from "@radix-ui/themes";
+import { invoke } from "@tauri-apps/api/core";
 import React from "react";
 import { BsPlay, BsRecord, BsStop } from "react-icons/bs";
 
@@ -16,9 +17,15 @@ type Props = {};
 
 const PlayerControlButtons = (props: Props) => {
   const sharedStyles = { width: "var(--space-6)", height: "var(--space-6)" };
+
+  const handlePlay = async () => {
+    console.log("playing audio");
+    await invoke("play_audio", {});
+  };
+
   return (
     <Flex gap="1">
-      <PlayerControlButton>
+      <PlayerControlButton onClick={handlePlay}>
         <BsPlay style={sharedStyles} />
       </PlayerControlButton>
       <PlayerControlButton>

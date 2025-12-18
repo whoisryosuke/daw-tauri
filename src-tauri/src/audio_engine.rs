@@ -1,9 +1,10 @@
-use std::{collections::HashMap, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed}}};
+use std::{collections::HashMap, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed}}, thread, time::Duration};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crossbeam::channel::{Receiver, Sender};
 use ringbuf::{Cons, HeapCons, HeapProd, HeapRb, Prod, SharedRb, storage::Heap, traits::{Consumer, Observer, Producer, Split}, wrap::caching::Caching};
 use symphonia::core::sample;
+use tauri::{AppHandle, Emitter};
 
 use crate::audio_node::AudioNode;
 
@@ -25,6 +26,7 @@ impl Mixer {
         output: &mut [f32],
         channels: usize,
         consumer: &mut Receiver<AudioCommand>,
+        waveform_producer: &mut Sender<f32>,
     ) {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
@@ -56,8 +58,12 @@ impl Mixer {
                     }
                 });
                 frame[ch] = mix;
+
+                // Send the waveform data
+                waveform_producer.try_send(mix);
             }
         }
+
 
     }
 }
@@ -118,7 +124,12 @@ pub struct AudioEngineMessaging {
 }
 impl AudioEngineMessaging {
     pub fn new(
-    producer: Sender<AudioCommand>) -> Self {
+        app: AppHandle,
+    producer: Sender<AudioCommand>,
+    waveform: Receiver<f32>,) -> Self {
+
+        Self::spawn_waveform_thread(app, waveform);
+
         Self{ 
             producer
         }
@@ -142,6 +153,29 @@ impl AudioEngineMessaging {
 
         println!("command result: {:?}", result);
     }
+
+    pub fn spawn_waveform_thread(
+    app: AppHandle,
+    waveform: Receiver<f32>) {
+        thread::spawn(move || {
+            let mut waveform_buffer = Vec::with_capacity(512);
+
+            loop {
+
+                // Handle commands
+                while let Ok(waveform_data) = waveform.try_recv() {
+                    waveform_buffer.push(waveform_data);
+                }
+                
+                if !waveform_buffer.is_empty() {
+                    let _ = app.emit("waveform", waveform_buffer.clone());
+                    waveform_buffer.clear();
+                }
+                thread::sleep(Duration::from_millis(16)); // ~60 FPS
+            }
+        });
+    }
+
 }
 
 pub struct AudioEngine {
@@ -155,7 +189,7 @@ pub struct AudioEngine {
 }
 
 impl AudioEngine {
-    pub fn new(mut consumer: Receiver<AudioCommand>) -> Self {
+    pub fn new(mut consumer: Receiver<AudioCommand>, mut waveform_producer: Sender<f32>) -> Self {
         // Set up CPAL.
         let host = cpal::default_host();
         let device = host
@@ -173,7 +207,7 @@ impl AudioEngine {
                 // Run the mixer which runs any commands and 
                 // combines samples into one signal,
                 // then overrides the output signal with it
-                mixer.process(output, channels, &mut consumer);
+                mixer.process(output, channels, &mut consumer, &mut waveform_producer);
             },
         |err| eprintln!("couldn't build audio stream: {err}"), None).expect("couldn't build audio stream"),
             cpal::SampleFormat::I16 =>  todo!(),

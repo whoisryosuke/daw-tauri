@@ -30,7 +30,7 @@ const Track = ({ id, name }: Props) => {
       ref={setNodeRef}
       style={{
         background: isOver ? "var(--accent-4)" : "transparent",
-        border: "1px solid blue",
+        // border: "1px solid blue",
         width: "100%",
       }}
     >

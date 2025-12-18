@@ -26,7 +26,7 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
 
   useEffect(() => {
     const attachEvents = async () => {
-      listenerRef.current = await listen("audio-waveform-time", (event) => {
+      listenerRef.current = await listen("waveform", (event) => {
         console.log("waveform data", event);
         data.current = event.payload as number[];
       });
@@ -79,7 +79,7 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
         );
         const x = i;
         // We scale the audio values to 0-1 to make it easier
-        const amplitude = map(data.current[index], -1, 1, 0, 1);
+        const amplitude = map(data.current[index], -1, 1, 0, 1) * 10 - 4.5;
         const y = (amplitude * canvasHeight) / 2 + canvasHeight / 4;
         if (i === 0) {
           ctx.moveTo(x, y);

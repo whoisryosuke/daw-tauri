@@ -164,13 +164,14 @@ pub fn run() {
 
             // Allocate a ring buffer to hold commands for the audio stream
             let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
+            let (waveform_producer, waveform_consumer) = crossbeam::channel::bounded::<f32>(128);
             
             // Set up audio backend (aka CPAL)
-            let engine = AudioEngine::new(consumer);
+            let engine = AudioEngine::new(consumer, waveform_producer);
             app.manage(engine);
 
             // Create the messaging layer between UI and AudioEngine
-            let messaging = AudioEngineMessaging::new(producer);
+            let messaging = AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer);
             app.manage(messaging);
             
             // Setup additional global state
