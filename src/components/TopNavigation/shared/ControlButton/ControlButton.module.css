@@ -1,0 +1,16 @@
+.ControlButton {
+  background: var(--gray-4);
+  border-color: var(--gray-4);
+  margin: var(--space-0-5);
+  box-shadow: none;
+}
+
+.ControlButton:hover {
+  background: var(--gray-5);
+  border-color: var(--gray-5);
+}
+
+.ControlButton:active {
+  background: var(--gray-6);
+  border-color: var(--gray-6);
+}

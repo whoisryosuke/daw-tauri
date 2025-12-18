@@ -1,40 +1,28 @@
-import { useEffect, useRef, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import Waveform from "./components/Waveform";
+import { useState } from "react";
+import { Box, Container, Flex } from "@radix-ui/themes";
+import TopNavigation from "./components/TopNavigation/TopNavigation";
+import MediaBrowser from "./components/MediaBrowser/MediaBrowser";
+import Composition from "./components/Composition/Composition";
+import ModuleArea from "./components/ModuleArea/ModuleArea";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    setGreetMsg(await invoke("play_audio"));
-  }
+  const [count, setCount] = useState(0);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <Waveform />
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <Flex
+      height="100dvh"
+      direction="column"
+      style={{ backgroundColor: "var(--color-surface)" }}
+    >
+      <TopNavigation />
+      <Flex style={{ flex: 1 }}>
+        <MediaBrowser />
+        <Composition />
+      </Flex>
+      <Flex>
+        <ModuleArea />
+      </Flex>
+    </Flex>
   );
 }
 

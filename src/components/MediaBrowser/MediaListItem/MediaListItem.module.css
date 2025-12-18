@@ -1,0 +1,15 @@
+.MediaListItem {
+  background: transparent;
+  border: 0;
+
+  display: flex;
+
+  padding: var(--space-1) var(--space-2);
+
+  gap: var(--space-1);
+}
+
+.MediaListItem:hover,
+.MediaListItem.selected {
+  background: var(--accent-5);
+}
