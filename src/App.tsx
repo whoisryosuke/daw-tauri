@@ -4,6 +4,7 @@ import TopNavigation from "./components/TopNavigation/TopNavigation";
 import MediaBrowser from "./components/MediaBrowser/MediaBrowser";
 import Composition from "./components/Composition/Composition";
 import ModuleArea from "./components/ModuleArea/ModuleArea";
+import DNDTest from "./DNDTest";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -22,6 +23,7 @@ function App() {
       <Flex>
         <ModuleArea />
       </Flex>
+      <DNDTest />
     </Flex>
   );
 }

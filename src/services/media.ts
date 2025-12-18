@@ -1,5 +1,11 @@
 import type { MediaBrowserDragData } from "../constants/drag";
-import { clipsAtom, type Clip, type ClipType } from "../store/composition";
+import {
+  clipsAtom,
+  TrackClipData,
+  trackClipsAtom,
+  type Clip,
+  type ClipType,
+} from "../store/composition";
 import {
   midiSequencesAtom,
   samplesAtom,
@@ -37,7 +43,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
 
   switch (item.type) {
     case "sample":
-      console.log("loading sample");
+      console.log("loading sample", item.id);
       const audioCtx = new window.OfflineAudioContext(2, 44100 * 40, 44100);
       const arrayBuffer = await response.arrayBuffer();
 
@@ -80,4 +86,33 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
   store.set(clipsAtom, (prev) => [...prev, newClip]);
 
   return newClip;
+};
+
+export const addClipToTrack = async (
+  id: string,
+  item: MediaBrowserDragData
+) => {
+  // Load media if needed and cache
+  const media = await loadMedia(item);
+
+  if (!media) {
+    console.error("media/clip failed to load");
+    return;
+  }
+
+  // Create a clip if necessary
+  const clip = await createMediaClip(media, item.type);
+
+  // Create a track clip using the ID of cache
+  const newId = generateSimpleHash();
+  const newTrackClip: TrackClipData = {
+    id: newId,
+    trackId: id,
+    clipId: clip.id,
+    startTime: 0,
+    enabled: true,
+  };
+  console.log("created new clip", newTrackClip);
+
+  store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);
 };
