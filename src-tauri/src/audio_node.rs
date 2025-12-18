@@ -47,7 +47,7 @@ impl AudioNode for SampleNode {
     }
 }
 
-struct SynthNode {
+pub struct SynthNode {
     synth: Sine<ConstHz>,
     pub finished: bool,
 }
@@ -68,5 +68,21 @@ impl AudioNode for SynthNode {
         let sample = self.synth.next();
 
         Some(sample as f32)
+    }
+}
+
+pub enum AudioNodeTypes {
+    StaticBuffer(SampleNode),
+    Streaming(SampleNode),
+    Synthesizer(SynthNode),
+}
+
+impl AudioNodeTypes {
+    pub fn get_sample(&mut self) -> Option<f32> {
+        match self {
+            AudioNodeTypes::StaticBuffer(buf) => buf.get_sample(),
+            AudioNodeTypes::Streaming(stream) => stream.get_sample(),
+            AudioNodeTypes::Synthesizer(synth) => synth.get_sample(),
+        }
     }
 }

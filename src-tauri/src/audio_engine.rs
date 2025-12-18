@@ -12,7 +12,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
-use crate::audio_node::{AudioNode, SampleNode};
+use crate::audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode};
 
 const SAMPLE_BUFFER_SIZE: usize = 48_000;
 
@@ -22,7 +22,7 @@ const SAMPLE_BUFFER_SIZE: usize = 48_000;
  * The queue is controlled by `AudioCommand`s
  */
 pub struct Mixer {
-    nodes: Vec<SampleNode>,
+    nodes: Vec<AudioNodeTypes>,
 }
 
 impl Mixer {
@@ -37,7 +37,10 @@ impl Mixer {
         while let Ok(command) = consumer.try_recv() {
             match command {
                 AudioCommand::Play(buffer) => {
-                    self.nodes.push(SampleNode::new(buffer));
+                    self.nodes.push(AudioNodeTypes::StaticBuffer(SampleNode::new(buffer)));
+                }
+                AudioCommand::AddSynth => {
+                    self.nodes.push(AudioNodeTypes::Synthesizer(SynthNode::new()));
                 }
                 AudioCommand::Pause => {}
             }
@@ -116,6 +119,7 @@ impl AssetStore {
 
 pub enum AudioCommand {
     Play(Vec<f32>),
+    AddSynth,
     Pause,
 }
 
@@ -146,6 +150,10 @@ impl AudioEngineMessaging {
         let result = self.producer.try_send(command);
 
         println!("command result: {:?}", result);
+    }
+
+    pub fn add_synth(&self) {
+        self.send_command(AudioCommand::AddSynth);
     }
 
     pub fn spawn_waveform_thread(app: AppHandle, waveform: Receiver<f32>) {

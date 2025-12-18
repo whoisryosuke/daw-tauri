@@ -2,8 +2,6 @@ mod audio_engine;
 mod audio_node;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use ringbuf::traits::Split;
-use ringbuf::HeapRb;
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::{FormatOptions, Track};
@@ -24,7 +22,7 @@ use std::{
 use crate::audio_engine::{
     AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
 };
-use crate::audio_node::SampleNode;
+use crate::audio_node::AudioNode;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -158,6 +156,18 @@ async fn play_audio(
     Ok(true)
 }
 
+#[tauri::command(async)]
+async fn add_synth(
+    messaging: State<'_, AudioEngineMessaging>,
+) -> Result<bool, bool> {
+    println!("adding synth in Rust");
+
+    // Get samples from cache
+    messaging.add_synth();
+
+    Ok(true)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -193,7 +203,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio])
+        .invoke_handler(tauri::generate_handler![greet, play_audio, add_synth])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
