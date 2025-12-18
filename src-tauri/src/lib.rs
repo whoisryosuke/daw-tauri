@@ -24,7 +24,7 @@ use std::{
 use crate::audio_engine::{
     AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
 };
-use crate::audio_node::AudioNode;
+use crate::audio_node::SampleNode;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 

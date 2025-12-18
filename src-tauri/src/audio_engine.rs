@@ -10,16 +10,9 @@ use std::{
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crossbeam::channel::{Receiver, Sender};
-use ringbuf::{
-    storage::Heap,
-    traits::{Consumer, Observer, Producer, Split},
-    wrap::caching::Caching,
-    Cons, HeapCons, HeapProd, HeapRb, Prod, SharedRb,
-};
-use symphonia::core::sample;
 use tauri::{AppHandle, Emitter};
 
-use crate::audio_node::AudioNode;
+use crate::audio_node::{AudioNode, SampleNode};
 
 const SAMPLE_BUFFER_SIZE: usize = 48_000;
 
@@ -29,7 +22,7 @@ const SAMPLE_BUFFER_SIZE: usize = 48_000;
  * The queue is controlled by `AudioCommand`s
  */
 pub struct Mixer {
-    nodes: Vec<AudioNode>,
+    nodes: Vec<SampleNode>,
 }
 
 impl Mixer {
@@ -44,7 +37,7 @@ impl Mixer {
         while let Ok(command) = consumer.try_recv() {
             match command {
                 AudioCommand::Play(buffer) => {
-                    self.nodes.push(AudioNode::new(buffer));
+                    self.nodes.push(SampleNode::new(buffer));
                 }
                 AudioCommand::Pause => {}
             }

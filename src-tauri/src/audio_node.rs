@@ -1,10 +1,16 @@
-pub struct AudioNode {
+use dasp_signal::{self as signal, ConstHz, Signal, Sine};
+
+pub trait AudioNode {
+    fn get_sample(&mut self) -> Option<f32>;
+}
+
+pub struct SampleNode {
     data: Vec<f32>,
     position: usize,
     pub finished: bool,
 }
 
-impl AudioNode {
+impl SampleNode {
     pub fn new(data: Vec<f32>) -> Self {
         let position = 0usize;
         let finished = false;
@@ -15,7 +21,10 @@ impl AudioNode {
             finished,
         }
     }
-    pub fn get_sample(&mut self) -> Option<f32> {
+}
+
+impl AudioNode for SampleNode {
+    fn get_sample(&mut self) -> Option<f32> {
         // Finished? Return no noise
         if self.finished {
             return None;
@@ -35,5 +44,29 @@ impl AudioNode {
 
         // Return current sample
         Some(self.data[index])
+    }
+}
+
+struct SynthNode {
+    synth: Sine<ConstHz>,
+    pub finished: bool,
+}
+
+impl SynthNode {
+    pub fn new() -> Self {
+        let synth = signal::rate(44100.0).const_hz(440.0).sine();
+
+        Self {
+            synth,
+            finished: false,
+        }
+    }
+}
+
+impl AudioNode for SynthNode {
+    fn get_sample(&mut self) -> Option<f32> {
+        let sample = self.synth.next();
+
+        Some(sample as f32)
     }
 }
