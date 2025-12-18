@@ -1,6 +1,5 @@
 mod audio_engine;
 mod audio_node;
-mod audio_player;
 
 use ringbuf::HeapRb;
 use ringbuf::traits::Split;
@@ -22,7 +21,6 @@ use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 use crate::audio_engine::{AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging};
 use crate::audio_node::AudioNode;
-use crate::audio_player::AudioPlayer;
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
