@@ -2,6 +2,8 @@ mod audio_engine;
 mod audio_node;
 mod audio_player;
 
+use ringbuf::HeapRb;
+use ringbuf::traits::Split;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -18,7 +20,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
-use crate::audio_engine::{AudioBuffer, AudioEngine};
+use crate::audio_engine::{AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging};
 use crate::audio_node::AudioNode;
 use crate::audio_player::AudioPlayer;
 
@@ -27,9 +29,8 @@ const WAVEFORM_SAMPLE_NUM: usize = 2048;
 type AudioSamples = HashMap<String, Vec<f32>>;
 
 struct AudioState {
-    engine: AudioEngine,
-    // player: AudioPlayer,
-    // samples: AudioSamples,
+    messaging: AudioEngineMessaging,
+    asset_store: Arc<AssetStore>,
 }
 
 fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
@@ -147,13 +148,13 @@ fn greet(name: &str) -> String {
 
 
 #[tauri::command(async)]
-async fn play_audio(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
+async fn play_audio(messaging: State<'_, AudioEngineMessaging>, asset_store: State<'_, AssetStore>) -> Result<bool, bool> {
     println!("loading audio from Rust");
-    let mut state = state.lock().unwrap();
 
     // Get samples from cache
     let file_name = "ff8-magic.mp3".to_string();
-    state.engine.play(file_name);
+    let buffer = asset_store.get_buffer_by_id(file_name);
+    messaging.play(buffer);
 
     Ok(true)
 }
@@ -163,24 +164,32 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
 
+            // Allocate a ring buffer to hold commands for the audio stream
+            let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
             
             // Set up audio backend (aka CPAL)
-            let mut engine = AudioEngine::new();
+            let engine = AudioEngine::new(consumer);
+            app.manage(engine);
+
+            // Create the messaging layer between UI and AudioEngine
+            let messaging = AudioEngineMessaging::new(producer);
+            app.manage(messaging);
             
             // Setup additional global state
-            // let audio_player = AudioPlayer::new();
-            // let mut samples: AudioSamples = HashMap::new();
+            // Create the asset store to contain any samples cached in memory
+            let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
 
             // DEBUG: Load a test sample
             let file_name = "ff8-magic.mp3";
             let sample_data = load_sample_data_from_disk(app.handle(), file_name);
-            engine.asset_store.insert(file_name.to_string(), AudioBuffer::new(sample_data, 0));
+            asset_store.insert(file_name.to_string(), AudioBuffer::new(sample_data, 0));
+
+            // let asset_store_ref = Arc::new(asset_store);
             
-            app.manage(Mutex::new(AudioState {
-                engine,
-                // player: audio_player,
-                // samples,
-            }));
+            app.manage(asset_store);
+
+            println!("app setup success");
+            
 
             Ok(())
         })

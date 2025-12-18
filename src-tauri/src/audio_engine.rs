@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed}}};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use crossbeam::channel::{Receiver, Sender};
 use ringbuf::{Cons, HeapCons, HeapProd, HeapRb, Prod, SharedRb, storage::Heap, traits::{Consumer, Observer, Producer, Split}, wrap::caching::Caching};
 use symphonia::core::sample;
 
@@ -23,10 +24,10 @@ impl Mixer {
         &mut self,
         output: &mut [f32],
         channels: usize,
-        consumer: &mut HeapCons<AudioCommand>,
+        consumer: &mut Receiver<AudioCommand>,
     ) {
         // Handle commands
-        while let Some(command) = consumer.try_pop() {
+        while let Ok(command) = consumer.try_recv() {
             match command {
                 AudioCommand::Play(buffer) => {
                     self.nodes.push(AudioNode::new(buffer));
@@ -62,14 +63,14 @@ impl Mixer {
 }
 
 pub struct AudioBuffer {
-    samples: Vec<f32>,
+    samples: Arc<Vec<f32>>,
     sample_rate: i32,
 }
 
 impl AudioBuffer {
     pub fn new(samples: Vec<f32>, sample_rate: i32) -> Self{
         Self {
-            samples, 
+            samples: Arc::new(samples), 
             sample_rate
         }
     }
@@ -82,6 +83,11 @@ pub struct AssetStore {
 }
 
 impl AssetStore {
+    pub fn new(buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>) -> Self {
+        Self {
+            buffers
+        }
+    }
     pub fn insert(&mut self, id: AssetId, buffer: AudioBuffer) {
         let buffer_lock = self.buffers.lock();
         match buffer_lock {
@@ -93,11 +99,49 @@ impl AssetStore {
             },
         }
     }
+    pub fn get_buffer_by_id(&self, id: AssetId) -> Option<Arc<AudioBuffer>> {
+        let buffer = {
+            let asset_store = self.buffers.lock().expect("Couldn't lock asset store buffer");
+            asset_store.get(&id).cloned()
+        };
+        buffer
+    }
 }
 
-enum AudioCommand {
+pub enum AudioCommand {
     Play(Vec<f32>),
     Pause,
+}
+
+pub struct AudioEngineMessaging {
+    producer: Sender<AudioCommand>,
+}
+impl AudioEngineMessaging {
+    pub fn new(
+    producer: Sender<AudioCommand>) -> Self {
+        Self{ 
+            producer
+        }
+    }
+    
+    pub fn play(&self, buffer: Option<Arc<AudioBuffer>>) {
+        if let Some(buffer) = buffer {
+            // The AudioBuffer here has "samples" that are also wrapped in `Arc`
+            // so we can ideally do a "free" clone
+            self.send_command(AudioCommand::Play(buffer.samples.clone().to_vec()));
+        }
+    }
+
+    pub fn send_command(&self, command: AudioCommand) {
+        // Wait until we can insert sample
+        while self.producer.is_full() {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+
+        let result = self.producer.try_send(command);
+
+        println!("command result: {:?}", result);
+    }
 }
 
 pub struct AudioEngine {
@@ -108,13 +152,10 @@ pub struct AudioEngine {
     
     config: cpal::SupportedStreamConfig,
     
-    producer: HeapProd<AudioCommand>,
-    
-    pub asset_store: AssetStore,
 }
 
 impl AudioEngine {
-    pub fn new() -> Self {
+    pub fn new(mut consumer: Receiver<AudioCommand>) -> Self {
         // Set up CPAL.
         let host = cpal::default_host();
         let device = host
@@ -122,17 +163,9 @@ impl AudioEngine {
             .expect("no output device available");
 
         let config = device.default_output_config().expect("Couldn't load config");
-
-        // Create the asset store to contain any samples cached in memory
-        let asset_store = AssetStore { buffers: Mutex::new(HashMap::new()) };
-
         // Create a mixer
         let mut mixer = Mixer { nodes: Vec::new() };
-
-        // Allocate a ring buffer to hold commands for the audio stream
-        let heap = HeapRb::<AudioCommand>::new(128);
-        let (producer, mut consumer) = heap.split();
-        
+       
         let channels = config.channels() as usize;
         
         let stream = match config.sample_format() {
@@ -162,28 +195,7 @@ impl AudioEngine {
         Self {
             config,
             stream,
-            producer,
-            asset_store
         }
-    }
-
-    pub fn play(&mut self, id: AssetId) {
-        let buffer = {
-            let asset_store = self.asset_store.buffers.lock().expect("Couldn't lock asset store buffer");
-            asset_store.get(&id).map(|buf| buf.samples.clone())
-        };
-        if let Some(buffer) = buffer {
-            self.send_command(AudioCommand::Play(buffer));
-        }
-    }
-
-    pub fn send_command(&mut self, command: AudioCommand) {
-        // Wait until we can insert sample
-        while self.producer.is_full() {
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        }
-
-        self.producer.try_push(command);
     }
 
 }
