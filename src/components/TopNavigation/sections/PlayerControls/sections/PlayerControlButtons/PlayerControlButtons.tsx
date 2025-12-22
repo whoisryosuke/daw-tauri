@@ -23,12 +23,17 @@ const PlayerControlButtons = (props: Props) => {
     await invoke("play_audio", {});
   };
 
+  const handleStop = async () => {
+    console.log("stopping audio");
+    await invoke("stop_audio");
+  };
+
   return (
     <Flex gap="1">
       <PlayerControlButton onClick={handlePlay}>
         <BsPlay style={sharedStyles} />
       </PlayerControlButton>
-      <PlayerControlButton>
+      <PlayerControlButton onClick={handleStop}>
         <BsStop style={sharedStyles} />
       </PlayerControlButton>
       <PlayerControlButton>

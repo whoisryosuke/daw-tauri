@@ -12,7 +12,7 @@ use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io::BufReader;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 use std::{
     f32::consts::PI,
@@ -157,6 +157,18 @@ async fn play_audio(
 }
 
 #[tauri::command(async)]
+async fn stop_audio(
+    messaging: State<'_, AudioEngineMessaging>,
+) -> Result<bool, bool> {
+    println!("loading audio from Rust");
+
+    // Get samples from cache
+    messaging.stop();
+
+    Ok(true)
+}
+
+#[tauri::command(async)]
 async fn add_synth(
     messaging: State<'_, AudioEngineMessaging>,
 ) -> Result<bool, bool> {
@@ -168,6 +180,18 @@ async fn add_synth(
     Ok(true)
 }
 
+#[tauri::command(async)]
+async fn get_sample_rate(
+    engine: State<'_, AudioEngine>,
+) -> Result<u32, bool> {
+    println!("adding synth in Rust");
+
+    // Get samples from cache
+    let sample_rate = engine.config.sample_rate().0;
+
+    Ok(sample_rate)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -176,13 +200,16 @@ pub fn run() {
             let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
             let (waveform_producer, waveform_consumer) = crossbeam::channel::bounded::<f32>(128);
 
+            // Allocate atomic memory for some shared state (like playback time)
+            let playback_time = Arc::new(AtomicU64::new(0));
+
             // Set up audio backend (aka CPAL)
-            let engine = AudioEngine::new(consumer, waveform_producer);
+            let engine = AudioEngine::new(consumer, waveform_producer, playback_time.clone());
             app.manage(engine);
 
             // Create the messaging layer between UI and AudioEngine
             let messaging =
-                AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer);
+                AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer, playback_time.clone());
             app.manage(messaging);
 
             // Setup additional global state
@@ -203,7 +230,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio, add_synth])
+        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -72,6 +72,7 @@ impl AudioNode for SynthNode {
 }
 
 pub enum AudioNodeTypes {
+    Silence,
     StaticBuffer(SampleNode),
     Streaming(SampleNode),
     Synthesizer(SynthNode),
@@ -80,6 +81,7 @@ pub enum AudioNodeTypes {
 impl AudioNodeTypes {
     pub fn get_sample(&mut self) -> Option<f32> {
         match self {
+            AudioNodeTypes::Silence => Some(0.0),
             AudioNodeTypes::StaticBuffer(buf) => buf.get_sample(),
             AudioNodeTypes::Streaming(stream) => stream.get_sample(),
             AudioNodeTypes::Synthesizer(synth) => synth.get_sample(),

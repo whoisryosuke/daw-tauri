@@ -27,7 +27,6 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
   useEffect(() => {
     const attachEvents = async () => {
       listenerRef.current = await listen("waveform", (event) => {
-        console.log("waveform data", event);
         data.current = event.payload as number[];
       });
     };
