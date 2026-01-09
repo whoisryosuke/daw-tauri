@@ -1,5 +1,6 @@
 mod audio_engine;
 mod audio_node;
+mod audio_graph;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
