@@ -10,8 +10,8 @@ export type MediaBase = {
 };
 
 export type Sample = MediaBase & {
-  cached: boolean;
-  buffer: AudioBuffer;
+  // cached: boolean;
+  // buffer: AudioBuffer;
 };
 
 export type MIDINote = {

@@ -1,6 +1,7 @@
 import type { MediaBrowserDragData } from "../constants/drag";
 import {
   clipsAtom,
+  compositionAtom,
   TrackClipData,
   trackClipsAtom,
   type Clip,
@@ -15,6 +16,12 @@ import {
 } from "../store/media";
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
+
+export type DragPositionData = {
+  x: number;
+  y: number;
+  width: number;
+};
 
 export const loadMedia = async (item: MediaBrowserDragData) => {
   // Check if it exists in cache first
@@ -37,25 +44,12 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
   }
   if (exists) return exists;
 
-  // Load the data from disk
-  // DEBUG: For now we fetch from `/public` folder.
-  const response = await fetch(item.id);
-
   switch (item.type) {
     case "sample":
-      console.log("loading sample", item.id);
-      const audioCtx = new window.OfflineAudioContext(2, 44100 * 40, 44100);
-      const arrayBuffer = await response.arrayBuffer();
-
-      // Use context to decode into an audio buffer
-      const newAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
       const newSample: Sample = {
         id: generateSimpleHash(),
         name: item.name,
         path: item.id,
-        cached: true,
-        buffer: newAudioBuffer,
       };
 
       store.set(samplesAtom, (prev) => [...prev, newSample]);
@@ -88,9 +82,24 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
   return newClip;
 };
 
+function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
+  // Get composition range
+  const [start, end] = store.get(compositionAtom).range;
+
+  // Convert position from size to percent (0% = left, 100% = right)
+  const percent = dragPosition.x / dragPosition.width;
+  // Figure out total time of composition so we can figure what percent we're at
+  const timeSpan = end - start;
+  // Make sure to offset by the start to keep it within range
+  const startTime = timeSpan * percent + start;
+
+  return startTime;
+}
+
 export const addClipToTrack = async (
   id: string,
-  item: MediaBrowserDragData
+  item: MediaBrowserDragData,
+  dragPosition: DragPositionData
 ) => {
   // Load media if needed and cache
   const media = await loadMedia(item);
@@ -103,13 +112,16 @@ export const addClipToTrack = async (
   // Create a clip if necessary
   const clip = await createMediaClip(media, item.type);
 
+  // Calculate the start time based on drag placement
+  const startTime = calculateStartTimeFromDrag(dragPosition);
+
   // Create a track clip using the ID of cache
   const newId = generateSimpleHash();
   const newTrackClip: TrackClipData = {
     id: newId,
     trackId: id,
     clipId: clip.id,
-    startTime: 0,
+    startTime,
     enabled: true,
   };
   console.log("created new clip", newTrackClip);

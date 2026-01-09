@@ -1,5 +1,10 @@
 import { atom } from "jotai";
 
+export type CompositionData = {
+  // Start and end range for the composition area (and all tracks inside)
+  range: [number, number];
+};
+
 export type TrackData = {
   id: string;
   name: string;
@@ -28,6 +33,9 @@ export type Clip = {
   data: string;
 };
 
+export const compositionAtom = atom<CompositionData>({
+  range: [0, 1],
+});
 export const tracksAtom = atom<TrackData[]>([]);
 export const trackClipsAtom = atom<TrackClipData[]>([]);
 export const clipsAtom = atom<Clip[]>([]);
