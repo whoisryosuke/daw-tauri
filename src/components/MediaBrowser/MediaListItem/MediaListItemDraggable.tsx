@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 export type MediaListItemDraggableProps = ListItemData & {
   dragType: DragTypes;
   type: Clip["type"];
-  style: CSSProperties;
+  style?: CSSProperties;
 };
 
 const MediaListItemDraggable = ({
