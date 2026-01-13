@@ -7,7 +7,7 @@ import {
 } from "../../../store/composition";
 import { useAtom } from "jotai";
 import { createMediaClip, loadMedia } from "../../../services/media";
-import { Flex } from "@radix-ui/themes";
+import { Flex, Heading } from "@radix-ui/themes";
 import TrackClip from "../TrackClip/TrackClip";
 import { generateSimpleHash } from "../../../utils/hash";
 import { useDroppable } from "@dnd-kit/core";
@@ -29,15 +29,31 @@ const Track = ({ id, name, width }: Props) => {
 
   return (
     <Flex
-      ref={setNodeRef}
       style={{
-        background: isOver ? "var(--accent-4)" : "transparent",
         // border: "1px solid blue",
         width: "100%",
+        position: "relative",
+        minHeight: 100,
       }}
     >
-      <h3>{name}</h3>
-      <Flex style={{ flex: 1, position: "relative" }}>
+      <Heading
+        as="h3"
+        style={{
+          position: "absolute",
+          top: "var(--space-2)",
+          left: "var(--space-2)",
+        }}
+      >
+        {name}
+      </Heading>
+      <Flex
+        ref={setNodeRef}
+        style={{
+          flex: 1,
+          position: "relative",
+          background: isOver ? "var(--accent-4)" : "transparent",
+        }}
+      >
         {localClips.map((trackClip) => (
           <TrackClip key={trackClip.id} {...trackClip} width={width} />
         ))}

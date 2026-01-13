@@ -33,9 +33,17 @@ const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
         break;
     }
     const x = mapRange(startTime, range[0], range[1], 0, width);
+    const clipWidth = mapRange(
+      currentClip.duration,
+      range[0],
+      range[1],
+      0,
+      width
+    );
+    console.log("clip width", clipWidth, currentClip.duration);
 
     return (
-      <ClipContainer {...currentClip} x={x}>
+      <ClipContainer {...currentClip} x={x} width={clipWidth}>
         <ClipComponent {...currentClip} />
       </ClipContainer>
     );

@@ -113,11 +113,11 @@ impl AudioBuffer {
 
 type AssetId = String;
 
-pub struct AssetStore {
+pub struct AudioCache {
     buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>,
 }
 
-impl AssetStore {
+impl AudioCache {
     pub fn new(buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>) -> Self {
         Self { buffers }
     }

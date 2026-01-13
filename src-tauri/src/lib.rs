@@ -1,5 +1,6 @@
 mod audio_engine;
 mod audio_node;
+mod asset_store;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
@@ -19,8 +20,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use crate::asset_store::{AssetStore, MediaAsset, get_assets};
 use crate::audio_engine::{
-    AssetStore, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
+    AudioCache, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
 };
 use crate::audio_node::AudioNode;
 
@@ -30,10 +32,10 @@ type AudioSamples = HashMap<String, Vec<f32>>;
 
 struct AudioState {
     messaging: AudioEngineMessaging,
-    asset_store: Arc<AssetStore>,
+    asset_store: Arc<AudioCache>,
 }
 
-fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
+fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> (Vec<f32>, f64) {
     let resource_path = app
         .path()
         .resolve("audio", BaseDirectory::Resource)
@@ -65,10 +67,18 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
         .expect("no audio track");
 
     let track_id = track.id;
+    let track_params = &track.codec_params;
+
+        // Get the duration of the clip
+        let mut track_duration = 0.0;
+        if let (Some(sample_rate), Some(n_frames)) = (track_params.sample_rate, track_params.n_frames) {
+            track_duration = n_frames as f64 / sample_rate as f64;
+        }
+
 
     // Create a decoder.
     let mut decoder = symphonia::default::get_codecs()
-        .make(&track.codec_params, &DecoderOptions::default())
+        .make(&track_params, &DecoderOptions::default())
         .expect("Couldn't create decoder");
 
     // Decode the ENTIRE MP3 ahead of time into f32 interleaved PCM.
@@ -115,12 +125,12 @@ fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> Vec<f32> {
             }
             other => {
                 eprintln!("Unsupported sample format: {:?}", other.spec());
-                return Vec::new();
+                return (Vec::new(), 0.0);
             }
         }
     }
 
-    samples
+    (samples, track_duration)
 }
 
 #[tauri::command]
@@ -144,7 +154,7 @@ fn greet(name: &str) -> String {
 #[tauri::command(async)]
 async fn play_audio(
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, AssetStore>,
+    asset_store: State<'_, AudioCache>,
 ) -> Result<bool, bool> {
     println!("loading audio from Rust");
 
@@ -214,15 +224,22 @@ pub fn run() {
 
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
+            let mut audio_cache = AudioCache::new(Mutex::new(HashMap::new()));
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
 
             // DEBUG: Load a test sample
-            let file_name = "ff8-magic.mp3";
-            let sample_data = load_sample_data_from_disk(app.handle(), file_name);
-            asset_store.insert(file_name.to_string(), AudioBuffer::new(sample_data, 0));
+            let file_name = "FF8 Magic";
+            let file_path = "ff8-magic.mp3";
+            let (sample_data, duration) = load_sample_data_from_disk(app.handle(), file_path);
 
-            // let asset_store_ref = Arc::new(asset_store);
+            // Add to asset store
+            let audio_asset = MediaAsset::new(file_name.to_string(), file_path.to_string(), duration);
+            asset_store.insert(file_name.to_string(), audio_asset);
 
+            // Add to sample cache
+            audio_cache.insert(file_path.to_string(), AudioBuffer::new(sample_data, 0));
+
+            app.manage(audio_cache);
             app.manage(asset_store);
 
             println!("app setup success");
@@ -230,7 +247,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate])
+        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

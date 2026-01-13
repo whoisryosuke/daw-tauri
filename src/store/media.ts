@@ -7,6 +7,10 @@ export type MediaBase = {
    * Path to file that was loaded.
    */
   path: string;
+  /**
+   * Duration in seconds
+   */
+  duration: number;
 };
 
 export type Sample = MediaBase & {

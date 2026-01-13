@@ -24,7 +24,7 @@ export type ClipType = "sample" | "midi";
 export type Clip = {
   id: string;
   name: string;
-  time: number;
+  duration: number;
   type: ClipType;
 
   /**

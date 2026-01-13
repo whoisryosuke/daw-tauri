@@ -50,6 +50,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
         id: generateSimpleHash(),
         name: item.name,
         path: item.id,
+        duration: item.duration,
       };
 
       store.set(samplesAtom, (prev) => [...prev, newSample]);
@@ -72,7 +73,7 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
   const newClip: Clip = {
     id: generateSimpleHash(),
     name: media.name,
-    time: 0,
+    duration: media.duration,
     type,
     data: media.id,
   };

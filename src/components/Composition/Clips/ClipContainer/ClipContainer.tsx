@@ -36,12 +36,14 @@ type RadixColors = (typeof accentColors)[number];
 type Props = Clip & {
   color: RadixColors;
   x: number;
+  width: number;
 };
 
 const ClipContainer = ({
   name,
   color = "blue",
   children,
+  width,
   x,
 }: PropsWithChildren<Props>) => {
   return (
@@ -49,6 +51,7 @@ const ClipContainer = ({
       direction="column"
       className={`${styles.Container} ${styles[color]}`}
       style={{
+        width: width,
         left: x,
       }}
     >
