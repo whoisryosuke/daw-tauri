@@ -1,16 +1,24 @@
 import React, { type JSX } from "react";
-import { clipsAtom, type TrackClipData } from "../../../store/composition";
+import {
+  clipsAtom,
+  compositionAtom,
+  type TrackClipData,
+} from "../../../store/composition";
 import { useAtomValue } from "jotai";
 import type { TrackClipComponent } from "./types";
 import MIDISequenceClip from "../Clips/MIDISequenceClip/MIDISequenceClip";
 import SampleClip from "../Clips/SampleClip/SampleClip";
 import ClipContainer from "../Clips/ClipContainer/ClipContainer";
+import mapRange from "../../../utils/map";
 
 const DefaultClip = () => <div>Error</div>;
 
-type Props = TrackClipData & {};
+type Props = TrackClipData & {
+  width: number;
+};
 
-const TrackClip = ({ clipId, startTime, enabled }: Props) => {
+const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
+  const { range } = useAtomValue(compositionAtom);
   const clips = useAtomValue(clipsAtom);
   const currentClip = clips.find((clip) => clip.id == clipId);
 
@@ -24,9 +32,10 @@ const TrackClip = ({ clipId, startTime, enabled }: Props) => {
         ClipComponent = SampleClip;
         break;
     }
+    const x = mapRange(startTime, range[0], range[1], 0, width);
 
     return (
-      <ClipContainer {...currentClip}>
+      <ClipContainer {...currentClip} x={x}>
         <ClipComponent {...currentClip} />
       </ClipContainer>
     );

@@ -12,9 +12,11 @@ import TrackClip from "../TrackClip/TrackClip";
 import { generateSimpleHash } from "../../../utils/hash";
 import { useDroppable } from "@dnd-kit/core";
 
-type Props = TrackData & {};
+type Props = TrackData & {
+  width: number;
+};
 
-const Track = ({ id, name }: Props) => {
+const Track = ({ id, name, width }: Props) => {
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
   const localClips = trackClips.filter((trackClip) => trackClip.trackId == id);
 
@@ -35,9 +37,9 @@ const Track = ({ id, name }: Props) => {
       }}
     >
       <h3>{name}</h3>
-      <Flex style={{ flex: 1 }}>
+      <Flex style={{ flex: 1, position: "relative" }}>
         {localClips.map((trackClip) => (
-          <TrackClip key={trackClip.id} {...trackClip} />
+          <TrackClip key={trackClip.id} {...trackClip} width={width} />
         ))}
       </Flex>
     </Flex>

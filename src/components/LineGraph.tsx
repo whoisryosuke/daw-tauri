@@ -1,5 +1,5 @@
 import { type ComponentProps, useCallback, useEffect, useRef } from "react";
-import map from "../utils/map";
+import mapRange from "../utils/map";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 // Assuming numbers are 0-1
@@ -74,11 +74,11 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
       ctx.strokeStyle = lineColor;
       for (let i = 0; i < canvasWidth; i++) {
         const index = Math.floor(
-          map(i, 0, canvasWidth, 0, data.current.length)
+          mapRange(i, 0, canvasWidth, 0, data.current.length)
         );
         const x = i;
         // We scale the audio values to 0-1 to make it easier
-        const amplitude = map(data.current[index], -1, 1, 0, 1) * 10 - 4.5;
+        const amplitude = mapRange(data.current[index], -1, 1, 0, 1) * 10 - 4.5;
         const y = (amplitude * canvasHeight) / 2 + canvasHeight / 4;
         if (i === 0) {
           ctx.moveTo(x, y);
