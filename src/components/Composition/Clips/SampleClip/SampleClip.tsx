@@ -2,15 +2,20 @@ import React from "react";
 import { useAtomValue } from "jotai";
 import type { TrackClipComponentProps } from "../../TrackClip/types";
 import { samplesAtom } from "../../../../store/media";
+import SampleClipWaveform from "./SampleClipWaveform";
 
 type Props = TrackClipComponentProps & {};
 
-const SampleClip = ({ id, name, data }: Props) => {
+const SampleClip = ({ id, name, data, width }: Props) => {
   const samples = useAtomValue(samplesAtom);
   const sample = samples.find((sampleItem) => sampleItem.id == data);
 
   if (sample) {
-    return <div>{sample.name}</div>;
+    return (
+      <div>
+        <SampleClipWaveform path={sample.path} width={width} />
+      </div>
+    );
   }
 
   return <div>Error</div>;

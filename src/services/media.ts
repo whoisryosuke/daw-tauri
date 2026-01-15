@@ -16,6 +16,7 @@ import {
 } from "../store/media";
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
+import mapRange from "../utils/map";
 
 export type DragPositionData = {
   x: number;
@@ -87,12 +88,16 @@ function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
   // Get composition range
   const [start, end] = store.get(compositionAtom).range;
 
-  // Convert position from size to percent (0% = left, 100% = right)
-  const percent = dragPosition.x / dragPosition.width;
-  // Figure out total time of composition so we can figure what percent we're at
-  const timeSpan = end - start;
-  // Make sure to offset by the start to keep it within range
-  const startTime = timeSpan * percent + start;
+  // // Convert position from size to percent (0% = left, 100% = right)
+  // const percent = dragPosition.x / dragPosition.width;
+  // // Figure out total time of composition so we can figure what percent we're at
+  // const timeSpan = end - start;
+  // // Make sure to offset by the start to keep it within range
+  // const startTime = timeSpan * percent + start;
+
+  const startTime = mapRange(dragPosition.x, 0, dragPosition.width, start, end);
+
+  console.log("calculated start time", startTime);
 
   return startTime;
 }

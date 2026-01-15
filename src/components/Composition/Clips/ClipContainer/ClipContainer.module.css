@@ -1,5 +1,7 @@
 .Container {
   position: absolute;
+  overflow: hidden;
+  height: 100%;
 }
 
 .blue {

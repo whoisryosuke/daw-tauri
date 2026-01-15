@@ -11,7 +11,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
-use crate::audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode};
+use crate::{audio_buffer::AudioBuffer, audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode}};
 
 const SAMPLE_BUFFER_SIZE: usize = 48_000;
 
@@ -97,52 +97,6 @@ impl Mixer {
     }
 }
 
-pub struct AudioBuffer {
-    samples: Arc<Vec<f32>>,
-    sample_rate: i32,
-}
-
-impl AudioBuffer {
-    pub fn new(samples: Vec<f32>, sample_rate: i32) -> Self {
-        Self {
-            samples: Arc::new(samples),
-            sample_rate,
-        }
-    }
-}
-
-type AssetId = String;
-
-pub struct AudioCache {
-    buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>,
-}
-
-impl AudioCache {
-    pub fn new(buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>) -> Self {
-        Self { buffers }
-    }
-    pub fn insert(&mut self, id: AssetId, buffer: AudioBuffer) {
-        let buffer_lock = self.buffers.lock();
-        match buffer_lock {
-            Ok(mut buffers) => {
-                buffers.insert(id, Arc::new(buffer));
-            }
-            Err(error) => {
-                eprintln!("{}", error);
-            }
-        }
-    }
-    pub fn get_buffer_by_id(&self, id: AssetId) -> Option<Arc<AudioBuffer>> {
-        let buffer = {
-            let asset_store = self
-                .buffers
-                .lock()
-                .expect("Couldn't lock asset store buffer");
-            asset_store.get(&id).cloned()
-        };
-        buffer
-    }
-}
 
 pub enum AudioCommand {
     Play(Vec<f32>),

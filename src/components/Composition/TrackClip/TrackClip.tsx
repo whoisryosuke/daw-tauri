@@ -40,11 +40,10 @@ const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
       0,
       width
     );
-    console.log("clip width", clipWidth, currentClip.duration);
 
     return (
       <ClipContainer {...currentClip} x={x} width={clipWidth}>
-        <ClipComponent {...currentClip} />
+        <ClipComponent {...currentClip} width={clipWidth} />
       </ClipContainer>
     );
   }

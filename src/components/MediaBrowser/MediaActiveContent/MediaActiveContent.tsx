@@ -40,6 +40,7 @@ const MediaActiveContent = (props: Props) => {
           id: newAsset.path,
           icon: "samples",
           type: "sample",
+          duration: newAsset.duration,
           dragType: "CLIP",
         } as MediaListItemDraggableProps)
     );

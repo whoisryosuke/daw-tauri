@@ -1,6 +1,9 @@
+mod asset_store;
+mod audio_buffer;
+mod audio_cache;
 mod audio_engine;
 mod audio_node;
-mod asset_store;
+mod math;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
@@ -11,18 +14,17 @@ use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
 use std::collections::{HashMap, VecDeque};
-use std::fs::File;
-use std::io::BufReader;
+use std::fs::{self, File};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::Duration;
 use std::{
-    f32::consts::PI,
     sync::{Arc, Mutex},
 };
 
 use crate::asset_store::{AssetStore, MediaAsset, get_assets};
+use crate::audio_buffer::AudioBuffer;
+use crate::audio_cache::{AudioCache, get_sample_waveform};
 use crate::audio_engine::{
-    AudioCache, AudioBuffer, AudioCommand, AudioEngine, AudioEngineMessaging,
+    AudioCommand, AudioEngine, AudioEngineMessaging,
 };
 use crate::audio_node::AudioNode;
 
@@ -202,6 +204,43 @@ async fn get_sample_rate(
     Ok(sample_rate)
 }
 
+fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
+
+    
+    let resource_path = handle
+        .path()
+        .resolve("audio", BaseDirectory::Resource)
+        .expect("Couldn't get audio folder");
+
+    let resources = fs::read_dir(resource_path).expect("Couldn't read audio resources folder");
+
+    for path_result in resources {
+        
+        match path_result {
+            Ok(path) => {
+                println!("path found");
+                let file_name = path.file_name().display().to_string();
+                let file_path = path.path();
+                let file_path_str = file_path.to_str().unwrap();
+
+                println!("Loading asset {}...", file_name);
+                
+                let (sample_data, duration) = load_sample_data_from_disk(handle, file_path_str);
+
+                let audio_asset = MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
+
+                // Add to appropriate stores
+                asset_store.insert(file_name.to_string(), audio_asset);
+                audio_cache.insert(file_path_str.to_string(), AudioBuffer::new(sample_data, 0));
+            },
+            Err(error) => {
+                println!("error loading audio resource: {}", error);
+            },
+        }
+        
+    } 
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -228,16 +267,7 @@ pub fn run() {
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
 
             // DEBUG: Load a test sample
-            let file_name = "FF8 Magic";
-            let file_path = "ff8-magic.mp3";
-            let (sample_data, duration) = load_sample_data_from_disk(app.handle(), file_path);
-
-            // Add to asset store
-            let audio_asset = MediaAsset::new(file_name.to_string(), file_path.to_string(), duration);
-            asset_store.insert(file_name.to_string(), audio_asset);
-
-            // Add to sample cache
-            audio_cache.insert(file_path.to_string(), AudioBuffer::new(sample_data, 0));
+            load_assets(app.handle(), &mut asset_store, &mut audio_cache);
 
             app.manage(audio_cache);
             app.manage(asset_store);
@@ -247,7 +277,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets])
+        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
