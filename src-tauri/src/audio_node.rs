@@ -1,8 +1,12 @@
 use dasp_signal::{self as signal, ConstHz, Signal, Sine};
 
 pub trait AudioNode {
-    fn get_sample(&mut self) -> Option<f32>;
+    fn process(&mut self, input: &[f32], output: &mut [f32], params: f32);
 }
+
+// pub struct AudioNodeMetadata {
+//     id: usize,
+// }
 
 pub struct SampleNode {
     data: Vec<f32>,
@@ -24,26 +28,23 @@ impl SampleNode {
 }
 
 impl AudioNode for SampleNode {
-    fn get_sample(&mut self) -> Option<f32> {
-        // Finished? Return no noise
-        if self.finished {
-            return None;
+
+    fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
+        for (i, &sample) in input.iter().enumerate() {
+            // Make a copy in case it changes somehow - might be unnecessary
+            let index = self.position;
+            let next_index = index + 1;
+
+            // Check if we're done - if not, keep incrementing
+            if next_index >= self.data.len() {
+                self.finished = true;
+            } else {
+                // Increment position for next sample
+                self.position += 1;
+                // Return current sample
+                output[i] = self.data[index];
+            }
         }
-
-        // Make a copy in case it changes somehow - might be unnecessary
-        let index = self.position.clone();
-        let next_index = index + 1;
-
-        // Check if we're done - if not, keep incrementing
-        if next_index >= self.data.len() {
-            self.finished = true;
-        } else {
-            // Increment position for next sample
-            self.position += 1;
-        }
-
-        // Return current sample
-        Some(self.data[index])
     }
 }
 
@@ -64,10 +65,32 @@ impl SynthNode {
 }
 
 impl AudioNode for SynthNode {
-    fn get_sample(&mut self) -> Option<f32> {
-        let sample = self.synth.next();
 
-        Some(sample as f32)
+    fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
+        for (i, &sample) in input.iter().enumerate() {
+            output[i] = self.synth.next() as f32;
+        }
+    }
+}
+
+pub struct GainNode {
+    gain: f32,
+    // pub disabled: bool,
+}
+
+impl GainNode {
+    pub fn new(gain: f32) -> Self {
+        Self {
+            gain,
+        }
+    }
+}
+
+impl AudioNode for GainNode {
+    fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
+        for (i, &sample) in input.iter().enumerate() {
+            output[i] = sample * self.gain;
+        }
     }
 }
 
@@ -76,15 +99,18 @@ pub enum AudioNodeTypes {
     StaticBuffer(SampleNode),
     Streaming(SampleNode),
     Synthesizer(SynthNode),
+    Gain(GainNode),
 }
 
 impl AudioNodeTypes {
-    pub fn get_sample(&mut self) -> Option<f32> {
+    
+    pub fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
         match self {
-            AudioNodeTypes::Silence => Some(0.0),
-            AudioNodeTypes::StaticBuffer(buf) => buf.get_sample(),
-            AudioNodeTypes::Streaming(stream) => stream.get_sample(),
-            AudioNodeTypes::Synthesizer(synth) => synth.get_sample(),
+            AudioNodeTypes::Silence => {},
+            AudioNodeTypes::StaticBuffer(node) => node.process(input, output, params),
+            AudioNodeTypes::Streaming(node) => node.process(input, output, params),
+            AudioNodeTypes::Synthesizer(node) => node.process(input, output, params),
+            AudioNodeTypes::Gain(node) => node.process(input, output, params),
         }
     }
 }
