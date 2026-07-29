@@ -67,31 +67,27 @@ impl Mixer {
             return;
         }
 
-        // Read from ring buffer
-        // Loop over the output and override with new audio
-        // If we don't have new audio, this outputs silence (aka `0.0`)
-        for frame in output.chunks_mut(channels) {
-            // Our playback timer. We increment each "frame" aka "sample".
-            let current_time = if should_play { playback_time.fetch_add(1, Ordering::SeqCst) } else { playback_time.load(Ordering::SeqCst) };
+        // Get current time for playback
+        let current_time = playback_time.load(Ordering::SeqCst);
 
-            // Replace output channel with sample data
-            for ch in 0..channels {
-                // Default to silence
-                let mut mix = 0.0;
-                
-                // Override output with our sample
-                self.nodes.retain_mut(|node| {
-                    if let Some(s) = node.get_sample() {
-                        mix += s;
-                        true
-                    } else {
-                        false
-                    }
-                });
-                frame[ch] = mix;
+        // Debug input for now
+        // TODO: This would be mic input that should be mixed into output
+        let input_raw = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let input: &[f32] = &input_raw;
 
-                // Send the waveform data
-                let _ = waveform_producer.try_send(mix);
+        // Process all nodes (aka play audio, apply effects like gain, etc)
+        self.nodes.iter_mut().for_each(|node| {
+            node.process(input, output, current_time as f32);
+        });
+
+        // Increment frame timer
+        if should_play {  
+            let sample_count = (output.len() / channels) as u64;
+            playback_time.fetch_add(sample_count, Ordering::SeqCst);
+            // Update waveform
+            // TODO: Replace with Waveform node
+            for sample in output.iter() {
+                let _ = waveform_producer.try_send(*sample);
             }
         }
     }
