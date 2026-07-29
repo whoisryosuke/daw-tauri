@@ -30,7 +30,7 @@ impl SampleNode {
 impl AudioNode for SampleNode {
 
     fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
-        for (i, &sample) in input.iter().enumerate() {
+        for (i, sample) in output.iter_mut().enumerate() {
             // Make a copy in case it changes somehow - might be unnecessary
             let index = self.position;
             let next_index = index + 1;
@@ -42,7 +42,7 @@ impl AudioNode for SampleNode {
                 // Increment position for next sample
                 self.position += 1;
                 // Return current sample
-                output[i] = self.data[index];
+                *sample += self.data[index];
             }
         }
     }
@@ -68,7 +68,7 @@ impl AudioNode for SynthNode {
 
     fn process(&mut self, input: &[f32], output: &mut [f32], params: f32) {
         for (i, &sample) in input.iter().enumerate() {
-            output[i] = self.synth.next() as f32;
+            output[i] += self.synth.next() as f32;
         }
     }
 }
