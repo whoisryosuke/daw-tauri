@@ -4,6 +4,7 @@ mod audio_cache;
 mod audio_engine;
 mod audio_graph;
 mod audio_node;
+mod composition;
 mod math;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -28,6 +29,7 @@ use crate::audio_engine::{
     AudioCommand, AudioEngine, AudioEngineMessaging,
 };
 use crate::audio_node::AudioNode;
+use crate::composition::{CompositionStore, add_clip, add_track, add_track_clip};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -266,19 +268,21 @@ pub fn run() {
             // Create the asset store to contain any samples cached in memory
             let mut audio_cache = AudioCache::new(Mutex::new(HashMap::new()));
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
+            let composition_store = Mutex::new(CompositionStore::new());
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
 
             app.manage(audio_cache);
             app.manage(asset_store);
+            app.manage(composition_store);
 
             println!("app setup success");
 
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform])
+        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, add_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
