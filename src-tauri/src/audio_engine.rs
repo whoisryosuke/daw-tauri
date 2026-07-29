@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{SampleRate, traits::{DeviceTrait, HostTrait, StreamTrait}};
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
@@ -34,6 +34,7 @@ impl Mixer {
         &mut self,
         output: &mut [f32],
         channels: usize,
+        sample_rate: u32,
         consumer: &mut Receiver<AudioCommand>,
         waveform_producer: &mut Sender<f32>,
         playback_time: Arc<AtomicU64>
@@ -46,7 +47,7 @@ impl Mixer {
                     self.playing = true;
                 }
                 AudioCommand::AddSynth => {
-                    self.nodes.push(AudioNodeTypes::Synthesizer(SynthNode::new())); 
+                    self.nodes.push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate))); 
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
                 AudioCommand::RemoveSynth(id) => {
@@ -68,7 +69,7 @@ impl Mixer {
         }
 
         // Get current time for playback
-        let current_time = playback_time.load(Ordering::SeqCst);
+        let current_time = playback_time.load(Ordering::Relaxed);
 
         // Debug input for now
         // TODO: This would be mic input that should be mixed into output
@@ -83,7 +84,7 @@ impl Mixer {
         // Increment frame timer
         if should_play {  
             let sample_count = (output.len() / channels) as u64;
-            playback_time.fetch_add(sample_count, Ordering::SeqCst);
+            playback_time.fetch_add(sample_count, Ordering::Relaxed);
             // Update waveform
             // TODO: Replace with Waveform node
             for sample in output.iter() {
@@ -187,6 +188,8 @@ impl AudioEngine {
         // Create a mixer
         let mut mixer = Mixer::new();
 
+        let SampleRate(sample_rate) = config.sample_rate();
+
         let channels = config.channels() as usize;
 
         let stream = match config.sample_format() {
@@ -194,11 +197,11 @@ impl AudioEngine {
                 .build_output_stream(
                     &config.clone().into(),
                     move |output: &mut [f32], _| {
-                        let playback_clone = playback_time.clone();
+                        let playback_time_clone = playback_time.clone();
                         // Run the mixer which runs any commands and
                         // combines samples into one signal,
                         // then overrides the output signal with it
-                        mixer.process(output, channels, &mut consumer, &mut waveform_producer, playback_clone);
+                        mixer.process(output, channels, sample_rate, &mut consumer, &mut waveform_producer, playback_time_clone);
                     },
                     |err| eprintln!("couldn't build audio stream: {err}"),
                     None,

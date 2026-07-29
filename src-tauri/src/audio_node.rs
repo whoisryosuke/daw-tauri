@@ -54,8 +54,8 @@ pub struct SynthNode {
 }
 
 impl SynthNode {
-    pub fn new() -> Self {
-        let synth = signal::rate(44100.0).const_hz(440.0).sine();
+    pub fn new(sample_rate: u32) -> Self {
+        let synth = signal::rate(sample_rate as f64).const_hz(440.0).sine();
 
         Self {
             synth,
