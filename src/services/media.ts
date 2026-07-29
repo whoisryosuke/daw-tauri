@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { MediaBrowserDragData } from "../constants/drag";
 import {
   clipsAtom,
@@ -37,7 +38,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
     case "midi":
       const allMIDISequences = store.get(midiSequencesAtom);
       const midiExists = allMIDISequences.find(
-        (midiSequence) => midiSequence.path == item.id
+        (midiSequence) => midiSequence.path == item.id,
       );
       exists = midiExists;
 
@@ -105,7 +106,7 @@ function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
 export const addClipToTrack = async (
   id: string,
   item: MediaBrowserDragData,
-  dragPosition: DragPositionData
+  dragPosition: DragPositionData,
 ) => {
   // Load media if needed and cache
   const media = await loadMedia(item);
@@ -117,6 +118,11 @@ export const addClipToTrack = async (
 
   // Create a clip if necessary
   const clip = await createMediaClip(media, item.type);
+
+  // Send to Rust backend
+  // Rust is strict on data structure so we remove props before sending
+  const { id: clip_id, ...clip_data } = clip;
+  invoke("add_clip", { clip_id, clip_data });
 
   // Calculate the start time based on drag placement
   const startTime = calculateStartTimeFromDrag(dragPosition);
@@ -132,5 +138,10 @@ export const addClipToTrack = async (
   };
   console.log("created new clip", newTrackClip);
 
+  // Send to Rust backend
+  const { trackId, ...track_data } = newTrackClip;
+  invoke("add_track_clip", { track_id: id, track_data });
+
+  // Add to store
   store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);
 };

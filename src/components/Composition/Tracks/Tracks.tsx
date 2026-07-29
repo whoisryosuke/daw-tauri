@@ -9,6 +9,7 @@ import TrackComponent from "../Track/Track";
 import { generateSimpleHash } from "../../../utils/hash";
 import { Flex } from "@radix-ui/themes";
 import { useMeasure } from "react-use";
+import { invoke } from "@tauri-apps/api/core";
 
 type Props = {};
 
@@ -25,10 +26,16 @@ const Tracks = (props: Props) => {
   // No track? Make sure we have at least 1 on load
   useEffect(() => {
     if (tracks.length == 0) {
-      const newTrack = generateTrackData();
-      const newTrack2 = generateTrackData("Track 2");
-      const newTrack3 = generateTrackData("Track 3");
-      setTracks([newTrack, newTrack2, newTrack3]);
+      let newTracks: TrackData[] = [];
+      new Array(3).fill(0).forEach((_, index) => {
+        const newTrack = generateTrackData(`Track ${index + 1}`);
+        newTracks.push(newTrack);
+
+        let { id, ...track_data } = newTrack;
+        invoke("add_track", { track_id: id, track_data });
+      });
+
+      setTracks(newTracks);
     }
   }, []);
 
