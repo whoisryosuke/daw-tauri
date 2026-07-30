@@ -1,19 +1,27 @@
 use std::{
     collections::HashMap,
     sync::{
-        Arc, Mutex, atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering::{self, Relaxed}}
+        atomic::{
+            AtomicBool, AtomicU64, AtomicUsize,
+            Ordering::{self, Relaxed},
+        },
+        Arc, Mutex,
     },
     thread,
     time::Duration,
 };
 
-use cpal::{SampleRate, traits::{DeviceTrait, HostTrait, StreamTrait}};
+use cpal::{
+    traits::{DeviceTrait, HostTrait, StreamTrait},
+    SampleRate,
+};
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
-use crate::{audio_buffer::AudioBuffer, audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode}};
-
-const SAMPLE_BUFFER_SIZE: usize = 48_000;
+use crate::{
+    audio_buffer::AudioBuffer,
+    audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode},
+};
 
 /**
  * Queue of audio to play in the form of `AudioNode`s.
@@ -27,7 +35,10 @@ pub struct Mixer {
 
 impl Mixer {
     pub fn new() -> Self {
-        Self { nodes: Vec::new(), playing: false }
+        Self {
+            nodes: Vec::new(),
+            playing: false,
+        }
     }
 
     pub fn process(
@@ -37,17 +48,19 @@ impl Mixer {
         sample_rate: u32,
         consumer: &mut Receiver<AudioCommand>,
         waveform_producer: &mut Sender<f32>,
-        playback_time: Arc<AtomicU64>
+        playback_time: Arc<AtomicU64>,
     ) {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
             match command {
                 AudioCommand::Play(buffer) => {
-                    self.nodes.push(AudioNodeTypes::StaticBuffer(SampleNode::new(buffer)));
+                    self.nodes
+                        .push(AudioNodeTypes::StaticBuffer(SampleNode::new(buffer)));
                     self.playing = true;
                 }
                 AudioCommand::AddSynth => {
-                    self.nodes.push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate))); 
+                    self.nodes
+                        .push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
                 AudioCommand::RemoveSynth(id) => {
@@ -82,18 +95,19 @@ impl Mixer {
         });
 
         // Increment frame timer
-        if should_play {  
+        if should_play {
             let sample_count = (output.len() / channels) as u64;
             playback_time.fetch_add(sample_count, Ordering::Relaxed);
-            // Update waveform
-            // TODO: Replace with Waveform node
-            for sample in output.iter() {
-                let _ = waveform_producer.try_send(*sample);
+            // Update waveform (decimated: ~256 samples per callback max)
+            // TODO: Use peak envelopes instead of decimation.
+            let frames = output.len() / channels;
+            let stride = (frames / 256).max(1);
+            for frame in (0..frames).step_by(stride) {
+                let _ = waveform_producer.try_send(output[frame * channels]);
             }
         }
     }
 }
-
 
 pub enum AudioCommand {
     Play(Vec<f32>),
@@ -107,10 +121,18 @@ pub struct AudioEngineMessaging {
     playback_time: Arc<AtomicU64>,
 }
 impl AudioEngineMessaging {
-    pub fn new(app: AppHandle, producer: Sender<AudioCommand>, waveform: Receiver<f32>, playback_time: Arc<AtomicU64>) -> Self {
+    pub fn new(
+        app: AppHandle,
+        producer: Sender<AudioCommand>,
+        waveform: Receiver<f32>,
+        playback_time: Arc<AtomicU64>,
+    ) -> Self {
         Self::spawn_waveform_thread(app, waveform, playback_time.clone());
 
-        Self { producer, playback_time: playback_time.clone() }
+        Self {
+            producer,
+            playback_time: playback_time.clone(),
+        }
     }
 
     pub fn play(&self, buffer: Option<Arc<AudioBuffer>>) {
@@ -141,7 +163,11 @@ impl AudioEngineMessaging {
         self.playback_time.store(0, Ordering::SeqCst);
     }
 
-    pub fn spawn_waveform_thread(app: AppHandle, waveform: Receiver<f32>, playback_time: Arc<AtomicU64>) {
+    pub fn spawn_waveform_thread(
+        app: AppHandle,
+        waveform: Receiver<f32>,
+        playback_time: Arc<AtomicU64>,
+    ) {
         thread::spawn(move || {
             let mut waveform_buffer = Vec::with_capacity(512);
 
@@ -157,7 +183,6 @@ impl AudioEngineMessaging {
                     waveform_buffer.clear();
                 }
                 let _ = app.emit("playback_time", playback_time.load(Ordering::SeqCst));
-                
 
                 thread::sleep(Duration::from_millis(16)); // ~60 FPS
             }
@@ -175,7 +200,11 @@ pub struct AudioEngine {
 }
 
 impl AudioEngine {
-    pub fn new(mut consumer: Receiver<AudioCommand>, mut waveform_producer: Sender<f32>, playback_time: Arc<AtomicU64>) -> Self {
+    pub fn new(
+        mut consumer: Receiver<AudioCommand>,
+        mut waveform_producer: Sender<f32>,
+        playback_time: Arc<AtomicU64>,
+    ) -> Self {
         // Set up CPAL.
         let host = cpal::default_host();
         let device = host
@@ -201,7 +230,14 @@ impl AudioEngine {
                         // Run the mixer which runs any commands and
                         // combines samples into one signal,
                         // then overrides the output signal with it
-                        mixer.process(output, channels, sample_rate, &mut consumer, &mut waveform_producer, playback_time_clone);
+                        mixer.process(
+                            output,
+                            channels,
+                            sample_rate,
+                            &mut consumer,
+                            &mut waveform_producer,
+                            playback_time_clone,
+                        );
                     },
                     |err| eprintln!("couldn't build audio stream: {err}"),
                     None,

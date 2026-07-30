@@ -40,12 +40,8 @@ struct AudioState {
     asset_store: Arc<AudioCache>,
 }
 
-fn load_sample_data_from_disk(app: &AppHandle, file_name: &str) -> (Vec<f32>, f64) {
-    let resource_path = app
-        .path()
-        .resolve("audio", BaseDirectory::Resource)
-        .expect("Couldn't get migrations folder");
-    let audio_path = resource_path.join(file_name);
+fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64) {
+    let audio_path = std::path::Path::new(file_path);
 
     // Open reader and probe MP3.
     let file = File::open(audio_path).expect("Couldn't load file");
@@ -228,7 +224,7 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 
                 println!("Loading asset {}...", file_name);
                 
-                let (sample_data, duration) = load_sample_data_from_disk(handle, file_path_str);
+                let (sample_data, duration) = load_sample_data_from_disk(file_path_str);
 
                 let audio_asset = MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
 
