@@ -1,45 +1,45 @@
-import { Flex, IconButton } from "@radix-ui/themes";
 import React from "react";
 import { BiLeftIndent, BiRightIndent, BiSidebar } from "react-icons/bi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { PiMetronome } from "react-icons/pi";
 import SelectBarControl from "./SelectBarControl";
 import ControlButton from "../../shared/ControlButton/ControlButton";
-import ControlIconButton from "../../shared/ControlButton/ControlIconButton";
+import { Stack } from "../../../../../styled-system/jsx";
+import Button from "../../../ui/Button";
 
 type Props = {};
 
 const MusicControls = (props: Props) => {
   return (
-    <Flex align="center" gap="1" style={{ padding: "0 var(--space-2) " }}>
-      <IconButton variant="ghost" color="gray" size="1" m="1">
+    <Stack flexDir="row" alignItems="stretch" gap="1" p="2">
+      <Button variant="ghost">
         <BiSidebar />
-      </IconButton>
+      </Button>
       <ControlButton>Tap</ControlButton>
       <ControlButton>128.00</ControlButton>
-      <ControlIconButton>
+      <ControlButton>
         <BiLeftIndent />
-      </ControlIconButton>
-      <ControlIconButton>
+      </ControlButton>
+      <ControlButton>
         <BiRightIndent />
-      </ControlIconButton>
+      </ControlButton>
       <ControlButton>4 / 4</ControlButton>
 
-      <Flex>
-        <ControlIconButton
+      <Stack flexDir="row" gap="0">
+        <ControlButton
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
         >
           <PiMetronome />
-        </ControlIconButton>
-        <ControlIconButton
+        </ControlButton>
+        <ControlButton
           style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
         >
           <IoMdArrowDropdown />
-        </ControlIconButton>
-      </Flex>
+        </ControlButton>
+      </Stack>
 
       <SelectBarControl />
-    </Flex>
+    </Stack>
   );
 };
 

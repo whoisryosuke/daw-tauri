@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Container, Flex } from "@radix-ui/themes";
 import TopNavigation from "./components/TopNavigation/TopNavigation";
 import MediaBrowser from "./components/MediaBrowser/MediaBrowser";
 import Composition from "./components/Composition/Composition";
 import ModuleArea from "./components/ModuleArea/ModuleArea";
 import DNDTest from "./DNDTest";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { Stack } from "../styled-system/jsx";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -25,21 +25,17 @@ function App() {
   }, []);
 
   return (
-    <Flex
-      height="100dvh"
-      direction="column"
-      style={{ backgroundColor: "var(--color-surface)" }}
-    >
+    <Stack height="100dvh" bg="gray.1">
       <TopNavigation />
-      <Flex style={{ flex: 1 }}>
+      <Stack flexDir="row" flex={1}>
         <MediaBrowser />
         <Composition />
-      </Flex>
-      <Flex>
+      </Stack>
+      <Stack flexDir="row">
         <ModuleArea />
-      </Flex>
+      </Stack>
       <DNDTest />
-    </Flex>
+    </Stack>
   );
 }
 

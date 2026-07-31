@@ -1,42 +1,18 @@
-import { Flex, Text } from "@radix-ui/themes";
 import React, { type PropsWithChildren } from "react";
 import type { Clip } from "../../../../store/composition";
-import styles from "./ClipContainer.module.css";
+import { Stack } from "../../../../../styled-system/jsx";
+import Text from "../../../ui/Typography/Text";
+import { css, cx } from "../../../../../styled-system/css";
+import { ColorPalette } from "../../../../../styled-system/tokens";
 
-const accentColors = [
-  "gray",
-  "gold",
-  "bronze",
-  "brown",
-  "yellow",
-  "amber",
-  "orange",
-  "tomato",
-  "red",
-  "ruby",
-  "crimson",
-  "pink",
-  "plum",
-  "purple",
-  "violet",
-  "iris",
-  "indigo",
-  "blue",
-  "cyan",
-  "teal",
-  "jade",
-  "green",
-  "grass",
-  "lime",
-  "mint",
-  "sky",
-] as const;
-type RadixColors = (typeof accentColors)[number];
+const containerStyle = css({
+  backgroundColor: "colorPalette.2",
+});
 
 type Props = Clip & {
-  color: RadixColors;
   x: number;
   width: number;
+  color: ColorPalette;
 };
 
 const ClipContainer = ({
@@ -46,10 +22,13 @@ const ClipContainer = ({
   width,
   x,
 }: PropsWithChildren<Props>) => {
+  const colorStyle = css({
+    colorPalette: color,
+  });
   return (
-    <Flex
+    <Stack
       direction="column"
-      className={`${styles.Container} ${styles[color]}`}
+      className={cx(containerStyle, colorStyle)}
       style={{
         width: width,
         left: x,
@@ -57,7 +36,7 @@ const ClipContainer = ({
     >
       <Text size="1">{name}</Text>
       {children}
-    </Flex>
+    </Stack>
   );
 };
 

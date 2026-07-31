@@ -1,30 +1,49 @@
-import { Select } from "@radix-ui/themes";
-import React from "react";
+import React, { HTMLProps } from "react";
 import type { SelectItem } from "../types";
+import { cva, cx, RecipeVariantProps, sva } from "../../../styled-system/css";
+import { SURFACE_VARIANTS } from "../../theme/variants/surface";
 
-type Props = Select.RootProps & {
-  items: SelectItem[];
-};
+const styles = sva({
+  slots: ["container"],
+  base: {
+    container: {
+      display: "flex",
+      colorPalette: "gray",
 
-const SelectSimple = ({ items, ...props }: Props) => {
+      color: {
+        base: "colorPalette.11",
+        _hover: "colorPalette.12",
+        _active: "colorPalette.9",
+      },
+    },
+  },
+  variants: {
+    ...SURFACE_VARIANTS,
+  },
+});
+
+export type SelectVariants = RecipeVariantProps<typeof styles>;
+type Props = React.ComponentPropsWithoutRef<"select"> &
+  SelectVariants & {
+    items: SelectItem[];
+  };
+
+const Select = ({
+  children,
+  className,
+  items,
+  variant = "default",
+  size = "medium",
+  ...props
+}: Props) => {
+  const classes = styles({ size, variant });
   return (
-    <Select.Root {...props}>
-      <Select.Trigger
-        variant="ghost"
-        color="gray"
-        style={{
-          background: "var(--gray-4)",
-          margin: "var(--space-0-5)",
-          border: 0,
-        }}
-      />
-      <Select.Content variant="solid">
-        {items.map((item) => (
-          <Select.Item value={item.value}>{item.title}</Select.Item>
-        ))}
-      </Select.Content>
-    </Select.Root>
+    <select className={cx(classes.container, className)} {...props}>
+      {items.map((item) => (
+        <option value={item.value}>{item.title}</option>
+      ))}
+    </select>
   );
 };
 
-export default SelectSimple;
+export default Select;

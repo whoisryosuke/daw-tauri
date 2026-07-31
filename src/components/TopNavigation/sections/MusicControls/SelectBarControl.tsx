@@ -54,7 +54,7 @@ const SELECT_BAR_ITEMS: SelectItem[] = [
 
 const SelectBarControl = ({ ...props }: Props) => {
   return (
-    <SelectSimple defaultValue="1-bar" items={SELECT_BAR_ITEMS} size="1" />
+    <SelectSimple defaultValue="1-bar" size="small" items={SELECT_BAR_ITEMS} />
   );
 };
 

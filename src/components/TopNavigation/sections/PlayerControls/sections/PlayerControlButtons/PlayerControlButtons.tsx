@@ -1,17 +1,10 @@
-import { Flex, IconButton } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import React from "react";
 import { BsPlay, BsRecord, BsStop } from "react-icons/bs";
+import { Stack } from "../../../../../../../styled-system/jsx";
+import Button from "../../../../../ui/Button";
 
-const PlayerControlButton = (props) => (
-  <IconButton
-    variant="ghost"
-    color="gray"
-    size="1"
-    style={{ margin: 0 }}
-    {...props}
-  />
-);
+const PlayerControlButton = (props) => <Button variant="ghost" {...props} />;
 
 type Props = {};
 
@@ -29,7 +22,7 @@ const PlayerControlButtons = (props: Props) => {
   };
 
   return (
-    <Flex gap="1">
+    <Stack gap="1" flexDir="row">
       <PlayerControlButton onClick={handlePlay}>
         <BsPlay style={sharedStyles} />
       </PlayerControlButton>
@@ -39,7 +32,7 @@ const PlayerControlButtons = (props: Props) => {
       <PlayerControlButton>
         <BsRecord style={sharedStyles} />
       </PlayerControlButton>
-    </Flex>
+    </Stack>
   );
 };
 

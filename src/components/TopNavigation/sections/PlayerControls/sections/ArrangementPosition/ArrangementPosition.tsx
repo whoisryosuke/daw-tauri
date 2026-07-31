@@ -1,34 +1,53 @@
-import { Flex, TextField } from "@radix-ui/themes";
-import React from "react";
-import styles from "./ArrangementPosition.module.css";
-import buttonStyles from "../../../../shared/ControlButton/ControlButton.module.css";
+import { css } from "../../../../../../../styled-system/css";
+import { Stack } from "../../../../../../../styled-system/jsx";
+
+const inputStyle = css({
+  width: "5ch",
+  bg: {
+    base: "gray.4",
+    _hover: "gray.5",
+    _active: "gray.3",
+  },
+  color: {
+    base: "gray.11",
+    _hover: "gray.12",
+    _focus: "gray.12",
+  },
+  borderRadius: "4",
+  py: 1,
+  px: 2,
+  textAlign: "right",
+});
 
 type Props = {};
 
 const ArrangementPosition = (props: Props) => {
   return (
-    <Flex>
-      <TextField.Root
-        size="1"
+    <Stack flexDir="row" gap="0">
+      <input
+        className={inputStyle}
         value={1}
-        className={[styles.Input, buttonStyles.ControlButton]}
-        radius="small"
-        style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+        style={{
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+        }}
       />
-      <TextField.Root
-        size="1"
+      <input
+        className={inputStyle}
         value={1}
-        className={[styles.Input, buttonStyles.ControlButton]}
-        radius="none"
+        style={{
+          borderRadius: 0,
+        }}
       />
-      <TextField.Root
-        size="1"
+      <input
+        className={inputStyle}
         value={1}
-        className={[styles.Input, buttonStyles.ControlButton]}
-        radius="small"
-        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+        style={{
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0,
+        }}
       />
-    </Flex>
+    </Stack>
   );
 };
 

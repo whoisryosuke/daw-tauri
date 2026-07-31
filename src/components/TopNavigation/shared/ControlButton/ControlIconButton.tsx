@@ -1,19 +1,10 @@
-import { IconButton, type IconButtonProps } from "@radix-ui/themes";
 import React from "react";
-import styles from "./ControlButton.module.css";
+import Button, { ButtonProps } from "../../../ui/Button";
 
-type Props = IconButtonProps & {};
+type Props = ButtonProps & {};
 
 const ControlIconButton = (props: Props) => {
-  return (
-    <IconButton
-      size="1"
-      color="gray"
-      radius="small"
-      className={styles.ControlButton}
-      {...props}
-    />
-  );
+  return <Button {...props} />;
 };
 
 export default ControlIconButton;
