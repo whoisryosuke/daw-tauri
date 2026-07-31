@@ -11,9 +11,9 @@ const MediaBrowser = (props: Props) => {
   const [search, setSearch] = useState("");
 
   return (
-    <Stack direction="column" bg="gray.2">
+    <Stack bg="gray.2">
       <MediaSearch />
-      <Stack flex={1}>
+      <Stack flexDir="row" flex={1}>
         <MediaList
           selectedListItem={selectedListItem}
           setSelectedListItem={setSelectedListItem}
