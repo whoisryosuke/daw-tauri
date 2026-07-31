@@ -6,6 +6,7 @@ import { tokens } from "./tokens/tokens";
 import { fontsSemantic, textStyles } from "./tokens/typography";
 import { semanticColors } from "./tokens/colors";
 import textRecipe from "./recipes/text.recipe";
+import buttonRecipe from "./recipes/button.recipe";
 
 const definePreset = <T extends Preset>(config: T) => config;
 
@@ -19,6 +20,7 @@ export const designSystemPreset = definePreset({
     containerSizes,
     recipes: {
       text: textRecipe,
+      button: buttonRecipe,
     },
     semanticTokens: {
       colors: semanticColors,

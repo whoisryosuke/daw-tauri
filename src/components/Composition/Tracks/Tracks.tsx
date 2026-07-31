@@ -7,9 +7,9 @@ import {
 } from "../../../store/composition";
 import TrackComponent from "../Track/Track";
 import { generateSimpleHash } from "../../../utils/hash";
-import { Flex } from "@radix-ui/themes";
 import { useMeasure } from "react-use";
 import { invoke } from "@tauri-apps/api/core";
+import { Stack } from "../../../../styled-system/jsx";
 
 type Props = {};
 
@@ -42,11 +42,11 @@ const Tracks = (props: Props) => {
   console.log("tracks", tracks);
 
   return (
-    <Flex ref={ref} direction="column" style={{ flex: 1 }}>
+    <Stack ref={ref} flex={1}>
       {tracks.map((track) => (
         <TrackComponent key={track.id} {...track} width={width} />
       ))}
-    </Flex>
+    </Stack>
   );
 };
 

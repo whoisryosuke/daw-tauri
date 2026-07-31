@@ -1,7 +1,9 @@
-import { Box, Heading, Text } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
+import { Box } from "../../../styled-system/jsx";
+import Heading from "../ui/Typography/Heading";
+import Text from "../ui/Typography/Text";
 
 type Props = {};
 

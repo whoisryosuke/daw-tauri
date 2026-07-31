@@ -1,9 +1,8 @@
-import { Select } from "@radix-ui/themes";
 import React from "react";
 import type { SelectItem } from "../../../types";
-import SelectSimple from "../../../primitives/SelectSimple";
+import SelectSimple, { SelectProps } from "../../../primitives/SelectSimple";
 
-type Props = Select.RootProps & {};
+type Props = Omit<SelectProps, "items"> & {};
 
 const SELECT_BAR_ITEMS: SelectItem[] = [
   {
@@ -54,7 +53,12 @@ const SELECT_BAR_ITEMS: SelectItem[] = [
 
 const SelectBarControl = ({ ...props }: Props) => {
   return (
-    <SelectSimple defaultValue="1-bar" size="small" items={SELECT_BAR_ITEMS} />
+    <SelectSimple
+      defaultValue="1-bar"
+      size="small"
+      items={SELECT_BAR_ITEMS}
+      {...props}
+    />
   );
 };
 

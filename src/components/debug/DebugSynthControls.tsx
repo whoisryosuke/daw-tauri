@@ -1,6 +1,8 @@
-import { Box, Button, Heading } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import React from "react";
+import { Box } from "../../../styled-system/jsx";
+import Heading from "../ui/Typography/Heading";
+import Button from "../ui/Button";
 
 type Props = {};
 

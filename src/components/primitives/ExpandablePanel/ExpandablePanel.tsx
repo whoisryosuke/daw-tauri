@@ -1,8 +1,8 @@
-import { Box, type BoxProps } from "@radix-ui/themes";
-import React, { useState, type PropsWithChildren } from "react";
+import React, { CSSProperties, useState, type PropsWithChildren } from "react";
 import styles from "./ExpandablePanel.module.css";
 import ExpandablePanelDragHandle from "./ExpandablePanelDragHandle";
 import type { ExpandablePanelSize } from "./types";
+import { Box, BoxProps } from "../../../../styled-system/jsx";
 
 const MIN_WIDTH = 200;
 
@@ -25,7 +25,7 @@ const ExpandablePanel = ({
   return (
     <Box
       className={styles.ExpandablePanel}
-      style={{ "--width": `${widthVar}px`, ...style }}
+      style={{ "--width": `${widthVar}px`, ...style } as CSSProperties}
       {...props}
     >
       {children}
