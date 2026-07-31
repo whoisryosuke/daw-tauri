@@ -1,14 +1,10 @@
 use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{
+    collections::HashMap, println, sync::{
+        Arc, Mutex, atomic::{
             AtomicBool, AtomicU64, AtomicUsize,
             Ordering::{self, Relaxed},
         },
-        Arc, Mutex,
-    },
-    thread,
-    time::Duration,
+    }, thread, time::Duration,
 };
 
 use cpal::{
@@ -19,9 +15,29 @@ use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
 use crate::{
-    audio_buffer::AudioBuffer,
-    audio_node::{AudioNode, AudioNodeTypes, SampleNode, SynthNode},
+    audio_buffer::AudioBuffer, audio_cache::AudioCache, audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode}, composition::{CompositionStore, TrackClipType}, math::seconds_to_frames,
 };
+
+pub struct MixerTrack {
+    current_node: usize,
+    
+    nodes: Vec<AudioNodeTypes>,
+    fx: Vec<EffectNodeTypes>,
+
+    /// Scratch buffer to do track-specific operations on signal
+    process_buffer: Vec<f32>,
+    gain: f32,
+}
+
+impl MixerTrack {
+    pub fn new() -> Self {
+        let nodes = Vec::new();
+        let fx = Vec::new();
+        let process_buffer = Vec::new();
+
+        Self { current_node: 0usize, nodes, fx, process_buffer, gain: 1.0 }
+    }
+}
 
 /**
  * Queue of audio to play in the form of `AudioNode`s.
@@ -29,14 +45,14 @@ use crate::{
  * The queue is controlled by `AudioCommand`s
  */
 pub struct Mixer {
-    nodes: Vec<AudioNodeTypes>,
+    tracks: [MixerTrack; 20],
     playing: bool,
 }
 
 impl Mixer {
     pub fn new() -> Self {
         Self {
-            nodes: Vec::new(),
+            tracks: std::array::from_fn(|_| MixerTrack::new()),
             playing: false,
         }
     }
@@ -53,28 +69,26 @@ impl Mixer {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
             match command {
-                AudioCommand::Play(buffer) => {
-                    self.nodes
-                        .push(AudioNodeTypes::StaticBuffer(SampleNode::new(buffer)));
+                AudioCommand::Play => {
                     self.playing = true;
                 }
-                AudioCommand::AddSynth => {
-                    self.nodes
+                AudioCommand::AddSample(track_index, node) => {
+                    self.tracks[track_index].nodes
+                        .push(node);
+                }
+                AudioCommand::AddSynth(track_index) => {
+                    self.tracks[track_index].nodes
                         .push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
-                AudioCommand::RemoveSynth(id) => {
-                    self.nodes[id] = AudioNodeTypes::Silence;
+                AudioCommand::RemoveSynth(track_index, id) => {
+                    self.tracks[track_index].nodes[id] = AudioNodeTypes::Silence;
                 }
                 AudioCommand::Pause => {
                     self.playing = false;
                 }
             }
         }
-
-        // Check if we have anything to play
-        // We don't stop audio immediately, or you may get strange noises without resetting signal
-        let should_play = self.nodes.len() > 0;
 
         // Not playing? Don't update samples
         if self.playing == false {
@@ -84,18 +98,44 @@ impl Mixer {
         // Get current time for playback
         let current_time = playback_time.load(Ordering::Relaxed);
 
-        // Debug input for now
-        // TODO: This would be mic input that should be mixed into output
-        let input_raw = [1.0, 2.0, 3.0, 4.0, 5.0];
-        let input: &[f32] = &input_raw;
+        // Zero out output
+        // I'm skeptical of this, here for testing to avoid accumulation
+        output.fill(0.0);
 
         // Process all nodes (aka play audio, apply effects like gain, etc)
-        self.nodes.iter_mut().for_each(|node| {
-            node.process(input, output, current_time as f32);
-        });
+        // First we loop through each "track" and run processing locally
+        for track in self.tracks.iter_mut() {
+            // Allocate memory
+            // TODO: Get this out of here!! just expose buffer size and allocate on track init
+            if track.process_buffer.len() != output.len() {
+                track.process_buffer.resize(output.len(), 0.0);
+            }
+            track.process_buffer.fill(0.0);
+            
+            for node in track.nodes.iter_mut() {
+                node.process(&mut track.process_buffer, current_time);
+            }
+            // Then I need to loop over fx and provide result from above
+            for fx in track.fx.iter_mut() {
+                fx.process(&track.process_buffer, output, current_time);
+            }
+
+            // Any final track operations (e.g. track-based gain)
+            if track.gain != 1.0 {
+                for sample in track.process_buffer.iter_mut() {
+                    *sample *= track.gain;
+                }
+            }
+
+            // Then we combine (or "mix") all the signals together
+            for (i, sample) in track.process_buffer.iter().enumerate() {
+                output[i] += *sample;
+            }
+        }
+
 
         // Increment frame timer
-        if should_play {
+        if self.playing {
             let sample_count = (output.len() / channels) as u64;
             playback_time.fetch_add(sample_count, Ordering::Relaxed);
             // Update waveform (decimated: ~256 samples per callback max)
@@ -110,9 +150,10 @@ impl Mixer {
 }
 
 pub enum AudioCommand {
-    Play(Vec<f32>),
-    AddSynth,
-    RemoveSynth(usize),
+    Play,
+    AddSample(usize, AudioNodeTypes),
+    AddSynth(usize),
+    RemoveSynth(usize, usize),
     Pause,
 }
 
@@ -135,12 +176,67 @@ impl AudioEngineMessaging {
         }
     }
 
-    pub fn play(&self, buffer: Option<Arc<AudioBuffer>>) {
-        if let Some(buffer) = buffer {
-            // The AudioBuffer here has "samples" that are also wrapped in `Arc`
-            // so we can ideally do a "free" clone
-            self.send_command(AudioCommand::Play(buffer.samples.clone().to_vec()));
+    pub fn play(&self, composition: &CompositionStore, asset_store: &AudioCache, sample_rate: u32) {
+        println!("Playing timeline audio");
+        
+        // Queue up clips to play
+        // Loop through each track in the composition
+        for (track_index, (track_id, track)) in composition.tracks.iter().enumerate() {
+            // TODO: Check if track is muted - don't add if so
+            println!("Playing timeline track {}", track.name);
+
+            // Grab clips inside that track (tecnically clip "references" by ID)
+            match composition.track_clips.get(track_id) {
+                Some(track_clips) => {
+                    println!("Got track clips {}", track.name);
+                    // Loop over each "track clip" then find actual audio clip
+                    for track_clip in track_clips {
+                        println!("Got track clips {}", track_clip.start_time);
+                        // Handle each clip type (samples vs synths)
+                        match track_clip.track_clip_type {
+                            TrackClipType::Sample => {
+                                println!("Got track clips {}", track_clip.clip_id);
+                                // Find the actual clip data from the clip cache
+                                match composition.clips.get(&track_clip.clip_id) {
+                                    Some(clip) => {
+                                        match asset_store.get_buffer_by_id(&clip.clip_id) {
+                                            // Create audio nodes for the mixer to process
+                                            Some(clip_data) => {
+                                                let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0 as u32) as usize;
+                                                let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), start_time));
+
+                                                println!("Creating audio node {}", clip.name);
+                                                
+                                                self.send_command(AudioCommand::AddSample(track_index, node));
+
+                                            },
+                                            None => {
+                                                 println!("Couldn't get clip's asset from cache {}", track.name);
+                                                
+                                            },
+                                        }
+                                    },
+                                    None => {
+                                        println!("Couldn't get the clip {}", track.name);
+                                    },
+                                }
+                            },
+                            TrackClipType::Synthesizer => {
+                                self.add_synth(track_index);
+                            },
+                        }
+                    }
+
+                },
+                None => {
+                    println!("Couldn't load the track clips {}", track.name);
+
+                },
+            }
         }
+
+        // Tell audio thread to start playing now that it has audio nodes
+        self.send_command(AudioCommand::Play);
     }
 
     pub fn send_command(&self, command: AudioCommand) {
@@ -154,8 +250,8 @@ impl AudioEngineMessaging {
         println!("command result: {:?}", result);
     }
 
-    pub fn add_synth(&self) {
-        self.send_command(AudioCommand::AddSynth);
+    pub fn add_synth(&self, track_index: usize) {
+        self.send_command(AudioCommand::AddSynth(track_index));
     }
 
     pub fn stop(&self) {

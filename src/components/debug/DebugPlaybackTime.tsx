@@ -12,7 +12,7 @@ const DebugPlaybackTime = (props: Props) => {
 
   useEffect(() => {
     const getSampleRate = async () => {
-      const newSampleRate = await invoke("get_sample_rate");
+      const newSampleRate = (await invoke("get_sample_rate")) as number;
       console.log("sample rate", newSampleRate);
       setSampleRate(newSampleRate);
     };
@@ -38,7 +38,7 @@ const DebugPlaybackTime = (props: Props) => {
     "playback time",
     playbackTime,
     sampleRate,
-    playbackTime / sampleRate
+    playbackTime / sampleRate,
   );
   return (
     <Box m="2">

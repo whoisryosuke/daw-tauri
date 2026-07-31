@@ -12,7 +12,7 @@ pub async fn get_sample_waveform(
     path: String,
     size: usize,
 ) -> Result<Vec<f32>, String> {
-    let buffer_option = audio_cache.get_buffer_by_id(path);
+    let buffer_option = audio_cache.get_buffer_by_id(&path);
     let mut waveform = Vec::with_capacity(size);
 
     // Reduce to necessary size
@@ -30,6 +30,7 @@ pub async fn get_sample_waveform(
     Ok(waveform)
 }
 
+/// The filename of the audio sample
 type AssetId = String;
 
 pub struct AudioCache {
@@ -51,13 +52,13 @@ impl AudioCache {
             }
         }
     }
-    pub fn get_buffer_by_id(&self, id: AssetId) -> Option<Arc<AudioBuffer>> {
+    pub fn get_buffer_by_id(&self, id: &AssetId) -> Option<Arc<AudioBuffer>> {
         let buffer = {
             let asset_store = self
                 .buffers
                 .lock()
                 .expect("Couldn't lock asset store buffer");
-            asset_store.get(&id).cloned()
+            asset_store.get(id).cloned()
         };
         buffer
     }

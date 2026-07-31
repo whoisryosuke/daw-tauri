@@ -134,11 +134,6 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64) {
     (samples, track_duration)
 }
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 // #[tauri::command]
 // async fn load_sample_file(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
 //    println!("loading audio from Rust");
@@ -156,13 +151,15 @@ fn greet(name: &str) -> String {
 async fn play_audio(
     messaging: State<'_, AudioEngineMessaging>,
     asset_store: State<'_, AudioCache>,
+    composition: State<'_, Mutex<CompositionStore>>,
+    engine: State<'_, AudioEngine>,
 ) -> Result<bool, bool> {
     println!("loading audio from Rust");
 
-    // Get samples from cache
-    let file_name = "ff8-magic.mp3".to_string();
-    let buffer = asset_store.get_buffer_by_id(file_name);
-    messaging.play(buffer);
+    let sample_rate = engine.config.sample_rate().0;
+    let store = &composition.try_lock().unwrap();
+
+    messaging.play(store, &asset_store, sample_rate);
 
     Ok(true)
 }
@@ -171,7 +168,7 @@ async fn play_audio(
 async fn stop_audio(
     messaging: State<'_, AudioEngineMessaging>,
 ) -> Result<bool, bool> {
-    println!("loading audio from Rust");
+    println!("stopping audio from Rust");
 
     // Get samples from cache
     messaging.stop();
@@ -186,7 +183,7 @@ async fn add_synth(
     println!("adding synth in Rust");
 
     // Get samples from cache
-    messaging.add_synth();
+    messaging.add_synth(0);
 
     Ok(true)
 }
@@ -278,7 +275,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, add_clip])
+        .invoke_handler(tauri::generate_handler![play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, add_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

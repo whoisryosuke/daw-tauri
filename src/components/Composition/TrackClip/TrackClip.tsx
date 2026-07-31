@@ -17,7 +17,12 @@ type Props = TrackClipData & {
   width: number;
 };
 
-const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
+const TrackClip = ({
+  clip_id: clipId,
+  start_time: startTime,
+  enabled,
+  width,
+}: Props) => {
   const { range } = useAtomValue(compositionAtom);
   const clips = useAtomValue(clipsAtom);
   const currentClip = clips.find((clip) => clip.id == clipId);
@@ -25,10 +30,10 @@ const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
   if (currentClip) {
     let ClipComponent: TrackClipComponent = DefaultClip;
     switch (currentClip?.type) {
-      case "midi":
+      case "Midi":
         ClipComponent = MIDISequenceClip;
         break;
-      case "sample":
+      case "Sample":
         ClipComponent = SampleClip;
         break;
     }
@@ -38,7 +43,7 @@ const TrackClip = ({ clipId, startTime, enabled, width }: Props) => {
       range[0],
       range[1],
       0,
-      width
+      width,
     );
 
     return (

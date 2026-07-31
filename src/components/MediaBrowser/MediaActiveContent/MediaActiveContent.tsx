@@ -12,7 +12,8 @@ const DEBUG_LIST: MediaListItemDraggableProps[] = [
     title: "FF8 Magic",
     id: "music/ff8-magic.mp3",
     icon: "samples",
-    type: "sample",
+    type: "Sample",
+    duration: 1.0,
     dragType: "CLIP",
   },
 ];
@@ -39,10 +40,10 @@ const MediaActiveContent = (props: Props) => {
           title: newAsset.name,
           id: newAsset.path,
           icon: "samples",
-          type: "sample",
+          type: "Sample",
           duration: newAsset.duration,
           dragType: "CLIP",
-        } as MediaListItemDraggableProps)
+        }) as MediaListItemDraggableProps,
     );
 
     setAssets(newMediaList);

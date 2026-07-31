@@ -26,16 +26,17 @@ export type DragPositionData = {
 };
 
 export const loadMedia = async (item: MediaBrowserDragData) => {
+  console.log("item", item);
   // Check if it exists in cache first
   let exists: Sample | MIDISequence | null | undefined;
   switch (item.type) {
-    case "sample":
+    case "Sample":
       const allSamples = store.get(samplesAtom);
       const sampleExists = allSamples.find((sample) => sample.path == item.id);
       exists = sampleExists;
 
       break;
-    case "midi":
+    case "Midi":
       const allMIDISequences = store.get(midiSequencesAtom);
       const midiExists = allMIDISequences.find(
         (midiSequence) => midiSequence.path == item.id,
@@ -47,9 +48,11 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
   if (exists) return exists;
 
   switch (item.type) {
-    case "sample":
+    case "Sample":
       const newSample: Sample = {
-        id: generateSimpleHash(),
+        // We currently store samples by file path - but ideally should not
+        // id: generateSimpleHash(),
+        id: item.id,
         name: item.name,
         path: item.id,
         duration: item.duration,
@@ -59,7 +62,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
 
       return newSample;
 
-    case "midi":
+    case "Midi":
       break;
   }
 };
@@ -67,7 +70,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
 export const createMediaClip = async (media: MediaBase, type: ClipType) => {
   // Check if clip exists
   const allClips = store.get(clipsAtom);
-  const sampleExists = allClips.find((clip) => clip.data == media.id);
+  const sampleExists = allClips.find((clip) => clip.clip_id == media.id);
 
   if (sampleExists) return sampleExists;
 
@@ -77,7 +80,7 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
     name: media.name,
     duration: media.duration,
     type,
-    data: media.id,
+    clip_id: media.path,
   };
 
   store.set(clipsAtom, (prev) => [...prev, newClip]);
@@ -121,8 +124,8 @@ export const addClipToTrack = async (
 
   // Send to Rust backend
   // Rust is strict on data structure so we remove props before sending
-  const { id: clip_id, ...clip_data } = clip;
-  invoke("add_clip", { clip_id, clip_data });
+  const { id: clipId, type: clip_type, ...clip_data } = clip;
+  invoke("add_clip", { clipId, clipData: { clip_type, ...clip_data } });
 
   // Calculate the start time based on drag placement
   const startTime = calculateStartTimeFromDrag(dragPosition);
@@ -131,16 +134,17 @@ export const addClipToTrack = async (
   const newId = generateSimpleHash();
   const newTrackClip: TrackClipData = {
     id: newId,
-    trackId: id,
-    clipId: clip.id,
-    startTime,
+    track_id: id,
+    track_clip_type: "Sample",
+    clip_id: clip.id,
+    start_time: startTime,
     enabled: true,
   };
   console.log("created new clip", newTrackClip);
 
   // Send to Rust backend
-  const { trackId, ...track_data } = newTrackClip;
-  invoke("add_track_clip", { track_id: id, track_data });
+  const { track_id: trackId, ...track_data } = newTrackClip;
+  invoke("add_track_clip", { trackId: id, trackData: track_data });
 
   // Add to store
   store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);

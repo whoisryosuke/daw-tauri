@@ -6,8 +6,8 @@ type TrackId = String;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Track {
-    name: TrackId,
-    muted: bool,
+    pub name: TrackId,
+    pub muted: bool,
 }
 
 impl Track {
@@ -16,18 +16,25 @@ impl Track {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub enum TrackClipType {
+    Sample,
+    Synthesizer,
+}
+
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TrackClip {
-    id: String,
-    clip_id: String,
-    start_time: f64,
-    enabled: bool,
+    pub id: String,
+    pub track_clip_type: TrackClipType,
+    pub clip_id: String,
+    pub start_time: f64,
+    pub enabled: bool,
 }
 
 impl TrackClip {
-    pub fn new(id: String, clip_id: String, start_time: f64, enabled: bool) -> Self {
-        Self { id, clip_id, start_time, enabled }
+    pub fn new(id: String, clip_id: String, start_time: f64, enabled: bool, track_clip_type: TrackClipType) -> Self {
+        Self { id, clip_id, start_time, enabled, track_clip_type }
     }
 }
 
@@ -44,12 +51,12 @@ pub enum ClipType {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Clip {
-    name: String,
-    duration: f64,
+    pub name: String,
+    pub duration: f64,
     // Clips can reference different types of audio data
-    clip_type: ClipType,
+    pub clip_type: ClipType,
     // This references the ID on the appropriate cache (e.g. sample cache)
-    clip_id: String,
+    pub clip_id: String,
 }
 
 impl Clip {
@@ -60,10 +67,10 @@ impl Clip {
 
 pub struct CompositionStore {
     // Start / end time of timeline
-    range: (f64, f64),
-    tracks: HashMap<String, Track>,
-    track_clips: TrackClips,
-    clips: HashMap<String, Clip>,
+    pub range: (f64, f64),
+    pub tracks: HashMap<String, Track>,
+    pub track_clips: TrackClips,
+    pub clips: HashMap<String, Clip>,
 }
 
 impl CompositionStore {
@@ -86,7 +93,8 @@ pub async fn add_track(
     let store_result = composition_store.lock();
 
     if let Ok(mut store) = store_result {
-        store.tracks.insert(track_id, track_data);
+        store.tracks.insert(track_id.clone(), track_data);
+        store.track_clips.insert(track_id, Vec::new());
         return Ok(true)
     }
 
@@ -103,6 +111,7 @@ pub async fn add_track_clip(
 
     if let Ok(mut store) = store_result {
         store.track_clips.entry(track_id).or_insert_with(Vec::new).push(track_data);
+        
         return Ok(true)
     }
 

@@ -18,7 +18,7 @@ type Props = TrackData & {
 
 const Track = ({ id, name, width }: Props) => {
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
-  const localClips = trackClips.filter((trackClip) => trackClip.trackId == id);
+  const localClips = trackClips.filter((trackClip) => trackClip.track_id == id);
 
   const { isOver, setNodeRef } = useDroppable({
     id: `TRACK_${id}`,

@@ -31,8 +31,8 @@ const Tracks = (props: Props) => {
         const newTrack = generateTrackData(`Track ${index + 1}`);
         newTracks.push(newTrack);
 
-        let { id, ...track_data } = newTrack;
-        invoke("add_track", { track_id: id, track_data });
+        let { id, ...trackData } = newTrack;
+        invoke("add_track", { trackId: id, trackData });
       });
 
       setTracks(newTracks);

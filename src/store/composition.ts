@@ -11,15 +11,18 @@ export type TrackData = {
   muted: boolean;
 };
 
+export type TrackClipType = "Sample" | "Synthesizer";
+
 export type TrackClipData = {
   id: string;
-  trackId: string;
-  clipId: string;
-  startTime: number;
+  track_id: string;
+  track_clip_type: TrackClipType;
+  clip_id: string;
+  start_time: number;
   enabled: boolean;
 };
 
-export type ClipType = "sample" | "midi";
+export type ClipType = "Sample" | "Midi";
 
 export type Clip = {
   id: string;
@@ -30,7 +33,7 @@ export type Clip = {
   /**
    * The ID of the associated clip type (e.g. id of sample in cache)
    */
-  data: string;
+  clip_id: string;
 };
 
 export const compositionAtom = atom<CompositionData>({

@@ -15,6 +15,7 @@ const SampleClipWaveform = ({ path, width }: Props) => {
   const [buffer, setBuffer] = useState<number[]>([]);
 
   const fetchBuffer = async () => {
+    console.log("clip path for waveform", path);
     const newBuffer = await invoke<number[]>("get_sample_waveform", {
       path,
       size: 1000,
