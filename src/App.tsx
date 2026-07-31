@@ -25,7 +25,7 @@ function App() {
   }, []);
 
   return (
-    <Stack height="100dvh" bg="gray.1">
+    <Stack height="100dvh" bg="gray.1" overflow="hidden">
       <TopNavigation />
       <Stack flexDir="row" flex={1}>
         <MediaBrowser />
@@ -34,7 +34,6 @@ function App() {
       <Stack flexDir="row">
         <ModuleArea />
       </Stack>
-      <DNDTest />
     </Stack>
   );
 }

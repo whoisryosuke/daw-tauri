@@ -10,22 +10,22 @@ const headingStyles = cva({
   variants: {
     as: {
       h1: {
-        fontSize: 10,
-      },
-      h2: {
-        fontSize: 9,
-      },
-      h3: {
         fontSize: 8,
       },
-      h4: {
+      h2: {
         fontSize: 7,
       },
-      h5: {
+      h3: {
         fontSize: 6,
       },
-      h6: {
+      h4: {
         fontSize: 5,
+      },
+      h5: {
+        fontSize: 4,
+      },
+      h6: {
+        fontSize: 3,
       },
     },
   },
