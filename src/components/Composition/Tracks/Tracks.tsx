@@ -11,7 +11,9 @@ import { useMeasure } from "react-use";
 import { invoke } from "@tauri-apps/api/core";
 import { Stack } from "../../../../styled-system/jsx";
 
-type Props = {};
+type Props = {
+  containerWidth: number;
+};
 
 const generateTrackData = (name = "Track 1"): TrackData => ({
   id: generateSimpleHash(),
@@ -19,9 +21,8 @@ const generateTrackData = (name = "Track 1"): TrackData => ({
   muted: false,
 });
 
-const Tracks = (props: Props) => {
+const Tracks = ({ containerWidth }: Props) => {
   const [tracks, setTracks] = useAtom(tracksAtom);
-  const [ref, { width }] = useMeasure<HTMLDivElement>();
 
   // No track? Make sure we have at least 1 on load
   useEffect(() => {
@@ -42,9 +43,9 @@ const Tracks = (props: Props) => {
   console.log("tracks", tracks);
 
   return (
-    <Stack ref={ref} flex={1}>
+    <Stack flex={1}>
       {tracks.map((track) => (
-        <TrackComponent key={track.id} {...track} width={width} />
+        <TrackComponent key={track.id} {...track} width={containerWidth} />
       ))}
     </Stack>
   );
