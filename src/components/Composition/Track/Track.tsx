@@ -4,6 +4,15 @@ import TrackClip from "../TrackClip/TrackClip";
 import { useDroppable } from "@dnd-kit/core";
 import { Stack } from "../../../../styled-system/jsx";
 import Heading from "../../ui/Typography/Heading";
+import { css } from "../../../../styled-system/css";
+
+const headingStyle = css({
+  position: "absolute",
+  top: 2,
+  left: 2,
+  fontSize: 1,
+  color: "gray.9",
+});
 
 type Props = TrackData & {
   width: number;
@@ -22,14 +31,7 @@ const Track = ({ id, name, width }: Props) => {
 
   return (
     <Stack width="100%" position="relative" minHeight={100}>
-      <Heading
-        as="h3"
-        style={{
-          position: "absolute",
-          top: "var(--space-2)",
-          left: "var(--space-2)",
-        }}
-      >
+      <Heading as="h5" className={headingStyle}>
         {name}
       </Heading>
       <Stack
