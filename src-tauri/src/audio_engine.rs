@@ -86,6 +86,8 @@ impl Mixer {
                 }
                 AudioCommand::Pause => {
                     self.playing = false;
+                    // Clear output buffer to prevent screeching from leftover signals 
+                    output.fill(0.0);
                 }
             }
         }
@@ -99,7 +101,7 @@ impl Mixer {
         let current_time = playback_time.load(Ordering::Relaxed);
 
         // Zero out output
-        // I'm skeptical of this, here for testing to avoid accumulation
+        // TODO: I'm skeptical of this, here for testing to avoid accumulation
         output.fill(0.0);
 
         // Process all nodes (aka play audio, apply effects like gain, etc)
