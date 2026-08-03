@@ -79,6 +79,11 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
             sample_rate = track_sample_rate;
         }
 
+        let mut channel_count = 1;
+        if let Some(channels) = track_params.channels {
+            channel_count = channels.count();
+        }
+
 
 
     // Create a decoder.
@@ -161,9 +166,10 @@ async fn play_audio(
     println!("loading audio from Rust");
 
     let sample_rate = engine.config.sample_rate().0;
+    let channel_count = engine.config.channels() as usize;
     let store = &composition.try_lock().unwrap();
 
-    messaging.play(store, &asset_store, sample_rate);
+    messaging.play(store, &asset_store, sample_rate, channel_count);
 
     Ok(true)
 }

@@ -9,15 +9,15 @@ pub trait AudioNode {
 }
 
 pub struct SampleNode {
-    pub start_frame: usize,
+    pub start_frame: u64,
     data: Arc<Vec<f32>>,
     position: usize,
     pub finished: bool,
 }
 
 impl SampleNode {
-    pub fn new(data: Arc<Vec<f32>>, start_frame: usize) -> Self {
-        let position = 0usize;
+    pub fn new(data: Arc<Vec<f32>>, start_frame: u64) -> Self {
+        let position = 0;
         let finished = false;
 
         Self {
@@ -33,7 +33,7 @@ impl AudioNode for SampleNode {
 
     fn process(&mut self, output: &mut [f32], current_frame: u64) {
         // Check if node is scheduled to start, if not, do nothing
-        if self.start_frame > current_frame.try_into().unwrap_or(0) {
+        if self.start_frame > current_frame {
             return;
         }
 
