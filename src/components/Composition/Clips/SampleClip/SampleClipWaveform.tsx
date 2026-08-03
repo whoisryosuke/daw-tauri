@@ -20,7 +20,6 @@ const SampleClipWaveform = ({ path, width }: Props) => {
       path,
       size: 1000,
     });
-    console.log("fetchBuffer", newBuffer);
 
     setBuffer(newBuffer);
   };
