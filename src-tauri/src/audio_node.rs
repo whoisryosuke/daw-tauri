@@ -110,7 +110,7 @@ impl AudioNodeTypes {
 
 /// Effect node that takes input data, processes it, and overrides the output
 pub trait EffectNode {
-    fn process(&mut self, input: &[f32], output: &mut [f32], current_frame: u64);
+    fn process(&mut self, output: &mut [f32], current_frame: u64);
 }
 
 #[derive(Debug, Clone)]
@@ -128,9 +128,9 @@ impl GainNode {
 }
 
 impl EffectNode for GainNode {
-    fn process(&mut self, input: &[f32], output: &mut [f32], current_frame: u64) {
-        for (i, &sample) in input.iter().enumerate() {
-            output[i] = sample * self.gain;
+    fn process(&mut self, output: &mut [f32], current_frame: u64) {
+        for (i, sample) in output.iter_mut().enumerate() {
+            *sample = *sample * self.gain;
         }
     }
 }
@@ -140,9 +140,9 @@ pub enum EffectNodeTypes {
 }
 
 impl EffectNodeTypes {
-    pub fn process(&mut self, input: &[f32], output: &mut [f32], current_frame: u64) {
+    pub fn process(&mut self, output: &mut [f32], current_frame: u64) {
         match self {
-            EffectNodeTypes::Gain(node) => node.process(input, output, current_frame),
+            EffectNodeTypes::Gain(node) => node.process(output, current_frame),
         }
     }
 }

@@ -89,6 +89,11 @@ impl Mixer {
                     // Clear output buffer to prevent screeching from leftover signals 
                     output.fill(0.0);
                 }
+                AudioCommand::ClearNodes => {
+                    for track in self.tracks.each_mut() {
+                        // @TODO: Clear each node and make it silent
+                    }
+                }
             }
         }
 
@@ -119,7 +124,7 @@ impl Mixer {
             }
             // Then I need to loop over fx and provide result from above
             for fx in track.fx.iter_mut() {
-                fx.process(&track.process_buffer, output, current_time);
+                fx.process(&mut track.process_buffer, current_time);
             }
 
             // Any final track operations (e.g. track-based gain)
@@ -157,6 +162,7 @@ pub enum AudioCommand {
     AddSynth(usize),
     RemoveSynth(usize, usize),
     Pause,
+    ClearNodes,
 }
 
 pub struct AudioEngineMessaging {
