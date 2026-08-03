@@ -40,7 +40,8 @@ struct AudioState {
     asset_store: Arc<AudioCache>,
 }
 
-fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64) {
+// @TODO: Return a Result instead of blank array for better error handling
+fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
     let audio_path = std::path::Path::new(file_path);
 
     // Open reader and probe MP3.
@@ -72,9 +73,12 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64) {
 
         // Get the duration of the clip
         let mut track_duration = 0.0;
-        if let (Some(sample_rate), Some(n_frames)) = (track_params.sample_rate, track_params.n_frames) {
-            track_duration = n_frames as f64 / sample_rate as f64;
+        let mut sample_rate = 0;
+        if let (Some(track_sample_rate), Some(n_frames)) = (track_params.sample_rate, track_params.n_frames) {
+            track_duration = n_frames as f64 / track_sample_rate as f64;
+            sample_rate = track_sample_rate;
         }
+
 
 
     // Create a decoder.
@@ -126,12 +130,12 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64) {
             }
             other => {
                 eprintln!("Unsupported sample format: {:?}", other.spec());
-                return (Vec::new(), 0.0);
+                return (Vec::new(), 0.0, 0, 0);
             }
         }
     }
 
-    (samples, track_duration)
+    (samples, track_duration, channel_count, sample_rate)
 }
 
 // #[tauri::command]
@@ -221,13 +225,13 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 
                 println!("Loading asset {}...", file_name);
                 
-                let (sample_data, duration) = load_sample_data_from_disk(file_path_str);
+                let (sample_data, duration, channel_count, sample_rate) = load_sample_data_from_disk(file_path_str);
 
                 let audio_asset = MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
 
                 // Add to appropriate stores
                 asset_store.insert(file_name.to_string(), audio_asset);
-                audio_cache.insert(file_path_str.to_string(), AudioBuffer::new(sample_data, 0));
+                audio_cache.insert(file_path_str.to_string(), AudioBuffer::new(sample_data, sample_rate, channel_count));
             },
             Err(error) => {
                 println!("error loading audio resource: {}", error);
