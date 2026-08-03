@@ -40,10 +40,9 @@ impl AudioNode for SampleNode {
         for sample in output.iter_mut() {
             // Make a copy in case it changes somehow - might be unnecessary
             let index = self.position;
-            let next_index = index + 1;
 
             // Check if we're done - if not, keep incrementing
-            if next_index >= self.data.len() {
+            if index >= self.data.len() {
                 self.finished = true;
             } else {
                 // Increment position for next sample
