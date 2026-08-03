@@ -4,8 +4,11 @@ import TrackClip from "../TrackClip/TrackClip";
 import { useDroppable } from "@dnd-kit/core";
 import { Stack } from "../../../../styled-system/jsx";
 import Heading from "../../ui/Typography/Heading";
-import { css } from "../../../../styled-system/css";
+import { css, cx } from "../../../../styled-system/css";
 
+const headingHoverStyle = css({
+  color: "gray.8",
+});
 const headingStyle = css({
   position: "absolute",
   top: 2,
@@ -31,14 +34,17 @@ const Track = ({ id, name, width }: Props) => {
 
   return (
     <Stack width="100%" position="relative" minHeight={100}>
-      <Heading as="h5" className={headingStyle}>
+      <Heading
+        as="h5"
+        className={cx(headingStyle, isOver && headingHoverStyle)}
+      >
         {name}
       </Heading>
       <Stack
         ref={setNodeRef}
         flex={1}
         position="relative"
-        bg={isOver ? "colorPalette.4" : "transparent"}
+        bg={isOver ? "gray.2" : "transparent"}
       >
         {localClips.map((trackClip) => (
           <TrackClip key={trackClip.id} {...trackClip} width={width} />

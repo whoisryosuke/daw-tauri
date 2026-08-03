@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MediaBrowserDragData } from "../constants/drag";
+import type {
+  MediaBrowserDragData,
+  TrackClipDragData,
+} from "../constants/drag";
 import {
   clipsAtom,
   compositionAtom,
@@ -148,4 +151,37 @@ export const addClipToTrack = async (
 
   // Add to store
   store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);
+};
+
+export const moveTrackClip = async (
+  trackId: string,
+  item: TrackClipDragData,
+  dragPosition: DragPositionData,
+) => {
+  const allTrackClips = store.get(trackClipsAtom);
+  const trackClip = allTrackClips.find((trackClip) => trackClip.id == item.id);
+
+  console.log("track clips", allTrackClips, item.id);
+
+  if (!trackClip) {
+    console.error("Couldn't find that track clip", item.id);
+    return;
+  }
+
+  // Calculate the start time based on drag placement
+  const startTime = calculateStartTimeFromDrag(dragPosition);
+
+  // Update
+  store.set(trackClipsAtom, (state) =>
+    state.map((stateClip) => {
+      if (stateClip.id == trackClip.id) {
+        return {
+          ...stateClip,
+          start_time: startTime,
+          track_id: trackId,
+        };
+      }
+      return stateClip;
+    }),
+  );
 };

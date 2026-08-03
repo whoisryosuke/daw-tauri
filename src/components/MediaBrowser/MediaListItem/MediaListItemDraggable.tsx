@@ -6,6 +6,7 @@ import {
   DRAG_TYPES,
   type MediaBrowserDragData,
   type DragTypes,
+  MediaBrowserDragTypes,
 } from "../../../constants/drag";
 import type { Clip } from "../../../store/composition";
 import type { ListItemData } from "../../../constants/media-list";
@@ -13,7 +14,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
 export type MediaListItemDraggableProps = ListItemData & {
-  dragType: DragTypes;
+  dragType: MediaBrowserDragTypes;
   type: Clip["type"];
   duration: number;
   style?: CSSProperties;
@@ -33,6 +34,7 @@ const MediaListItemDraggable = ({
       name: props.title,
       type,
       duration,
+      action: dragType,
     } as MediaBrowserDragData,
   });
   const transformStyle = {

@@ -18,6 +18,7 @@ type Props = TrackClipData & {
 };
 
 const TrackClip = ({
+  id,
   clip_id: clipId,
   start_time: startTime,
   enabled,
@@ -47,7 +48,7 @@ const TrackClip = ({
     );
 
     return (
-      <ClipContainer {...currentClip} x={x} width={clipWidth}>
+      <ClipContainer trackId={id} {...currentClip} x={x} width={clipWidth}>
         <ClipComponent {...currentClip} width={clipWidth} />
       </ClipContainer>
     );
