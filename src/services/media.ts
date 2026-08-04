@@ -171,14 +171,25 @@ export const moveTrackClip = async (
   // Calculate the start time based on drag placement
   const startTime = calculateStartTimeFromDrag(dragPosition);
 
-  // Update
+  const updateData = {
+    start_time: startTime,
+    track_id: trackId,
+  };
+
+  // Update Rust backendn
+  invoke("update_track_clip_time", {
+    id: trackClip.id,
+    trackId: trackId,
+    time: startTime,
+  });
+
+  // Update local store
   store.set(trackClipsAtom, (state) =>
     state.map((stateClip) => {
       if (stateClip.id == trackClip.id) {
         return {
           ...stateClip,
-          start_time: startTime,
-          track_id: trackId,
+          ...updateData,
         };
       }
       return stateClip;

@@ -29,7 +29,7 @@ use crate::audio_engine::{
     AudioCommand, AudioEngine, AudioEngineMessaging,
 };
 use crate::audio_node::AudioNode;
-use crate::composition::{CompositionStore, add_clip, add_track, add_track_clip};
+use crate::composition::{CompositionStore, add_clip, add_track, add_track_clip, update_track_clip_time};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -285,7 +285,7 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, add_clip])
+        .invoke_handler(tauri::generate_handler![play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, update_track_clip_time, add_clip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

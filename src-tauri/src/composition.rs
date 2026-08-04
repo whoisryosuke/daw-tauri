@@ -118,6 +118,32 @@ pub async fn add_track_clip(
     Err("Couldn't lock composition store".to_string())
 }
 
+/// Update track clip start time by provided time (in seconds)
+#[tauri::command()]
+pub async fn update_track_clip_time(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    id: String,
+    time: f64,
+) -> Result<bool, String> {
+    let store_result = composition_store.lock();
+
+    if let Ok(mut store) = store_result {
+        if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
+            if let Some(current_clip) = track_clips
+                .iter_mut()
+                .find(|track_clip| &track_clip.id == &id)
+            {
+                current_clip.start_time = time;
+                return Ok(true)
+
+            }
+        }
+    }
+
+    return Err("Couldn't update clip time".to_string())
+}
+
 #[tauri::command()]
 pub async fn add_clip(
     composition_store: State<'_, Mutex<CompositionStore>>,

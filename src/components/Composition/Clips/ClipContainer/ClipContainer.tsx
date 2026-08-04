@@ -53,6 +53,9 @@ const ClipContainer = ({
       style={{
         width: width,
       }}
+      transition={{
+        duration: 0,
+      }}
       {...listeners}
       {...attributes}
     >

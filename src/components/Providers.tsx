@@ -30,11 +30,13 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
     if (overId.includes("TRACK_")) {
       let trackData = event.over.data.current as TrackDragEvent;
 
-      // The mouse click position
-      const pointerEvent = event.activatorEvent as PointerEvent | MouseEvent;
       // The draggable element's "initial" position
       const activeRect = event.active.rect.current.initial;
       if (!activeRect) return;
+      const containerRect = event.over.rect;
+
+      // The mouse click position
+      const pointerEvent = event.activatorEvent as PointerEvent | MouseEvent;
 
       // Get the initial grab position relative to the dragged element
       const grabOffsetX = pointerEvent.clientX - activeRect.left;
@@ -49,7 +51,6 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
       const pointerY = finalRect.top + grabOffsetY;
 
       // Calculate relative coordinates to drop container
-      const containerRect = event.over.rect;
       const relativeX = pointerX - containerRect.left;
       const relativeY = pointerY - containerRect.top;
 

@@ -37,7 +37,7 @@ export type Clip = {
 };
 
 export const compositionAtom = atom<CompositionData>({
-  range: [0, 1],
+  range: [0, 5],
 });
 export const tracksAtom = atom<TrackData[]>([]);
 export const trackClipsAtom = atom<TrackClipData[]>([]);
