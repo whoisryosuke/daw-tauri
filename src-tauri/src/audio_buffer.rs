@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-
 pub struct AudioBuffer {
     pub samples: Arc<Vec<f32>>,
     pub sample_rate: u32,

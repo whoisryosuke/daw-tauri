@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use tauri::{State};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Mutex};
+use tauri::State;
 
 type TrackId = String;
 
@@ -22,7 +22,6 @@ pub enum TrackClipType {
     Synthesizer,
 }
 
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TrackClip {
     pub id: String,
@@ -33,21 +32,31 @@ pub struct TrackClip {
 }
 
 impl TrackClip {
-    pub fn new(id: String, clip_id: String, start_time: f64, enabled: bool, track_clip_type: TrackClipType) -> Self {
-        Self { id, clip_id, start_time, enabled, track_clip_type }
+    pub fn new(
+        id: String,
+        clip_id: String,
+        start_time: f64,
+        enabled: bool,
+        track_clip_type: TrackClipType,
+    ) -> Self {
+        Self {
+            id,
+            clip_id,
+            start_time,
+            enabled,
+            track_clip_type,
+        }
     }
 }
 
 // We associate TrackClips with a Track ID (aka String)
 type TrackClips = HashMap<TrackId, Vec<TrackClip>>;
 
-
 #[derive(Clone, Serialize, Deserialize)]
 pub enum ClipType {
     Sample,
     Midi,
 }
-
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Clip {
@@ -61,7 +70,12 @@ pub struct Clip {
 
 impl Clip {
     pub fn new(name: String, duration: f64, clip_type: ClipType, clip_id: String) -> Self {
-        Self { name, duration, clip_type, clip_id }
+        Self {
+            name,
+            duration,
+            clip_type,
+            clip_id,
+        }
     }
 }
 
@@ -80,7 +94,12 @@ impl CompositionStore {
         let track_clips = HashMap::new();
         let clips = HashMap::new();
 
-        Self { range, tracks, track_clips, clips }
+        Self {
+            range,
+            tracks,
+            track_clips,
+            clips,
+        }
     }
 }
 
@@ -95,7 +114,7 @@ pub async fn add_track(
     if let Ok(mut store) = store_result {
         store.tracks.insert(track_id.clone(), track_data);
         store.track_clips.insert(track_id, Vec::new());
-        return Ok(true)
+        return Ok(true);
     }
 
     Err("Couldn't lock composition store".to_string())
@@ -110,9 +129,13 @@ pub async fn add_track_clip(
     let store_result = composition_store.lock();
 
     if let Ok(mut store) = store_result {
-        store.track_clips.entry(track_id).or_insert_with(Vec::new).push(track_data);
-        
-        return Ok(true)
+        store
+            .track_clips
+            .entry(track_id)
+            .or_insert_with(Vec::new)
+            .push(track_data);
+
+        return Ok(true);
     }
 
     Err("Couldn't lock composition store".to_string())
@@ -135,13 +158,12 @@ pub async fn update_track_clip_time(
                 .find(|track_clip| &track_clip.id == &id)
             {
                 current_clip.start_time = time;
-                return Ok(true)
-
+                return Ok(true);
             }
         }
     }
 
-    return Err("Couldn't update clip time".to_string())
+    return Err("Couldn't update clip time".to_string());
 }
 
 #[tauri::command()]
@@ -154,7 +176,7 @@ pub async fn add_clip(
 
     if let Ok(mut store) = store_result {
         store.clips.insert(clip_id, clip_data);
-        return Ok(true)
+        return Ok(true);
     }
 
     Err("Couldn't lock composition store".to_string())

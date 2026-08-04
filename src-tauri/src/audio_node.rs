@@ -30,7 +30,6 @@ impl SampleNode {
 }
 
 impl AudioNode for SampleNode {
-
     fn process(&mut self, output: &mut [f32], current_frame: u64) {
         // Check if node is scheduled to start, if not, do nothing
         if self.start_frame > current_frame {
@@ -71,7 +70,6 @@ impl SynthNode {
 }
 
 impl AudioNode for SynthNode {
-
     fn process(&mut self, output: &mut [f32], current_frame: u64) {
         for sample in output.iter_mut() {
             *sample += self.synth.next() as f32;
@@ -82,7 +80,7 @@ impl AudioNode for SynthNode {
 // impl fmt::Debug for SynthNode {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         f.debug_struct("SynthNode")
-//             .field("finished", &self.finished) 
+//             .field("finished", &self.finished)
 //             .finish()
 //     }
 // }
@@ -95,17 +93,15 @@ pub enum AudioNodeTypes {
 }
 
 impl AudioNodeTypes {
-    
     pub fn process(&mut self, output: &mut [f32], params: u64) {
         match self {
-            AudioNodeTypes::Silence => {},
+            AudioNodeTypes::Silence => {}
             AudioNodeTypes::StaticBuffer(node) => node.process(output, params),
             AudioNodeTypes::Streaming(node) => node.process(output, params),
-            AudioNodeTypes::Synthesizer(node) => node.process(output, params)
+            AudioNodeTypes::Synthesizer(node) => node.process(output, params),
         }
     }
 }
-
 
 /// Effect node that takes input data, processes it, and overrides the output
 pub trait EffectNode {
@@ -120,9 +116,7 @@ pub struct GainNode {
 
 impl GainNode {
     pub fn new(gain: f32) -> Self {
-        Self {
-            gain,
-        }
+        Self { gain }
     }
 }
 

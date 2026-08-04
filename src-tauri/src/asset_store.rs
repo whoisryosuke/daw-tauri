@@ -1,14 +1,16 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use serde::Serialize;
+use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
 #[tauri::command(async)]
-pub async fn get_assets(
-    asset_store: State<'_, AssetStore>,
-) -> Result<Vec<MediaAsset>, String> {
+pub async fn get_assets(asset_store: State<'_, AssetStore>) -> Result<Vec<MediaAsset>, String> {
     println!("Getting assets from store");
-    Ok(asset_store.get_assets()
+    Ok(asset_store
+        .get_assets()
         .into_iter()
         .map(|arc_asset| (*arc_asset).clone())
         .collect())
@@ -22,9 +24,11 @@ pub struct MediaAsset {
 }
 
 impl MediaAsset {
-    pub fn new(name: String, path: String, duration: f64) -> Self{
+    pub fn new(name: String, path: String, duration: f64) -> Self {
         Self {
-            name, path, duration
+            name,
+            path,
+            duration,
         }
     }
 }
@@ -34,10 +38,8 @@ pub struct AssetStore {
 }
 
 impl AssetStore {
-    pub fn new(assets: Mutex<HashMap<String, Arc<MediaAsset>>>,) -> Self {
-        Self {
-            assets
-        }
+    pub fn new(assets: Mutex<HashMap<String, Arc<MediaAsset>>>) -> Self {
+        Self { assets }
     }
     pub fn insert(&mut self, id: String, asset: MediaAsset) {
         let buffer_lock = self.assets.lock();

@@ -18,18 +18,16 @@ use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use std::collections::{HashMap, VecDeque};
 use std::fs::{self, File};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::{
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
-use crate::asset_store::{AssetStore, MediaAsset, get_assets};
+use crate::asset_store::{get_assets, AssetStore, MediaAsset};
 use crate::audio_buffer::AudioBuffer;
-use crate::audio_cache::{AudioCache, get_sample_waveform};
-use crate::audio_engine::{
-    AudioCommand, AudioEngine, AudioEngineMessaging,
-};
+use crate::audio_cache::{get_sample_waveform, AudioCache};
+use crate::audio_engine::{AudioCommand, AudioEngine, AudioEngineMessaging};
 use crate::audio_node::AudioNode;
-use crate::composition::{CompositionStore, add_clip, add_track, add_track_clip, update_track_clip_time};
+use crate::composition::{
+    add_clip, add_track, add_track_clip, update_track_clip_time, CompositionStore,
+};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -71,20 +69,20 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
     let track_id = track.id;
     let track_params = &track.codec_params;
 
-        // Get the duration of the clip
-        let mut track_duration = 0.0;
-        let mut sample_rate = 0;
-        if let (Some(track_sample_rate), Some(n_frames)) = (track_params.sample_rate, track_params.n_frames) {
-            track_duration = n_frames as f64 / track_sample_rate as f64;
-            sample_rate = track_sample_rate;
-        }
+    // Get the duration of the clip
+    let mut track_duration = 0.0;
+    let mut sample_rate = 0;
+    if let (Some(track_sample_rate), Some(n_frames)) =
+        (track_params.sample_rate, track_params.n_frames)
+    {
+        track_duration = n_frames as f64 / track_sample_rate as f64;
+        sample_rate = track_sample_rate;
+    }
 
-        let mut channel_count = 1;
-        if let Some(channels) = track_params.channels {
-            channel_count = channels.count();
-        }
-
-
+    let mut channel_count = 1;
+    if let Some(channels) = track_params.channels {
+        channel_count = channels.count();
+    }
 
     // Create a decoder.
     let mut decoder = symphonia::default::get_codecs()
@@ -175,9 +173,7 @@ async fn play_audio(
 }
 
 #[tauri::command(async)]
-async fn stop_audio(
-    messaging: State<'_, AudioEngineMessaging>,
-) -> Result<bool, bool> {
+async fn stop_audio(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, bool> {
     println!("stopping audio from Rust");
 
     // Get samples from cache
@@ -187,9 +183,7 @@ async fn stop_audio(
 }
 
 #[tauri::command(async)]
-async fn add_synth(
-    messaging: State<'_, AudioEngineMessaging>,
-) -> Result<bool, bool> {
+async fn add_synth(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, bool> {
     println!("adding synth in Rust");
 
     // Get samples from cache
@@ -199,9 +193,7 @@ async fn add_synth(
 }
 
 #[tauri::command(async)]
-async fn get_sample_rate(
-    engine: State<'_, AudioEngine>,
-) -> Result<u32, bool> {
+async fn get_sample_rate(engine: State<'_, AudioEngine>) -> Result<u32, bool> {
     println!("adding synth in Rust");
 
     // Get samples from cache
@@ -211,8 +203,6 @@ async fn get_sample_rate(
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
-
-    
     let resource_path = handle
         .path()
         .resolve("audio", BaseDirectory::Resource)
@@ -221,7 +211,6 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
     let resources = fs::read_dir(resource_path).expect("Couldn't read audio resources folder");
 
     for path_result in resources {
-        
         match path_result {
             Ok(path) => {
                 println!("path found");
@@ -230,21 +219,25 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
                 let file_path_str = file_path.to_str().unwrap();
 
                 println!("Loading asset {}...", file_name);
-                
-                let (sample_data, duration, channel_count, sample_rate) = load_sample_data_from_disk(file_path_str);
 
-                let audio_asset = MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
+                let (sample_data, duration, channel_count, sample_rate) =
+                    load_sample_data_from_disk(file_path_str);
+
+                let audio_asset =
+                    MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
 
                 // Add to appropriate stores
                 asset_store.insert(file_name.to_string(), audio_asset);
-                audio_cache.insert(file_path_str.to_string(), AudioBuffer::new(sample_data, sample_rate, channel_count));
-            },
+                audio_cache.insert(
+                    file_path_str.to_string(),
+                    AudioBuffer::new(sample_data, sample_rate, channel_count),
+                );
+            }
             Err(error) => {
                 println!("error loading audio resource: {}", error);
-            },
+            }
         }
-        
-    } 
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -263,8 +256,12 @@ pub fn run() {
             app.manage(engine);
 
             // Create the messaging layer between UI and AudioEngine
-            let messaging =
-                AudioEngineMessaging::new(app.handle().clone(), producer, waveform_consumer, playback_time.clone());
+            let messaging = AudioEngineMessaging::new(
+                app.handle().clone(),
+                producer,
+                waveform_consumer,
+                playback_time.clone(),
+            );
             app.manage(messaging);
 
             // Setup additional global state
@@ -285,7 +282,18 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![play_audio, stop_audio, add_synth, get_sample_rate, get_assets, get_sample_waveform,add_track,add_track_clip, update_track_clip_time, add_clip])
+        .invoke_handler(tauri::generate_handler![
+            play_audio,
+            stop_audio,
+            add_synth,
+            get_sample_rate,
+            get_assets,
+            get_sample_waveform,
+            add_track,
+            add_track_clip,
+            update_track_clip_time,
+            add_clip
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

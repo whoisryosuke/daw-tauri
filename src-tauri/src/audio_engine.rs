@@ -1,10 +1,15 @@
 use std::{
-    collections::HashMap, println, sync::{
-        Arc, Mutex, atomic::{
+    collections::HashMap,
+    println,
+    sync::{
+        atomic::{
             AtomicBool, AtomicU64, AtomicUsize,
             Ordering::{self, Relaxed},
         },
-    }, thread, time::Duration,
+        Arc, Mutex,
+    },
+    thread,
+    time::Duration,
 };
 
 use cpal::{
@@ -15,12 +20,16 @@ use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter};
 
 use crate::{
-    audio_buffer::AudioBuffer, audio_cache::AudioCache, audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode}, composition::{CompositionStore, TrackClipType}, math::seconds_to_frames,
+    audio_buffer::AudioBuffer,
+    audio_cache::AudioCache,
+    audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
+    composition::{CompositionStore, TrackClipType},
+    math::seconds_to_frames,
 };
 
 pub struct MixerTrack {
     current_node: usize,
-    
+
     nodes: Vec<AudioNodeTypes>,
     fx: Vec<EffectNodeTypes>,
 
@@ -35,7 +44,13 @@ impl MixerTrack {
         let fx = Vec::new();
         let process_buffer = Vec::new();
 
-        Self { current_node: 0usize, nodes, fx, process_buffer, gain: 1.0 }
+        Self {
+            current_node: 0usize,
+            nodes,
+            fx,
+            process_buffer,
+            gain: 1.0,
+        }
     }
 }
 
@@ -73,11 +88,11 @@ impl Mixer {
                     self.playing = true;
                 }
                 AudioCommand::AddSample(track_index, node) => {
-                    self.tracks[track_index].nodes
-                        .push(node);
+                    self.tracks[track_index].nodes.push(node);
                 }
                 AudioCommand::AddSynth(track_index) => {
-                    self.tracks[track_index].nodes
+                    self.tracks[track_index]
+                        .nodes
                         .push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
@@ -86,7 +101,7 @@ impl Mixer {
                 }
                 AudioCommand::Pause => {
                     self.playing = false;
-                    // Clear output buffer to prevent screeching from leftover signals 
+                    // Clear output buffer to prevent screeching from leftover signals
                     output.fill(0.0);
                 }
                 AudioCommand::ClearNodes => {
@@ -118,7 +133,7 @@ impl Mixer {
                 track.process_buffer.resize(output.len(), 0.0);
             }
             track.process_buffer.fill(0.0);
-            
+
             for node in track.nodes.iter_mut() {
                 node.process(&mut track.process_buffer, current_time);
             }
@@ -139,7 +154,6 @@ impl Mixer {
                 output[i] += *sample;
             }
         }
-
 
         // Increment frame timer
         if self.playing {
@@ -184,9 +198,15 @@ impl AudioEngineMessaging {
         }
     }
 
-    pub fn play(&self, composition: &CompositionStore, asset_store: &AudioCache, sample_rate: u32, channel_count: usize) {
+    pub fn play(
+        &self,
+        composition: &CompositionStore,
+        asset_store: &AudioCache,
+        sample_rate: u32,
+        channel_count: usize,
+    ) {
         println!("Playing timeline audio");
-        
+
         // Queue up clips to play
         // Loop through each track in the composition
         for (track_index, (track_id, track)) in composition.tracks.iter().enumerate() {
@@ -210,36 +230,46 @@ impl AudioEngineMessaging {
                                         match asset_store.get_buffer_by_id(&clip.clip_id) {
                                             // Create audio nodes for the mixer to process
                                             Some(clip_data) => {
-                                                let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
-                                                let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), start_time));
+                                                let start_time = seconds_to_frames(
+                                                    track_clip.start_time,
+                                                    sample_rate,
+                                                )
+                                                .unwrap_or(0);
+                                                let node =
+                                                    AudioNodeTypes::StaticBuffer(SampleNode::new(
+                                                        clip_data.samples.clone(),
+                                                        start_time,
+                                                    ));
 
                                                 println!("Creating audio node {}", clip.name);
-                                                
-                                                self.send_command(AudioCommand::AddSample(track_index, node));
 
-                                            },
+                                                self.send_command(AudioCommand::AddSample(
+                                                    track_index,
+                                                    node,
+                                                ));
+                                            }
                                             None => {
-                                                 println!("Couldn't get clip's asset from cache {}", track.name);
-                                                
-                                            },
+                                                println!(
+                                                    "Couldn't get clip's asset from cache {}",
+                                                    track.name
+                                                );
+                                            }
                                         }
-                                    },
+                                    }
                                     None => {
                                         println!("Couldn't get the clip {}", track.name);
-                                    },
+                                    }
                                 }
-                            },
+                            }
                             TrackClipType::Synthesizer => {
                                 self.add_synth(track_index);
-                            },
+                            }
                         }
                     }
-
-                },
+                }
                 None => {
                     println!("Couldn't load the track clips {}", track.name);
-
-                },
+                }
             }
         }
 

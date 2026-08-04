@@ -1,10 +1,12 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
 use serde::Serialize;
+use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
 use crate::{audio_buffer::AudioBuffer, math::map_range};
-
 
 #[tauri::command(async)]
 pub async fn get_sample_waveform(
@@ -18,9 +20,10 @@ pub async fn get_sample_waveform(
     // Reduce to necessary size
     if let Some(buffer) = buffer_option {
         let original_length = buffer.samples.len();
-        
+
         for index in (0..size) {
-            let buffer_index_raw = map_range(index as f64, 0.0, size as f64, 0.0, original_length as f64);
+            let buffer_index_raw =
+                map_range(index as f64, 0.0, size as f64, 0.0, original_length as f64);
             let buffer_index = buffer_index_raw.floor() as usize;
             let waveform_value = buffer.samples[buffer_index];
             waveform.push(waveform_value);
