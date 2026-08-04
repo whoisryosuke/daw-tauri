@@ -10,6 +10,25 @@ import { useAtomValue } from "jotai/react";
 import { compositionAtom } from "../../store/composition";
 import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
 
+const timelineWindowStyle = css({
+  "&::-webkit-scrollbar": {
+    width: "10px",
+  },
+  "&::-webkit-scrollbar-track": {
+    backgroundColor: "gray.3",
+  },
+  "&::-webkit-scrollbar-thumb": {
+    background: {
+      base: "gray.6",
+      _hover: "gray.8",
+    },
+    borderRadius: 1,
+  },
+  "&::-webkit-scrollbar-thumb:hover": {
+    background: "#555",
+  },
+});
+
 const cornerBoxStyle = css({
   borderBottomWidth: "1px",
   borderColor: "gray.5",
@@ -43,6 +62,7 @@ const Composition = (props: Props) => {
           overflowX="scroll"
           position="relative"
           whiteSpace="nowrap"
+          className={timelineWindowStyle}
         >
           <Stack style={{ width }} gap={0}>
             <TimeMarkers containerWidth={width} />
