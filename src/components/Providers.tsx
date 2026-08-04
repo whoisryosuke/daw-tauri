@@ -35,47 +35,58 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
       if (!activeRect) return;
       const containerRect = event.over.rect;
 
-      // The mouse click position
-      const pointerEvent = event.activatorEvent as PointerEvent | MouseEvent;
-
-      // Get the initial grab position relative to the dragged element
-      const grabOffsetX = pointerEvent.clientX - activeRect.left;
-      const grabOffsetY = pointerEvent.clientY - activeRect.top;
-
       // Get the final position of drag element after dragging
       const finalRect = event.active.rect.current.translated;
       if (!finalRect) return;
-
-      // Calculate where the pointer is now (accounting for the grab offset)
-      const pointerX = finalRect.left + grabOffsetX;
-      const pointerY = finalRect.top + grabOffsetY;
-
-      // Calculate relative coordinates to drop container
-      const relativeX = pointerX - containerRect.left;
-      const relativeY = pointerY - containerRect.top;
-
-      const dragPosition: DragPositionData = {
-        x: relativeX,
-        y: relativeY,
-        width: containerRect.width,
-      };
-
       let item = event.active.data.current as BaseDragData;
       switch (item.action) {
         // Handle moving an existing clip
-        case "TRACK_CLIP":
+        case "TRACK_CLIP": {
+          // We want the clip's own top left edge, not the cursor position.
+          // So we just check distance between the two corners (final drag position + container).
           const trackClipData = event.active.data.current as TrackClipDragData;
-          console.log("moving track clip...", trackClipData);
+
+          const relativeX = finalRect.left - containerRect.left;
+          const relativeY = finalRect.top - containerRect.top;
+
+          const dragPosition: DragPositionData = {
+            x: relativeX,
+            y: relativeY,
+            width: containerRect.width,
+          };
           moveTrackClip(trackData.id, trackClipData, dragPosition);
           break;
+        }
 
         // Handle creating a new track clip and adding to track
-        case "CLIP":
+        case "CLIP": {
+          // Drop point should match the cursor position exactly
           const mediaBrowserDragData = event.active.data
             .current as MediaBrowserDragData;
+          const activeRect = event.active.rect.current.initial;
+          if (!activeRect) return;
 
+          // The mouse click position
+          const pointerEvent = event.activatorEvent as
+            | PointerEvent
+            | MouseEvent;
+          const grabOffsetX = pointerEvent.clientX - activeRect.left;
+          const grabOffsetY = pointerEvent.clientY - activeRect.top;
+
+          const pointerX = finalRect.left + grabOffsetX;
+          const pointerY = finalRect.top + grabOffsetY;
+
+          const relativeX = pointerX - containerRect.left;
+          const relativeY = pointerY - containerRect.top;
+
+          const dragPosition: DragPositionData = {
+            x: relativeX,
+            y: relativeY,
+            width: containerRect.width,
+          };
           addClipToTrack(trackData.id, mediaBrowserDragData, dragPosition);
           break;
+        }
       }
     }
   };
