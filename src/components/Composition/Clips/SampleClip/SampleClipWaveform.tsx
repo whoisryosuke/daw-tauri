@@ -26,7 +26,7 @@ const SampleClipWaveform = ({ path, width }: Props) => {
 
   useEffect(() => {
     fetchBuffer();
-  }, [range]);
+  }, [width, range]);
 
   return <Waveform data={buffer} width={width} height={100} />;
 };

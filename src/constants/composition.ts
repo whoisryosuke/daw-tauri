@@ -1,0 +1,1 @@
+export const TIMELINE_DEFAULT_SPACING = 100;

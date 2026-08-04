@@ -43,7 +43,7 @@ const Tracks = ({ containerWidth }: Props) => {
   console.log("tracks", tracks);
 
   return (
-    <Stack flex={1} gap={0}>
+    <Stack width="100%" gap={0}>
       {tracks.map((track) => (
         <TrackComponent key={track.id} {...track} width={containerWidth} />
       ))}

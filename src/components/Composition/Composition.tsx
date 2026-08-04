@@ -6,6 +6,9 @@ import { useMeasure } from "react-use";
 import TimeMarkers from "./TimeMarkers/TimeMarkers";
 import TrackControls from "./TrackControls/TrackControls";
 import { css } from "../../../styled-system/css";
+import { useAtomValue } from "jotai/react";
+import { compositionAtom } from "../../store/composition";
+import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
 
 const cornerBoxStyle = css({
   borderBottomWidth: "1px",
@@ -16,9 +19,12 @@ const cornerBoxStyle = css({
 type Props = {};
 
 const Composition = (props: Props) => {
-  const [ref, { width }] = useMeasure<HTMLDivElement>();
+  const { zoom, range } = useAtomValue(compositionAtom);
+  const timelineDistance = range[1] - range[0];
+  const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
+
   return (
-    <Stack flexDirection="row" flex={1} gap={0}>
+    <Stack flexDirection="row" flex={1} gap={0} minWidth={0} style={{ width }}>
       {/* Left Side */}
       <Stack width="150px" gap={0}>
         <Box
@@ -31,11 +37,20 @@ const Composition = (props: Props) => {
       </Stack>
 
       {/* Timeline */}
-      <Stack ref={ref} flex={1} overflowX="none" position="relative" gap={0}>
-        <TimeMarkers containerWidth={width} />
-        <Tracks containerWidth={width} />
-        <PlaybackHead containerWidth={width} />
-      </Stack>
+      <Box flex={1} overflow="hidden" position="relative" minWidth={0}>
+        <Box
+          minWidth="100%"
+          overflowX="scroll"
+          position="relative"
+          whiteSpace="nowrap"
+        >
+          <Stack style={{ width }} gap={0}>
+            <TimeMarkers containerWidth={width} />
+            <Tracks containerWidth={width} />
+            <PlaybackHead containerWidth={width} />
+          </Stack>
+        </Box>
+      </Box>
     </Stack>
   );
 };
