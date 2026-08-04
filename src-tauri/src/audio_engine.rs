@@ -210,7 +210,7 @@ impl AudioEngineMessaging {
                                         match asset_store.get_buffer_by_id(&clip.clip_id) {
                                             // Create audio nodes for the mixer to process
                                             Some(clip_data) => {
-                                                let start_time = seconds_to_frames(track_clip.start_time, sample_rate, channel_count).unwrap_or(0);
+                                                let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
                                                 let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), start_time));
 
                                                 println!("Creating audio node {}", clip.name);
