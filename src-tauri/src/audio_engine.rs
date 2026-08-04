@@ -109,6 +109,9 @@ impl Mixer {
                         // @TODO: Clear each node and make it silent
                     }
                 }
+                AudioCommand::SetMixerGain(track_index, gain) => {
+                    self.tracks[track_index].gain = gain;
+                }
             }
         }
 
@@ -143,7 +146,7 @@ impl Mixer {
             }
 
             // Any final track operations (e.g. track-based gain)
-            if track.gain != 1.0 {
+            if track.gain < 1.0 {
                 for sample in track.process_buffer.iter_mut() {
                     *sample *= track.gain;
                 }
@@ -177,6 +180,7 @@ pub enum AudioCommand {
     RemoveSynth(usize, usize),
     Pause,
     ClearNodes,
+    SetMixerGain(usize, f32),
 }
 
 pub struct AudioEngineMessaging {
@@ -275,6 +279,11 @@ impl AudioEngineMessaging {
 
         // Tell audio thread to start playing now that it has audio nodes
         self.send_command(AudioCommand::Play);
+    }
+
+    pub fn update_mixer_track_gain(&self, track_index: usize, gain: f32) {
+        // Sync track gain to mixer track
+        self.send_command(AudioCommand::SetMixerGain(track_index, gain));
     }
 
     pub fn send_command(&self, command: AudioCommand) {

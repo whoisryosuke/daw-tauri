@@ -2,17 +2,27 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Mutex};
 use tauri::State;
 
+use crate::audio_engine::AudioEngineMessaging;
+
 type TrackId = String;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Track {
     pub name: TrackId,
+    /// Index for corrresponding MixerTrack on RT thread
+    pub pool_index: usize,
     pub muted: bool,
+    pub gain: f32,
 }
 
 impl Track {
-    pub fn new(name: TrackId, muted: bool) -> Self {
-        Self { name, muted }
+    pub fn new(name: TrackId, muted: bool, pool_index: usize) -> Self {
+        Self {
+            name,
+            pool_index,
+            muted,
+            gain: 1.0,
+        }
     }
 }
 
@@ -107,14 +117,44 @@ impl CompositionStore {
 pub async fn add_track(
     composition_store: State<'_, Mutex<CompositionStore>>,
     track_id: String,
-    track_data: Track,
+    name: String,
 ) -> Result<bool, String> {
     let store_result = composition_store.lock();
 
     if let Ok(mut store) = store_result {
-        store.tracks.insert(track_id.clone(), track_data);
+        let index = store.tracks.len();
+        if index > 20 {
+            return Err("Max 20 tracks".to_string());
+        }
+
+        let new_track = Track::new(name, false, index);
+        store.tracks.insert(track_id.clone(), new_track);
         store.track_clips.insert(track_id, Vec::new());
         return Ok(true);
+    }
+
+    Err("Couldn't lock composition store".to_string())
+}
+
+#[tauri::command()]
+pub async fn update_track_gain(
+    messaging: State<'_, AudioEngineMessaging>,
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    gain: f32,
+) -> Result<bool, String> {
+    let store_result = composition_store.lock();
+
+    if let Ok(mut store) = store_result {
+        if let Some(track) = store.tracks.get_mut(&track_id) {
+            // Update value in Composition store ("Track")
+            track.gain = gain;
+
+            // Sync value to the audio backend ("MixerTrack")
+            messaging.update_mixer_track_gain(track.pool_index, gain);
+
+            return Ok(true);
+        }
     }
 
     Err("Couldn't lock composition store".to_string())
