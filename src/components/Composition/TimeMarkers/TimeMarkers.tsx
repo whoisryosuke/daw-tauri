@@ -8,11 +8,16 @@ import { css } from "../../../../styled-system/css";
 const containerStyle = css({
   width: "100%",
   height: "50px",
+  backgroundColor: "gray.2",
   position: "relative",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "end",
   py: 1,
+
+  borderBottomWidth: "1px",
+  borderColor: "gray.5",
+  borderStyle: "solid",
 });
 
 type Props = {
