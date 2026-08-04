@@ -6,6 +6,8 @@ import {
   useRef,
 } from "react";
 import mapRange from "../../utils/map";
+import { useAtomValue } from "jotai";
+import { colorModeStore } from "../../store/theme";
 
 // Assuming numbers are 0-1
 type GraphData = number[];
@@ -18,12 +20,13 @@ type Props = ComponentPropsWithoutRef<"canvas"> & {
 };
 
 const Waveform = ({ data, animated, fps, ...props }: Props) => {
-  const colorMode = "dark";
-  const bgColor = colorMode === "dark" ? "#111" : "#EEE";
-  const lineColor = colorMode === "dark" ? "blue" : "blue";
+  const colorMode = useAtomValue(colorModeStore);
+
+  const bgColor = colorMode === "dark" ? "#111111ff" : "#fcfcfcff";
+  const lineColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
-    null
+    null,
   );
   const prevTime = useRef(0);
 
@@ -78,7 +81,7 @@ const Waveform = ({ data, animated, fps, ...props }: Props) => {
 
       if (animated) animationRef.current = requestAnimationFrame(draw);
     },
-    [data, lineColor, bgColor, animated, fps]
+    [data, lineColor, bgColor, animated, fps, colorMode],
   );
 
   useEffect(() => {
