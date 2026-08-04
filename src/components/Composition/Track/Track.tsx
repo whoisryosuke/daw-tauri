@@ -32,7 +32,7 @@ const Track = ({ id, name, width }: Props) => {
       width="100%"
       position="relative"
       flexDirection="row"
-      minHeight={100}
+      minHeight={125}
       className={containerStyle}
     >
       <Stack

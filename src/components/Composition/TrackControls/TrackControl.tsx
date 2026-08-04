@@ -6,7 +6,7 @@ import { TrackData } from "../../../store/composition";
 
 const trackControlContainer = css({
   backgroundColor: "gray.3",
-  minHeight: 100,
+  minHeight: 125,
   display: "flex",
   alignItems: "end",
   p: 2,

@@ -1,5 +1,4 @@
 import React, { forwardRef, type ButtonHTMLAttributes } from "react";
-import styles from "./MediaListItem.module.css";
 import type { ListItemData } from "../../../constants/media-list";
 import Icon from "../../primitives/Icon/Icon";
 import { css, cx } from "../../../../styled-system/css";
@@ -13,12 +12,14 @@ const textStyle = css({
 });
 
 const buttonStyle = css({
+  position: "relative",
   background: "transparent",
   border: 0,
   display: "flex",
   px: 2,
   py: 1,
   gap: 1,
+  zIndex: 420,
 
   "& selected": {
     bg: "blue.4",
