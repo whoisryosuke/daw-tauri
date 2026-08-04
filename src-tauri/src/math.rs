@@ -24,7 +24,7 @@ pub fn map_range<Number>(current: Number, in_min: Number, in_max: Number, out_mi
 
 
 /// Convert seconds to frames based on sample rate
-pub fn seconds_to_frames(seconds: f64, sample_rate: u32, channel_count: usize) -> Result<u64, String> {
+pub fn seconds_to_frames(seconds: f64, sample_rate: u32) -> Result<u64, String> {
     if seconds < 0.0 {
         return Err("Seconds cannot be negative".to_string());
     }
@@ -32,7 +32,7 @@ pub fn seconds_to_frames(seconds: f64, sample_rate: u32, channel_count: usize) -
         return Err("Sample rate cannot be zero".to_string());
     }
 
-    let frame_count = (seconds * sample_rate as f64).round();
+    let frame_count = (seconds * sample_rate as f64).round() as u64;
     
-    Ok((frame_count * channel_count as f64) as u64)
+    Ok(frame_count)
 }
