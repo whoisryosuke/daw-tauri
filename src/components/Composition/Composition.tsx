@@ -59,6 +59,7 @@ const Composition = (props: Props) => {
       <Box flex={1} overflow="hidden" position="relative" minWidth={0}>
         <Box
           minWidth="100%"
+          height="100%"
           overflowX="scroll"
           position="relative"
           whiteSpace="nowrap"
