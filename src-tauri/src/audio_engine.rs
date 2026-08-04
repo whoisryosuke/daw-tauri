@@ -213,7 +213,7 @@ impl AudioEngineMessaging {
 
         // Queue up clips to play
         // Loop through each track in the composition
-        for (track_index, (track_id, track)) in composition.tracks.iter().enumerate() {
+        for (track_id, track) in composition.tracks.iter() {
             // TODO: Check if track is muted - don't add if so
             println!("Playing timeline track {}", track.name);
 
@@ -248,7 +248,7 @@ impl AudioEngineMessaging {
                                                 println!("Creating audio node {}", clip.name);
 
                                                 self.send_command(AudioCommand::AddSample(
-                                                    track_index,
+                                                    track.pool_index,
                                                     node,
                                                 ));
                                             }
@@ -266,7 +266,7 @@ impl AudioEngineMessaging {
                                 }
                             }
                             TrackClipType::Synthesizer => {
-                                self.add_synth(track_index);
+                                self.add_synth(track.pool_index);
                             }
                         }
                     }
