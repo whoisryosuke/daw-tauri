@@ -1,6 +1,6 @@
 import React, { type PropsWithChildren } from "react";
 import type { Clip, TrackClipData } from "../../../../store/composition";
-import { Stack } from "../../../../../styled-system/jsx";
+import { Box, Stack } from "../../../../../styled-system/jsx";
 import Text from "../../../ui/Typography/Text";
 import { css, cx } from "../../../../../styled-system/css";
 import { ColorPalette } from "../../../../../styled-system/tokens";
@@ -8,12 +8,29 @@ import { motion } from "motion/react";
 import { useDraggable } from "@dnd-kit/core";
 import { TrackClipDragData } from "../../../../constants/drag";
 
+const textStyle = css({
+  fontSize: 1,
+  width: "100%",
+  height: "25px",
+
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  px: 2,
+  py: 1,
+
+  color: "colorPalette.8",
+  backgroundColor: "colorPalette.2",
+});
+
 const containerStyle = css({
-  position: "relative",
+  position: "absolute",
+  top: 0,
+  left: 0,
   display: "flex",
   flexDirection: "column",
 
-  backgroundColor: "colorPalette.2",
+  backgroundColor: "gray.1",
 });
 
 type Props = Clip & {
@@ -44,7 +61,6 @@ const ClipContainer = ({
   });
   return (
     <motion.div
-      ref={setNodeRef}
       className={cx(containerStyle, colorStyle)}
       animate={{
         x: x + (transform ? transform.x : 0),
@@ -59,8 +75,18 @@ const ClipContainer = ({
       {...listeners}
       {...attributes}
     >
-      <Text size="1">{name}</Text>
+      <Text className={textStyle}>{name}</Text>
       {children}
+      <Box
+        ref={setNodeRef}
+        position="absolute"
+        inset="0"
+        pointerEvents="none"
+        backgroundColor={{
+          base: "transparent",
+          _hover: "gray.2",
+        }}
+      />
     </motion.div>
   );
 };
