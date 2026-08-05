@@ -44,3 +44,13 @@ export const compositionAtom = atom<CompositionData>({
 export const tracksAtom = atom<TrackData[]>([]);
 export const trackClipsAtom = atom<TrackClipData[]>([]);
 export const clipsAtom = atom<Clip[]>([]);
+
+/**
+ * Time in frames
+ */
+export const playbackTimeAtom = atom(0);
+/**
+ * Sample rate synced from backend.
+ * Used to derive time in seconds and PPQ.
+ */
+export const sampleRateAtom = atom(44100);

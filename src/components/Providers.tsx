@@ -13,6 +13,7 @@ import {
   TrackClipDragData,
   TrackDragEvent,
 } from "../constants/drag";
+import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
 
 type Props = {};
 
@@ -92,7 +93,10 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
   };
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <StoreProvider store={store}>{children}</StoreProvider>
+      <StoreProvider store={store}>
+        {children}
+        <PlaybackTimeSync />
+      </StoreProvider>
     </DndContext>
   );
 };

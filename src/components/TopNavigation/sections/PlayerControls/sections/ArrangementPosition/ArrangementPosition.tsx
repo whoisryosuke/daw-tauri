@@ -1,5 +1,11 @@
+import { useAtomValue } from "jotai";
 import { css } from "../../../../../../../styled-system/css";
 import { Stack } from "../../../../../../../styled-system/jsx";
+import {
+  playbackTimeAtom,
+  sampleRateAtom,
+} from "../../../../../../store/composition";
+import { DEFAULT_PPQ, getMusicalTime } from "../../../../../../utils/music";
 
 const inputStyle = css({
   width: "5ch",
@@ -22,11 +28,23 @@ const inputStyle = css({
 type Props = {};
 
 const ArrangementPosition = (props: Props) => {
+  const sampleRate = useAtomValue(sampleRateAtom);
+  const playbackTime = useAtomValue(playbackTimeAtom);
+
+  // Convert frame-based time to a musical notation (aka "PPQ"-based)
+  const [bars, beats, ticks] = getMusicalTime(
+    playbackTime,
+    sampleRate,
+    120,
+    DEFAULT_PPQ,
+    4,
+  );
+
   return (
     <Stack flexDir="row" gap="0">
       <input
         className={inputStyle}
-        value={1}
+        value={bars}
         style={{
           borderTopRightRadius: 0,
           borderBottomRightRadius: 0,
@@ -34,14 +52,14 @@ const ArrangementPosition = (props: Props) => {
       />
       <input
         className={inputStyle}
-        value={1}
+        value={beats}
         style={{
           borderRadius: 0,
         }}
       />
       <input
         className={inputStyle}
-        value={1}
+        value={ticks}
         style={{
           borderTopLeftRadius: 0,
           borderBottomLeftRadius: 0,
