@@ -32,7 +32,7 @@ const Track = ({ id, name, width }: Props) => {
       width="100%"
       position="relative"
       flexDirection="row"
-      minHeight={125}
+      minHeight={125 + 4} // 4 = gap for border clip
       className={containerStyle}
     >
       <Stack

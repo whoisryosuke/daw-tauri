@@ -30,7 +30,12 @@ const containerStyle = css({
   display: "flex",
   flexDirection: "column",
 
-  backgroundColor: "gray.1",
+  backgroundColor: "colorPalette.alpha-1",
+  borderColor: "colorPalette.alpha-4",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderRadius: 2,
+  overflow: "hidden",
 });
 
 type Props = Clip & {
@@ -64,7 +69,7 @@ const ClipContainer = ({
       className={cx(containerStyle, colorStyle)}
       animate={{
         x: x + (transform ? transform.x : 0),
-        y: transform ? transform.y : 0,
+        y: transform ? 1 + transform.y : 1,
       }}
       style={{
         width: width,

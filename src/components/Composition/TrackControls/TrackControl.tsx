@@ -9,7 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 const trackControlContainer = css({
   backgroundColor: "gray.3",
-  minHeight: 125,
+  minHeight: 125 + 4,
   display: "flex",
   justifyContent: "end",
   p: 2,

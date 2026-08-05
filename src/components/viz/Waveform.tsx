@@ -22,7 +22,7 @@ type Props = ComponentPropsWithoutRef<"canvas"> & {
 const Waveform = ({ data, animated, fps, ...props }: Props) => {
   const colorMode = useAtomValue(colorModeStore);
 
-  const bgColor = colorMode === "dark" ? "#111111ff" : "#fcfcfcff";
+  const bgColor = colorMode === "dark" ? "rgba(17, 17, 17, 0.0)" : "#fcfcfcff";
   const lineColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
