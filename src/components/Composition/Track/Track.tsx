@@ -6,10 +6,13 @@ import { Box, Stack } from "../../../../styled-system/jsx";
 import Heading from "../../ui/Typography/Heading";
 import { css, cx } from "../../../../styled-system/css";
 
+const MIN_HEIGHT = 129; // 125 + 4 = gap for border clip
+
 const containerStyle = css({
   borderBottomWidth: "1px",
   borderColor: "gray.5",
   borderStyle: "solid",
+  minHeight: MIN_HEIGHT,
 });
 
 type Props = TrackData & {
@@ -32,7 +35,6 @@ const Track = ({ id, name, width }: Props) => {
       width="100%"
       position="relative"
       flexDirection="row"
-      minHeight={125 + 4} // 4 = gap for border clip
       className={containerStyle}
     >
       <Stack
