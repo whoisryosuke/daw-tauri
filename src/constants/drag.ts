@@ -22,8 +22,7 @@ export type BaseDragData = {
 export type MediaBrowserDragData = BaseDragData & {
   id: string;
   name: string;
-  type: Clip["type"];
-  duration: number;
+  data: any;
 };
 
 export type TrackDragEvent = {

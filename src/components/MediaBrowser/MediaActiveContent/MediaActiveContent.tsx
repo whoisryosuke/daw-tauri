@@ -1,63 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { JSX } from "react";
 import ExpandablePanel from "../../primitives/ExpandablePanel/ExpandablePanel";
-import type { ListItemData } from "../../../constants/media-list";
-import MediaListItem from "../MediaListItem/MediaListItem";
-import MediaListItemDraggable, {
-  type MediaListItemDraggableProps,
-} from "../MediaListItem/MediaListItemDraggable";
-import { invoke } from "@tauri-apps/api/core";
+import type { MediaBrowserCategory } from "../../../constants/media-list";
+import MediaSampleList from "./content/MediaSampleList";
+import MediaEffectList from "./content/MediaEffectList";
 
-const DEBUG_LIST: MediaListItemDraggableProps[] = [
-  {
-    title: "FF8 Magic",
-    id: "music/ff8-magic.mp3",
-    icon: "samples",
-    type: "Sample",
-    duration: 1.0,
-    dragType: "CLIP",
-  },
-];
-
-type MediaAsset = {
-  name: string;
-  path: string;
-  duration: number;
+const CONTENT_COMPONENTS: Record<
+  MediaBrowserCategory,
+  (props: any) => JSX.Element
+> = {
+  samples: MediaSampleList,
+  effects: MediaEffectList,
 };
 
-type Props = {};
+type Props = {
+  content: MediaBrowserCategory;
+};
 
-const MediaActiveContent = (props: Props) => {
-  const [assets, setAssets] = useState<MediaListItemDraggableProps[]>([]);
-
-  // Get assets from Rust backend
-  const fetchAssets = async () => {
-    const newAssets = (await invoke("get_assets")) as MediaAsset[];
-    console.log("new assets", newAssets);
-
-    const newMediaList = newAssets.map(
-      (newAsset) =>
-        ({
-          title: newAsset.name,
-          id: newAsset.path,
-          icon: "samples",
-          type: "Sample",
-          duration: newAsset.duration,
-          dragType: "CLIP",
-        }) as MediaListItemDraggableProps,
-    );
-
-    setAssets(newMediaList);
-  };
-
-  useEffect(() => {
-    fetchAssets();
-  }, []);
+const MediaActiveContent = ({ content }: Props) => {
+  const ContentComponent = CONTENT_COMPONENTS[content];
 
   return (
     <ExpandablePanel>
-      {assets.map((listItem) => (
-        <MediaListItemDraggable key={listItem.id} {...listItem} />
-      ))}
+      <ContentComponent />
     </ExpandablePanel>
   );
 };

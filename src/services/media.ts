@@ -8,6 +8,9 @@ import {
   compositionAtom,
   TrackClipData,
   trackClipsAtom,
+  TrackEffect,
+  trackEffectsAtom,
+  tracksAtom,
   type Clip,
   type ClipType,
 } from "../store/composition";
@@ -21,6 +24,7 @@ import {
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
 import mapRange from "../utils/map";
+import { EffectName } from "../constants/effects";
 
 export type DragPositionData = {
   x: number;
@@ -32,7 +36,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
   console.log("item", item);
   // Check if it exists in cache first
   let exists: Sample | MIDISequence | null | undefined;
-  switch (item.type) {
+  switch (item.data.type) {
     case "Sample":
       const allSamples = store.get(samplesAtom);
       const sampleExists = allSamples.find((sample) => sample.path == item.id);
@@ -50,7 +54,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
   }
   if (exists) return exists;
 
-  switch (item.type) {
+  switch (item.data.type) {
     case "Sample":
       const newSample: Sample = {
         // We currently store samples by file path - but ideally should not
@@ -58,7 +62,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
         id: item.id,
         name: item.name,
         path: item.id,
-        duration: item.duration,
+        duration: item.data.duration,
       };
 
       store.set(samplesAtom, (prev) => [...prev, newSample]);
@@ -123,7 +127,7 @@ export const addClipToTrack = async (
   }
 
   // Create a clip if necessary
-  const clip = await createMediaClip(media, item.type);
+  const clip = await createMediaClip(media, item.data.type);
 
   // Send to Rust backend
   // Rust is strict on data structure so we remove props before sending
@@ -195,4 +199,14 @@ export const moveTrackClip = async (
       return stateClip;
     }),
   );
+};
+
+export const addEffectToTrack = (trackId: string, effect: EffectName) => {
+  const newItem: TrackEffect = {
+    id: generateSimpleHash(),
+    trackId,
+    effect,
+  };
+
+  store.set(trackEffectsAtom, (state) => [...state, newItem]);
 };

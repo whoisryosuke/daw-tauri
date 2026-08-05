@@ -4,6 +4,7 @@ import { store } from "../store/store";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
   addClipToTrack,
+  addEffectToTrack,
   DragPositionData,
   moveTrackClip,
 } from "../services/media";
@@ -14,6 +15,7 @@ import {
   TrackDragEvent,
 } from "../constants/drag";
 import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
+import { EffectName } from "../constants/effects";
 
 type Props = {};
 
@@ -87,6 +89,14 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
           };
           addClipToTrack(trackData.id, mediaBrowserDragData, dragPosition);
           break;
+        }
+
+        // Handle dropping an new effect on a track
+        case "EFFECT": {
+          console.log("[DND] User dropped an effect", item, trackData);
+          const effectItem = event.active.data.current as MediaBrowserDragData;
+
+          addEffectToTrack(trackData.id, effectItem.id as EffectName);
         }
       }
     }

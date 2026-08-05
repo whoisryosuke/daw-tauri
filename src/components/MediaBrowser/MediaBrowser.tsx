@@ -24,7 +24,7 @@ const MediaBrowser = (props: Props) => {
           selectedListItem={selectedListItem}
           handleSelectedItem={handleSelectedItem}
         />
-        <MediaActiveContent />
+        <MediaActiveContent content={selectedListItem} />
       </Stack>
     </Stack>
   );

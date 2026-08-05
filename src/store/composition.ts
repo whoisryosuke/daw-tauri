@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { EffectName } from "../constants/effects";
 
 export type CompositionData = {
   // Start and end range for the composition area (and all tracks inside)
@@ -10,6 +11,12 @@ export type TrackData = {
   id: string;
   name: string;
   muted: boolean;
+};
+
+export type TrackEffect = {
+  id: string;
+  trackId: string;
+  effect: EffectName;
 };
 
 export type TrackClipType = "Sample" | "Synthesizer";
@@ -43,6 +50,7 @@ export const compositionAtom = atom<CompositionData>({
 });
 export const tracksAtom = atom<TrackData[]>([]);
 export const trackClipsAtom = atom<TrackClipData[]>([]);
+export const trackEffectsAtom = atom<TrackEffect[]>([]);
 export const clipsAtom = atom<Clip[]>([]);
 
 /**

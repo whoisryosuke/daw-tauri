@@ -9,31 +9,32 @@ import {
   MediaBrowserDragTypes,
 } from "../../../constants/drag";
 import type { Clip } from "../../../store/composition";
-import type { ListItemData } from "../../../constants/media-list";
+import type {
+  ListItemData,
+  MediaBrowserCategory,
+  MediaBrowserListData,
+} from "../../../constants/media-list";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
-export type MediaListItemDraggableProps = ListItemData & {
+export type MediaListItemDraggableProps = MediaBrowserListData & {
   dragType: MediaBrowserDragTypes;
-  type: Clip["type"];
-  duration: number;
+  data: any; // @TODO: Should switch based off drag type provided.
   style?: CSSProperties;
 };
 
 const MediaListItemDraggable = ({
   dragType = "CLIP",
-  type,
-  duration,
+  data,
   style,
   ...props
 }: MediaListItemDraggableProps) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `${dragType}_${props.id}`,
     data: {
+      ...data,
       id: props.id,
       name: props.title,
-      type,
-      duration,
       action: dragType,
     } as MediaBrowserDragData,
   });

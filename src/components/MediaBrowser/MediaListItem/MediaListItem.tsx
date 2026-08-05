@@ -52,13 +52,13 @@ const buttonStyle = cva({
 export type MediaListItemProps = MediaBrowserListData &
   ButtonHTMLAttributes<HTMLButtonElement> & {
     selected?: boolean;
-    handleSelectedItem: (newItem: MediaBrowserCategory) => void;
+    handleSelectedItem?: (newItem: MediaBrowserCategory) => void;
   };
 
 const MediaListItem = forwardRef<HTMLButtonElement, MediaListItemProps>(
   ({ id, title, icon, selected, handleSelectedItem, ...props }, ref) => {
     const handleClick = () => {
-      handleSelectedItem(id);
+      if (handleSelectedItem) handleSelectedItem(id);
     };
     return (
       <button
