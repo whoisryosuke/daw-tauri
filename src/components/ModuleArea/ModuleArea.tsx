@@ -14,7 +14,6 @@ const ModuleArea = (props: Props) => {
       <Stack flexDir="row" gap="0">
         <Waveform />
         <DebugSynthControls />
-        <DebugPlaybackTime />
       </Stack>
     </Box>
   );
