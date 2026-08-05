@@ -1,7 +1,16 @@
-import React, { forwardRef, type ButtonHTMLAttributes } from "react";
-import type { ListItemData } from "../../../constants/media-list";
+import React, {
+  Dispatch,
+  forwardRef,
+  SetStateAction,
+  type ButtonHTMLAttributes,
+} from "react";
+import type {
+  ListItemData,
+  MediaBrowserCategory,
+  MediaBrowserListData,
+} from "../../../constants/media-list";
 import Icon from "../../primitives/Icon/Icon";
-import { css, cx } from "../../../../styled-system/css";
+import { css, cva, cx } from "../../../../styled-system/css";
 
 const textStyle = css({
   maxWidth: "20ch",
@@ -11,36 +20,51 @@ const textStyle = css({
   alignItems: "center",
 });
 
-const buttonStyle = css({
-  position: "relative",
-  background: "transparent",
-  border: 0,
-  display: "flex",
-  px: 2,
-  py: 1,
-  gap: 1,
-  zIndex: 420,
+const buttonStyle = cva({
+  base: {
+    position: "relative",
+    background: "transparent",
+    border: 0,
+    display: "flex",
+    alignItems: "center",
+    px: 2,
+    py: 1,
+    gap: 1,
+    zIndex: 420,
 
-  "& selected": {
-    bg: "blue.4",
+    fontSize: 2,
+    color: "gray.11",
+
+    "& svg": {
+      flexShrink: 0,
+    },
   },
-
-  "& svg": {
-    flexShrink: 0,
+  variants: {
+    selected: {
+      true: {
+        bg: "blue.4",
+        color: "blue.12",
+      },
+    },
   },
 });
 
-export type MediaListItemProps = ListItemData &
+export type MediaListItemProps = MediaBrowserListData &
   ButtonHTMLAttributes<HTMLButtonElement> & {
     selected?: boolean;
+    handleSelectedItem: (newItem: MediaBrowserCategory) => void;
   };
 
 const MediaListItem = forwardRef<HTMLButtonElement, MediaListItemProps>(
-  ({ id, title, icon, selected, ...props }, ref) => {
+  ({ id, title, icon, selected, handleSelectedItem, ...props }, ref) => {
+    const handleClick = () => {
+      handleSelectedItem(id);
+    };
     return (
       <button
         ref={ref}
-        className={cx(buttonStyle, selected && "selected")}
+        className={buttonStyle({ selected })}
+        onClick={handleClick}
         {...props}
       >
         <Icon icon={icon} />

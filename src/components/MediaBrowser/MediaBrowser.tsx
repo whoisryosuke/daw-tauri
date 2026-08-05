@@ -3,12 +3,18 @@ import MediaSearch from "./MediaSearch/MediaSearch";
 import MediaList from "./MediaList/MediaList";
 import MediaActiveContent from "./MediaActiveContent/MediaActiveContent";
 import { Stack } from "../../../styled-system/jsx";
+import { MediaBrowserCategory } from "../../constants/media-list";
 
 type Props = {};
 
 const MediaBrowser = (props: Props) => {
-  const [selectedListItem, setSelectedListItem] = useState("");
+  const [selectedListItem, setSelectedListItem] =
+    useState<MediaBrowserCategory>("samples");
   const [search, setSearch] = useState("");
+
+  const handleSelectedItem = (newItem: MediaBrowserCategory) => {
+    setSelectedListItem(newItem);
+  };
 
   return (
     <Stack bg="gray.2">
@@ -16,7 +22,7 @@ const MediaBrowser = (props: Props) => {
       <Stack flexDir="row" flex={1}>
         <MediaList
           selectedListItem={selectedListItem}
-          setSelectedListItem={setSelectedListItem}
+          handleSelectedItem={handleSelectedItem}
         />
         <MediaActiveContent />
       </Stack>
