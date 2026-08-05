@@ -6,6 +6,7 @@ import type {
 import {
   clipsAtom,
   compositionAtom,
+  selectedTrackAtom,
   TrackClipData,
   trackClipsAtom,
   TrackEffect,
@@ -113,6 +114,10 @@ function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
   return startTime;
 }
 
+export const setSelectedTrack = (trackId: string) => {
+  store.set(selectedTrackAtom, trackId);
+};
+
 export const addClipToTrack = async (
   id: string,
   item: MediaBrowserDragData,
@@ -152,6 +157,9 @@ export const addClipToTrack = async (
   // Send to Rust backend
   const { track_id: trackId, ...track_data } = newTrackClip;
   invoke("add_track_clip", { trackId: id, trackData: track_data });
+
+  // Mark track as selected
+  setSelectedTrack(trackId);
 
   // Add to store
   store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);
@@ -202,11 +210,17 @@ export const moveTrackClip = async (
 };
 
 export const addEffectToTrack = (trackId: string, effect: EffectName) => {
+  // Mark track as selected
+  setSelectedTrack(trackId);
+
+  // Add effect to track (frontend store)
   const newItem: TrackEffect = {
     id: generateSimpleHash(),
     trackId,
     effect,
   };
-
   store.set(trackEffectsAtom, (state) => [...state, newItem]);
+
+  // Add effect to backend
+  // @TODO: Implement backend handler
 };

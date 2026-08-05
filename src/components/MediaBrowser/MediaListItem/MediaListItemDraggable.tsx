@@ -32,7 +32,7 @@ const MediaListItemDraggable = ({
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `${dragType}_${props.id}`,
     data: {
-      ...data,
+      data,
       id: props.id,
       name: props.title,
       action: dragType,

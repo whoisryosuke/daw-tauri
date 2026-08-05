@@ -1,30 +1,50 @@
 import React, { useState } from "react";
 import { Box, Stack } from "../../../../styled-system/jsx";
 import Text from "../../ui/Typography/Text";
-import { css, cx } from "../../../../styled-system/css";
+import { css, cva, cx } from "../../../../styled-system/css";
 import { TrackData } from "../../../store/composition";
 import Slider from "../../ui/Slider/Slider";
 import { SliderRootProps } from "@base-ui/react/slider";
 import { invoke } from "@tauri-apps/api/core";
+import { setSelectedTrack } from "../../../services/media";
 
-const trackControlContainer = css({
-  backgroundColor: "gray.3",
-  minHeight: 125 + 4,
-  display: "flex",
-  justifyContent: "end",
-  p: 2,
-  borderBottomWidth: "1px",
-  borderColor: "gray.5",
-  borderStyle: "solid",
+const trackControlContainer = cva({
+  base: {
+    backgroundColor: "gray.3",
+    minHeight: 125 + 4,
+    display: "flex",
+    justifyContent: "end",
+    p: 2,
+    borderBottomWidth: "1px",
+    borderColor: "gray.5",
+    color: "gray.9",
+    borderStyle: "solid",
+
+    _motionSafe: {
+      transitionProperty: "background-color, color, border-color",
+      transitionTimingFunction: "ease-in-out",
+      transitionDuration: "slow",
+    },
+  },
+  variants: {
+    selected: {
+      true: {
+        backgroundColor: "blue.3",
+        borderColor: "blue.5",
+        color: "blue.9",
+      },
+    },
+  },
 });
 const headingStyle = css({
   fontSize: 1,
-  color: "gray.9",
 });
 
-type Props = TrackData & {};
+type Props = TrackData & {
+  selected: boolean;
+};
 
-const TrackControl = ({ id, name }: Props) => {
+const TrackControl = ({ id, name, selected }: Props) => {
   const [volume, setVolume] = useState(1.0);
 
   const handleVolumeChange: SliderRootProps["onValueChange"] = (newVal) => {
@@ -36,8 +56,15 @@ const TrackControl = ({ id, name }: Props) => {
     }
   };
 
+  const handleSelectTrack = () => {
+    setSelectedTrack(id);
+  };
+
   return (
-    <Stack className={trackControlContainer}>
+    <Stack
+      className={trackControlContainer({ selected })}
+      onClick={handleSelectTrack}
+    >
       <Text className={headingStyle}>{name}</Text>
       <Box px={1} width="100%">
         <Slider

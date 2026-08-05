@@ -48,9 +48,18 @@ export const compositionAtom = atom<CompositionData>({
   range: [0, 100],
   zoom: 1,
 });
+
+/**
+ * TRACKS
+ */
 export const tracksAtom = atom<TrackData[]>([]);
 export const trackClipsAtom = atom<TrackClipData[]>([]);
 export const trackEffectsAtom = atom<TrackEffect[]>([]);
+export const selectedTrackAtom = atom<string>("");
+
+/**
+ * CLIPS
+ */
 export const clipsAtom = atom<Clip[]>([]);
 
 /**
