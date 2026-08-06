@@ -25,7 +25,7 @@ import {
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
 import mapRange from "../utils/map";
-import { EffectName } from "../constants/effects";
+import { EFFECT_LIST } from "../constants/effects";
 
 export type DragPositionData = {
   x: number;
@@ -209,18 +209,33 @@ export const moveTrackClip = async (
   );
 };
 
-export const addEffectToTrack = (trackId: string, effect: EffectName) => {
+export const addEffectToTrack = (
+  trackId: string,
+  effect: TrackEffect["effect"],
+) => {
   // Mark track as selected
   setSelectedTrack(trackId);
 
   // Add effect to track (frontend store)
-  const newItem: TrackEffect = {
-    id: generateSimpleHash(),
+  const id = generateSimpleHash();
+  const newItem = {
+    id,
     trackId,
     effect,
-  };
+    data: {
+      ...EFFECT_LIST[effect].data,
+    },
+  } as TrackEffect;
   store.set(trackEffectsAtom, (state) => [...state, newItem]);
 
   // Add effect to backend
-  // @TODO: Implement backend handler
+  invoke("add_track_effect", {
+    trackId: trackId,
+    effectId: id,
+    effectData: {
+      [EFFECT_LIST[effect].name]: {
+        ...EFFECT_LIST[effect].data,
+      },
+    },
+  });
 };

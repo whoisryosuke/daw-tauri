@@ -15,7 +15,7 @@ import {
   TrackDragEvent,
 } from "../constants/drag";
 import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
-import { EffectName } from "../constants/effects";
+import { TrackEffect } from "../store/composition";
 
 type Props = {};
 
@@ -96,7 +96,10 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
           console.log("[DND] User dropped an effect", item, trackData);
           const effectItem = event.active.data.current as MediaBrowserDragData;
 
-          addEffectToTrack(trackData.id, effectItem.id as EffectName);
+          addEffectToTrack(
+            trackData.id,
+            effectItem.id as TrackEffect["effect"],
+          );
         }
       }
     }

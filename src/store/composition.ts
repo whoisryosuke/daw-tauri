@@ -1,5 +1,4 @@
 import { atom } from "jotai";
-import { EffectName } from "../constants/effects";
 
 export type CompositionData = {
   // Start and end range for the composition area (and all tracks inside)
@@ -13,11 +12,29 @@ export type TrackData = {
   muted: boolean;
 };
 
-export type TrackEffect = {
+// Effects for tracks
+export type GainData = {
+  gain: number;
+};
+export type GainEffect = {
+  effect: "gain";
+  data: GainData;
+};
+
+export type PanData = {
+  balance: number;
+};
+export type PanEffect = {
+  effect: "pan";
+  data: PanData;
+};
+
+export type BaseTrackEffect = {
   id: string;
   trackId: string;
-  effect: EffectName;
 };
+
+export type TrackEffect = BaseTrackEffect & (GainEffect | PanEffect);
 
 export type TrackClipType = "Sample" | "Synthesizer";
 

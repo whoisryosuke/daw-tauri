@@ -1,17 +1,17 @@
 import React from "react";
 import Waveform from "../Waveform";
 import DebugSynthControls from "../debug/DebugSynthControls";
-import DebugPlaybackTime from "../debug/DebugPlaybackTime";
 import { Box, Stack } from "../../../styled-system/jsx";
-import Heading from "../ui/Typography/Heading";
+import EffectModules from "./EffectModules/EffectModules";
 
 type Props = {};
 
 const ModuleArea = (props: Props) => {
   return (
     <Box minHeight="200px">
-      <Stack flexDir="row" gap="0">
+      <Stack flexDir="row" gap="0" height="100%" p={2}>
         <Waveform />
+        <EffectModules />
         {/* <DebugSynthControls /> */}
       </Stack>
     </Box>

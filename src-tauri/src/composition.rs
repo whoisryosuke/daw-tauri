@@ -2,7 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Mutex};
 use tauri::State;
 
-use crate::audio_engine::AudioEngineMessaging;
+use crate::{
+    audio_engine::AudioEngineMessaging,
+    audio_node::{
+        CreateEffectNodeRequest, EffectNode, EffectNodePayload, EffectNodeTypes, GainNode,
+    },
+};
 
 type TrackId = String;
 
@@ -25,6 +30,19 @@ impl Track {
         }
     }
 }
+
+pub struct TrackEffect {
+    pub track_id: TrackId,
+    pub effect: EffectNodeTypes,
+}
+
+impl TrackEffect {
+    pub fn new(track_id: TrackId, effect: EffectNodeTypes) -> Self {
+        Self { track_id, effect }
+    }
+}
+
+pub type TrackEffects = HashMap<String, TrackEffect>;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum TrackClipType {
@@ -95,6 +113,7 @@ pub struct CompositionStore {
     pub tracks: HashMap<String, Track>,
     pub track_clips: TrackClips,
     pub clips: HashMap<String, Clip>,
+    pub track_effects: TrackEffects,
 }
 
 impl CompositionStore {
@@ -103,12 +122,14 @@ impl CompositionStore {
         let tracks = HashMap::new();
         let track_clips = HashMap::new();
         let clips = HashMap::new();
+        let track_effects = HashMap::new();
 
         Self {
             range,
             tracks,
             track_clips,
             clips,
+            track_effects,
         }
     }
 }
@@ -155,6 +176,63 @@ pub async fn update_track_gain(
 
             return Ok(true);
         }
+    }
+
+    Err("Couldn't lock composition store".to_string())
+}
+
+#[tauri::command()]
+pub async fn add_track_effect(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    effect_id: String,
+    effect_data: EffectNodePayload,
+) -> Result<bool, String> {
+    let store_result = composition_store.lock();
+
+    if let Ok(mut store) = store_result {
+        let node;
+        match effect_data {
+            EffectNodePayload::Gain { gain } => node = EffectNodeTypes::Gain(GainNode::new(gain)),
+        }
+
+        let track_effect = TrackEffect::new(track_id, node);
+
+        store.track_effects.insert(effect_id, track_effect);
+
+        return Ok(true);
+    }
+
+    Err("Couldn't lock composition store".to_string())
+}
+
+#[tauri::command()]
+pub async fn update_track_effect(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    effect_id: String,
+    effect_data: EffectNodePayload,
+) -> Result<bool, String> {
+    let store_result = composition_store.lock();
+
+    if let Ok(mut store) = store_result {
+        // Find the track effect in store
+        let effect_result = store.track_effects.get_mut(&effect_id);
+
+        match effect_result {
+            Some(track_effect) => {
+                // Update the node based on data provided by user
+                match effect_data {
+                    EffectNodePayload::Gain { gain } => {
+                        // Update the existing gain node
+                        let EffectNodeTypes::Gain(ref mut gain_node) = track_effect.effect;
+                        gain_node.set_gain(gain);
+                    }
+                }
+            }
+            None => todo!(),
+        }
+
+        return Ok(true);
     }
 
     Err("Couldn't lock composition store".to_string())

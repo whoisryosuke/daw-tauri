@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use dasp_signal::{self as signal, ConstHz, Signal, Sine};
+use serde::{Deserialize, Serialize};
 // use std::fmt;
 
 /// Audio node that transmits sample data (e.g. static buffers, virtual synths, etc)
@@ -118,6 +119,9 @@ impl GainNode {
     pub fn new(gain: f32) -> Self {
         Self { gain }
     }
+    pub fn set_gain(&mut self, gain: f32) {
+        self.gain = gain;
+    }
 }
 
 impl EffectNode for GainNode {
@@ -128,6 +132,18 @@ impl EffectNode for GainNode {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum EffectNodePayload {
+    Gain { gain: f32 },
+    // Reverb { decay: f32, mix: f32 },
+    // Delay { delay_time: f32, feedback: f32 },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateEffectNodeRequest {
+    pub node_type: EffectNodePayload,
+}
+
 pub enum EffectNodeTypes {
     Gain(GainNode),
 }
@@ -136,6 +152,12 @@ impl EffectNodeTypes {
     pub fn process(&mut self, output: &mut [f32], current_frame: u64) {
         match self {
             EffectNodeTypes::Gain(node) => node.process(output, current_frame),
+        }
+    }
+
+    pub fn from_payload(payload: EffectNodePayload) -> Self {
+        match payload {
+            EffectNodePayload::Gain { gain } => EffectNodeTypes::Gain(GainNode::new(gain)),
         }
     }
 }
