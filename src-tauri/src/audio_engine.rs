@@ -17,7 +17,7 @@ use cpal::{
     SampleRate,
 };
 use crossbeam::channel::{Receiver, Sender};
-use tauri::{AppHandle, Emitter};
+use tauri::{window::Effect, AppHandle, Emitter};
 
 use crate::{
     audio_buffer::AudioBuffer,
@@ -89,6 +89,9 @@ impl Mixer {
                 }
                 AudioCommand::AddSample(track_index, node) => {
                     self.tracks[track_index].nodes.push(node);
+                }
+                AudioCommand::AddEffect(track_index, node) => {
+                    self.tracks[track_index].fx.push(node);
                 }
                 AudioCommand::AddSynth(track_index) => {
                     self.tracks[track_index]
@@ -177,6 +180,7 @@ pub enum AudioCommand {
     Play,
     AddSample(usize, AudioNodeTypes),
     AddSynth(usize),
+    AddEffect(usize, EffectNodeTypes),
     RemoveSynth(usize, usize),
     Pause,
     ClearNodes,
@@ -270,6 +274,20 @@ impl AudioEngineMessaging {
                             }
                         }
                     }
+
+                    // Handle any effects
+                    let effects = composition
+                        .track_effects
+                        .iter()
+                        .filter(|(_, item)| &item.track_id == track_id);
+                    effects.for_each(|(_, item)| {
+                        println!("Creating effect node");
+
+                        self.send_command(AudioCommand::AddEffect(
+                            track.pool_index,
+                            item.effect.clone(),
+                        ));
+                    });
                 }
                 None => {
                     println!("Couldn't load the track clips {}", track.name);

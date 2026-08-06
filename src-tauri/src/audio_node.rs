@@ -144,6 +144,7 @@ pub struct CreateEffectNodeRequest {
     pub node_type: EffectNodePayload,
 }
 
+#[derive(Clone)]
 pub enum EffectNodeTypes {
     Gain(GainNode),
 }
