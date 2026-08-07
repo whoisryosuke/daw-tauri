@@ -23,7 +23,7 @@ use crate::{
     audio_buffer::AudioBuffer,
     audio_cache::AudioCache,
     audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
-    composition::{CompositionStore, TrackClipType},
+    composition::{CompositionStore, Track, TrackClip, TrackClipType},
     math::seconds_to_frames,
 };
 
@@ -206,6 +206,8 @@ impl AudioEngineMessaging {
         }
     }
 
+    /// Play the composition.
+    /// Loops through all tracks and queues track clips as audio nodes.
     pub fn play(
         &self,
         composition: &CompositionStore,
@@ -222,77 +224,35 @@ impl AudioEngineMessaging {
             println!("Playing timeline track {}", track.name);
 
             // Grab clips inside that track (tecnically clip "references" by ID)
-            match composition.track_clips.get(track_id) {
-                Some(track_clips) => {
-                    println!("Got track clips {}", track.name);
-                    // Loop over each "track clip" then find actual audio clip
-                    for track_clip in track_clips {
-                        println!("Got track clips {}", track_clip.start_time);
-                        // Handle each clip type (samples vs synths)
-                        match track_clip.track_clip_type {
-                            TrackClipType::Sample => {
-                                println!("Got track clips {}", track_clip.clip_id);
-                                // Find the actual clip data from the clip cache
-                                match composition.clips.get(&track_clip.clip_id) {
-                                    Some(clip) => {
-                                        match asset_store.get_buffer_by_id(&clip.clip_id) {
-                                            // Create audio nodes for the mixer to process
-                                            Some(clip_data) => {
-                                                let start_time = seconds_to_frames(
-                                                    track_clip.start_time,
-                                                    sample_rate,
-                                                )
-                                                .unwrap_or(0);
-                                                let node =
-                                                    AudioNodeTypes::StaticBuffer(SampleNode::new(
-                                                        clip_data.samples.clone(),
-                                                        start_time,
-                                                    ));
+            let Some(track_clips) = composition.track_clips.get(track_id) else {
+                println!("Couldn't load the track clips {}", track.name);
+                continue;
+            };
 
-                                                println!("Creating audio node {}", clip.name);
-
-                                                self.send_command(AudioCommand::AddSample(
-                                                    track.pool_index,
-                                                    node,
-                                                ));
-                                            }
-                                            None => {
-                                                println!(
-                                                    "Couldn't get clip's asset from cache {}",
-                                                    track.name
-                                                );
-                                            }
-                                        }
-                                    }
-                                    None => {
-                                        println!("Couldn't get the clip {}", track.name);
-                                    }
-                                }
-                            }
-                            TrackClipType::Synthesizer => {
-                                self.add_synth(track.pool_index);
-                            }
-                        }
+            println!("Got track clips {}", track.name);
+            // Loop over each "track clip" then find actual audio clip
+            for track_clip in track_clips {
+                match track_clip.track_clip_type {
+                    TrackClipType::Sample => {
+                        self.queue_sample(track, track_clip, composition, asset_store, sample_rate)
                     }
-
-                    // Handle any effects
-                    let effects = composition
-                        .track_effects
-                        .iter()
-                        .filter(|(_, item)| &item.track_id == track_id);
-                    effects.for_each(|(_, item)| {
-                        println!("Creating effect node");
-
-                        self.send_command(AudioCommand::AddEffect(
-                            track.pool_index,
-                            item.effect.clone(),
-                        ));
-                    });
-                }
-                None => {
-                    println!("Couldn't load the track clips {}", track.name);
+                    TrackClipType::Synthesizer => self.add_synth(track.pool_index),
                 }
             }
+
+            // Handle any effects
+            let effects = composition
+                .track_effects
+                .iter()
+                .filter(|(_, item)| &item.track_id == track_id);
+            effects.for_each(|(_, item)| {
+                println!("Creating effect node");
+
+                self.send_command(AudioCommand::AddEffect(
+                    track.pool_index,
+                    item.effect.clone(),
+                ));
+            });
         }
 
         // Tell audio thread to start playing now that it has audio nodes
@@ -313,6 +273,33 @@ impl AudioEngineMessaging {
         let result = self.producer.try_send(command);
 
         println!("command result: {:?}", result);
+    }
+
+    /// Create audio node from track clip using asset store data,
+    /// then add node to appropriate mixer track via audio command.
+    fn queue_sample(
+        &self,
+        track: &Track,
+        track_clip: &TrackClip,
+        composition: &CompositionStore,
+        asset_store: &AudioCache,
+        sample_rate: u32,
+    ) {
+        let Some(clip) = composition.clips.get(&track_clip.clip_id) else {
+            println!("Couldn't get the clip {}", track.name);
+            return;
+        };
+        let Some(clip_data) = asset_store.get_buffer_by_id(&clip.clip_id) else {
+            println!("Couldn't get clip's asset from cache {}", track.name);
+            return;
+        };
+
+        let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
+        let node =
+            AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), start_time));
+
+        println!("Creating audio node {}", clip.name);
+        self.send_command(AudioCommand::AddSample(track.pool_index, node));
     }
 
     pub fn add_synth(&self, track_index: usize) {
