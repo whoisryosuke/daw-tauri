@@ -48,7 +48,11 @@ export const dialogRecipe = sva({
       borderRadius: "4",
       boxShadow: "0.25rem 0.25rem 0 rgba(0,0,0,0.12)",
       _motionSafe: {
-        transition: "scale 100ms ease-out, opacity 100ms ease-out",
+        transition: "transform 100ms ease-out, opacity 100ms ease-out",
+      },
+      "&[data-starting-style], &[data-ending-style]": {
+        opacity: 0,
+        transform: "translate(-50%, -50%) scale(0.98)",
       },
     },
     title: {

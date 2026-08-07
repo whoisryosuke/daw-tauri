@@ -102,15 +102,17 @@ const dropdownPattern = sva({
       outline: "0",
       borderWidth: "1.5px",
       borderStyle: "solid",
-      borderColor: "gray.11",
+      borderColor: "gray.4",
       borderRadius: "3",
-      backgroundColor: "gray.1",
+      backgroundColor: "gray.2",
       backgroundClip: "padding-box",
       color: "gray.11",
       minWidth: "var(--anchor-width)",
       transformOrigin: "var(--transform-origin)",
       // boxShadow: "0.25rem 0.25rem 0 rgb(0 0 0 / 12%)",
-      transition: "transform 100ms ease-out, opacity 100ms ease-out",
+      _motionSafe: {
+        transition: "transform 100ms ease-out, opacity 100ms ease-out",
+      },
       "&[data-starting-style], &[data-ending-style]": {
         opacity: 0,
         transform: "scale(0.98) translateY(-20px)",
@@ -147,9 +149,23 @@ const dropdownPattern = sva({
       alignItems: "center",
       cursor: "default",
       userSelect: "none",
-      "&[data-highlighted]": {
-        backgroundColor: "gray.4",
+      backgroundColor: {
+        base: "gray.2",
+        _hover: "gray.3",
+      },
+
+      "&[data-selected]": {
+        backgroundColor: {
+          base: "blue.4",
+          _hover: "blue.4",
+        },
         color: "gray.12",
+      },
+
+      _motionSafe: {
+        transitionProperty: "background-color, color",
+        transitionTimingFunction: "ease-in-out",
+        transitionDuration: "faster",
       },
     },
     itemIndicator: {
