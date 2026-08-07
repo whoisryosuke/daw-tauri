@@ -92,7 +92,6 @@ type Props = {};
 
 const SettingsModal = (props: Props) => {
   const [open, setModalVisible] = useAtom(settingsModalVisibleStore);
-  const colorMode = useAtomValue(colorModeStore);
   const styles = dialogRecipe();
 
   const handleClose = () => {
@@ -104,9 +103,7 @@ const SettingsModal = (props: Props) => {
       <Dialog.Portal>
         <Dialog.Backdrop className={styles.backdrop} onClick={handleClose} />
 
-        <Dialog.Popup
-          className={cx(colorMode == "dark" && "dark", styles.popup)}
-        >
+        <Dialog.Popup className={styles.popup}>
           {/* Content Wrapper */}
           <div className={styles.contentWrapper}>
             <Dialog.Title className={styles.title}>Settings</Dialog.Title>
