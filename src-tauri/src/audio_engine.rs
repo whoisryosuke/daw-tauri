@@ -14,10 +14,10 @@ use std::{
 
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    SampleRate,
+    Device, SampleRate, SupportedStreamConfig,
 };
 use crossbeam::channel::{Receiver, Sender};
-use tauri::{window::Effect, AppHandle, Emitter};
+use tauri::{window::Effect, AppHandle, Emitter, Manager};
 
 use crate::{
     audio_buffer::AudioBuffer,
@@ -355,19 +355,35 @@ pub struct AudioEngine {
     /**
      * The audio stream. This has to stay alive to ensure sound continues playing.
      */
-    stream: cpal::Stream,
+    stream: Option<cpal::Stream>,
 
     pub config: cpal::SupportedStreamConfig,
 
     pub selected_device: String,
+
+    consumer: Receiver<AudioCommand>,
+    playback_time: Arc<AtomicU64>,
+    waveform_producer: Sender<f32>,
 }
 
 impl AudioEngine {
-    pub fn new(
-        mut consumer: Receiver<AudioCommand>,
-        mut waveform_producer: Sender<f32>,
-        playback_time: Arc<AtomicU64>,
-    ) -> Self {
+    pub fn new(app: AppHandle) -> Self {
+        // Allocate a ring buffer to hold commands for the audio stream
+        let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
+        let (waveform_producer, waveform_consumer) = crossbeam::channel::bounded::<f32>(128);
+
+        // Allocate atomic memory for some shared state (like playback time)
+        let playback_time = Arc::new(AtomicU64::new(0));
+
+        // Create the messaging layer between UI and AudioEngine
+        let messaging = AudioEngineMessaging::new(
+            app.app_handle().clone(),
+            producer,
+            waveform_consumer,
+            playback_time.clone(),
+        );
+        app.manage(messaging);
+
         // Set up CPAL.
         let host = cpal::default_host();
         let device = host
@@ -379,19 +395,41 @@ impl AudioEngine {
         let config = device
             .default_output_config()
             .expect("Couldn't load config");
+
+        let mut engine = Self {
+            config,
+            stream: None,
+            selected_device,
+            consumer,
+            playback_time,
+            waveform_producer,
+        };
+
+        engine.create_audio_stream(device);
+
+        engine
+    }
+
+    fn create_audio_stream(&mut self, device: Device) -> Result<(), Box<dyn std::error::Error>> {
+        // Create a new audio config for this specific device
+        self.config = device.default_output_config().map_err(|e| e.to_string())?;
+
         // Create a mixer
         let mut mixer = Mixer::new();
 
-        let SampleRate(sample_rate) = config.sample_rate();
+        let SampleRate(sample_rate) = self.config.sample_rate();
 
-        let channels = config.channels() as usize;
+        let channels = self.config.channels() as usize;
+        let mut cloned_consumer = self.consumer.clone();
+        let mut waveform_producer = self.waveform_producer.clone();
+        let playback_time_clone = self.playback_time.clone();
 
-        let stream = match config.sample_format() {
+        let stream = match self.config.sample_format() {
             cpal::SampleFormat::F32 => device
                 .build_output_stream(
-                    &config.clone().into(),
+                    &self.config.clone().into(),
                     move |output: &mut [f32], _| {
-                        let playback_time_clone = playback_time.clone();
+                        let playback_time_local_clone = playback_time_clone.clone();
                         // Run the mixer which runs any commands and
                         // combines samples into one signal,
                         // then overrides the output signal with it
@@ -399,9 +437,9 @@ impl AudioEngine {
                             output,
                             channels,
                             sample_rate,
-                            &mut consumer,
+                            &mut cloned_consumer,
                             &mut waveform_producer,
-                            playback_time_clone,
+                            playback_time_local_clone,
                         );
                     },
                     |err| eprintln!("couldn't build audio stream: {err}"),
@@ -423,10 +461,32 @@ impl AudioEngine {
 
         stream.play().expect("Couldn't play");
 
-        Self {
-            config,
-            stream,
-            selected_device,
-        }
+        self.stream = Some(stream);
+
+        Ok(())
+    }
+
+    pub fn create_stream_for_device_name(
+        &mut self,
+        device_name: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let host = cpal::default_host();
+
+        // Find the device by name...
+        let device = host
+            .output_devices()
+            .map_err(|e| e.to_string())?
+            .find(|d| d.name().unwrap_or("".to_string()) == device_name)
+            .ok_or("Device not found")?;
+
+        // Recreate the stream using the engine's existing context
+        self.create_audio_stream(device)
+            .map_err(|e| e.to_string())?;
+
+        self.selected_device = device_name;
+
+        println!("Changed audio device to {}", self.selected_device);
+
+        Ok(())
     }
 }

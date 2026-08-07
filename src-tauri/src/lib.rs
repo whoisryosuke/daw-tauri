@@ -161,13 +161,16 @@ async fn play_audio(
     messaging: State<'_, AudioEngineMessaging>,
     asset_store: State<'_, AudioCache>,
     composition: State<'_, Mutex<CompositionStore>>,
-    engine: State<'_, AudioEngine>,
-) -> Result<bool, bool> {
+    engine: State<'_, Mutex<AudioEngine>>,
+) -> Result<bool, String> {
+    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
     println!("loading audio from Rust");
 
     let sample_rate = engine.config.sample_rate().0;
     let channel_count = engine.config.channels() as usize;
-    let store = &composition.try_lock().unwrap();
+    let store = &composition
+        .lock()
+        .map_err(|_| "Couldn't lock composition")?;
 
     messaging.play(store, &asset_store, sample_rate, channel_count);
 
@@ -195,7 +198,8 @@ async fn add_synth(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, b
 }
 
 #[tauri::command(async)]
-async fn get_sample_rate(engine: State<'_, AudioEngine>) -> Result<u32, bool> {
+async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, String> {
+    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
     println!("adding synth in Rust");
 
     // Get samples from cache
@@ -217,9 +221,10 @@ pub struct OutputDeviceResponse {
 
 #[tauri::command(async)]
 async fn get_output_devices(
-    engine: State<'_, AudioEngine>,
+    engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<OutputDeviceResponse, String> {
     println!("getting output devices from cpal");
+    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
 
     let selected_device = &engine.selected_device;
 
@@ -241,6 +246,20 @@ async fn get_output_devices(
     };
 
     Ok(response)
+}
+
+#[tauri::command]
+fn change_audio_device(
+    engine: State<'_, Mutex<AudioEngine>>,
+    device_name: String, // The name of the device selected in UI
+) -> Result<(), String> {
+    let mut engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+
+    engine
+        .create_stream_for_device_name(device_name)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
@@ -285,25 +304,9 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            // Allocate a ring buffer to hold commands for the audio stream
-            let (producer, consumer) = crossbeam::channel::bounded::<AudioCommand>(128);
-            let (waveform_producer, waveform_consumer) = crossbeam::channel::bounded::<f32>(128);
-
-            // Allocate atomic memory for some shared state (like playback time)
-            let playback_time = Arc::new(AtomicU64::new(0));
-
             // Set up audio backend (aka CPAL)
-            let engine = AudioEngine::new(consumer, waveform_producer, playback_time.clone());
-            app.manage(engine);
-
-            // Create the messaging layer between UI and AudioEngine
-            let messaging = AudioEngineMessaging::new(
-                app.handle().clone(),
-                producer,
-                waveform_consumer,
-                playback_time.clone(),
-            );
-            app.manage(messaging);
+            let engine = AudioEngine::new(app.handle().clone());
+            app.manage(Mutex::new(engine));
 
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
@@ -325,6 +328,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_output_devices,
+            change_audio_device,
             play_audio,
             stop_audio,
             add_synth,

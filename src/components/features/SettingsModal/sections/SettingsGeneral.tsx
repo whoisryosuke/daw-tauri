@@ -16,10 +16,15 @@ type Props = {};
 const SettingsGeneral = (props: Props) => {
   const [outputDevices, setOutputDevices] = useState<DropdownItems>([]);
   const [selectedOutputDevice, setSelectedOutputDevice] = useState("");
-  const onCategoryChange: SelectRootProps<string, false>["onValueChange"] = (
-    newValue,
-  ) => {
-    if (newValue) setSelectedOutputDevice(newValue as string);
+  const onCategoryChange: SelectRootProps<
+    string,
+    false
+  >["onValueChange"] = async (newValue) => {
+    if (newValue) {
+      setSelectedOutputDevice(newValue as string);
+
+      await invoke("change_audio_device", { deviceName: newValue });
+    }
   };
 
   useEffect(() => {
