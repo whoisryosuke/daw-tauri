@@ -207,11 +207,21 @@ async fn get_sample_rate(engine: State<'_, AudioEngine>) -> Result<u32, bool> {
 #[derive(Serialize)]
 pub struct DeviceInfo {
     name: String,
+    selected: bool,
+}
+#[derive(Serialize)]
+pub struct OutputDeviceResponse {
+    devices: Vec<DeviceInfo>,
+    selected: String,
 }
 
 #[tauri::command(async)]
-async fn get_output_devices() -> Result<Vec<DeviceInfo>, String> {
+async fn get_output_devices(
+    engine: State<'_, AudioEngine>,
+) -> Result<OutputDeviceResponse, String> {
     println!("getting output devices from cpal");
+
+    let selected_device = &engine.selected_device;
 
     // Set up CPAL.
     let host = cpal::default_host();
@@ -221,10 +231,16 @@ async fn get_output_devices() -> Result<Vec<DeviceInfo>, String> {
 
     for device in devices {
         let name = device.name().map_err(|e| e.to_string())?.to_string();
-        device_list.push(DeviceInfo { name });
+        let selected = *selected_device == name;
+        device_list.push(DeviceInfo { name, selected });
     }
 
-    Ok(device_list)
+    let response = OutputDeviceResponse {
+        devices: device_list,
+        selected: engine.selected_device.clone(),
+    };
+
+    Ok(response)
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {

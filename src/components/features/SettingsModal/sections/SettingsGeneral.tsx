@@ -6,8 +6,10 @@ import Dropdown, {
   DropdownItems,
 } from "../../../ui/Dropdown/Dropdown";
 import { invoke } from "@tauri-apps/api/core";
+import Text from "../../../ui/Typography/Text";
 
-type OutputDeviceResponse = { name: string }[];
+type DeviceResponse = { name: string };
+type OutputDeviceResponse = { devices: DeviceResponse[]; selected: string };
 
 type Props = {};
 
@@ -22,13 +24,13 @@ const SettingsGeneral = (props: Props) => {
 
   useEffect(() => {
     const getOutputDevices = async () => {
-      const devices = (await invoke(
+      const response = (await invoke(
         "get_output_devices",
       )) as OutputDeviceResponse;
-      console.log("get_output_devices", devices);
+      console.log("get_output_devices", response);
 
-      if (Array.isArray(devices)) {
-        const newOutputDevices = devices.map(
+      if (Array.isArray(response.devices)) {
+        const newOutputDevices = response.devices.map(
           (device) =>
             ({
               label: device.name,
@@ -38,6 +40,8 @@ const SettingsGeneral = (props: Props) => {
 
         setOutputDevices(newOutputDevices);
       }
+
+      setSelectedOutputDevice(response.selected);
     };
 
     getOutputDevices();
@@ -45,6 +49,7 @@ const SettingsGeneral = (props: Props) => {
 
   return (
     <Stack p={2}>
+      <Text>Output Device</Text>
       <Dropdown
         name="c"
         value={selectedOutputDevice}

@@ -358,6 +358,8 @@ pub struct AudioEngine {
     stream: cpal::Stream,
 
     pub config: cpal::SupportedStreamConfig,
+
+    pub selected_device: String,
 }
 
 impl AudioEngine {
@@ -371,6 +373,8 @@ impl AudioEngine {
         let device = host
             .default_output_device()
             .expect("no output device available");
+
+        let selected_device = device.name().unwrap_or("Default Device".to_string());
 
         let config = device
             .default_output_config()
@@ -419,6 +423,10 @@ impl AudioEngine {
 
         stream.play().expect("Couldn't play");
 
-        Self { config, stream }
+        Self {
+            config,
+            stream,
+            selected_device,
+        }
     }
 }
