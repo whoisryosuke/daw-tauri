@@ -5,24 +5,9 @@ import Composition from "./components/Composition/Composition";
 import ModuleArea from "./components/ModuleArea/ModuleArea";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Stack } from "../styled-system/jsx";
+import { invoke } from "@tauri-apps/api/core";
 
 function App() {
-  const [count, setCount] = useState(0);
-  const listenRef = useRef<UnlistenFn | null>(null);
-
-  useEffect(() => {
-    let startListen = async () => {
-      listenRef.current = await listen("waveform", (event) => {
-        // console.log("waveform event", event);
-      });
-    };
-    startListen();
-
-    return () => {
-      listenRef.current?.();
-    };
-  }, []);
-
   return (
     <Stack height="100dvh" bg="gray.1" overflow="hidden">
       <TopNavigation />

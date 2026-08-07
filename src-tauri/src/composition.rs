@@ -132,6 +132,24 @@ impl CompositionStore {
             track_effects,
         }
     }
+
+    /// Resets the store to its initial state by overwriting it with a new instance.
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+}
+
+#[tauri::command()]
+pub async fn reset_composition(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+) -> Result<(), String> {
+    let mut store = composition_store
+        .lock()
+        .map_err(|_| "Couldn't lock composition store")?;
+
+    store.reset();
+
+    Ok(())
 }
 
 #[tauri::command()]

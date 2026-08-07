@@ -1,6 +1,7 @@
 import { Menu, MenuItem, Submenu } from "@tauri-apps/api/menu";
 import { store } from "../store/store";
 import { settingsModalVisibleStore } from "../store/app";
+import { newFile } from "./composition";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -12,9 +13,7 @@ const fileSubmenu = await Submenu.new({
     await MenuItem.new({
       id: "new",
       text: "New Composition",
-      action: () => {
-        console.log("New clicked");
-      },
+      action: newFile,
     }),
     await MenuItem.new({
       id: "open",

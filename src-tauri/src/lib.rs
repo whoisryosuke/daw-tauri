@@ -27,8 +27,8 @@ use crate::audio_cache::{get_sample_waveform, AudioCache};
 use crate::audio_engine::{AudioCommand, AudioEngine, AudioEngineMessaging};
 use crate::audio_node::AudioNode;
 use crate::composition::{
-    add_clip, add_track, add_track_clip, add_track_effect, update_track_clip_time,
-    update_track_effect, update_track_gain, CompositionStore,
+    add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
+    update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
@@ -335,6 +335,7 @@ pub fn run() {
             get_sample_rate,
             get_assets,
             get_sample_waveform,
+            reset_composition,
             add_track,
             update_track_gain,
             add_track_effect,

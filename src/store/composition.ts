@@ -1,4 +1,6 @@
 import { atom } from "jotai";
+import { generateSimpleHash } from "../utils/hash";
+import { invoke } from "@tauri-apps/api/core";
 
 export type CompositionData = {
   // Start and end range for the composition area (and all tracks inside)
@@ -61,15 +63,40 @@ export type Clip = {
   clip_id: string;
 };
 
-export const compositionAtom = atom<CompositionData>({
-  range: [0, 100],
-  zoom: 1,
-});
+export function generateCompositionDefaultData() {
+  return {
+    range: [0, 100],
+    zoom: 1,
+  } as CompositionData;
+}
+
+export const compositionAtom = atom<CompositionData>(
+  generateCompositionDefaultData(),
+);
 
 /**
  * TRACKS
  */
-export const tracksAtom = atom<TrackData[]>([]);
+export const generateTrackData = (name = "Track 1"): TrackData => ({
+  id: generateSimpleHash(),
+  name,
+  muted: false,
+});
+
+export function generateTracksDefaultData() {
+  let newTracks: TrackData[] = [];
+  new Array(3).fill(0).forEach((_, index) => {
+    const newTrack = generateTrackData(`Track ${index + 1}`);
+    newTracks.push(newTrack);
+
+    // Update backend with new track
+    invoke("add_track", { trackId: newTrack.id, name: newTrack.name });
+  });
+
+  return newTracks;
+}
+
+export const tracksAtom = atom<TrackData[]>(generateTracksDefaultData());
 export const trackClipsAtom = atom<TrackClipData[]>([]);
 export const trackEffectsAtom = atom<TrackEffect[]>([]);
 export const selectedTrackAtom = atom<string>("");
