@@ -16,6 +16,7 @@ import {
 } from "../constants/drag";
 import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
 import { TrackEffect } from "../store/composition";
+import SettingsModal from "./features/SettingsModal/SettingsModal";
 
 type Props = {};
 
@@ -108,6 +109,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
     <DndContext onDragEnd={handleDragEnd}>
       <StoreProvider store={store}>
         {children}
+        <SettingsModal />
         <PlaybackTimeSync />
       </StoreProvider>
     </DndContext>

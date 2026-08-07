@@ -8,6 +8,7 @@ mod composition;
 mod math;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use serde::Serialize;
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::{FormatOptions, Track};
@@ -203,6 +204,29 @@ async fn get_sample_rate(engine: State<'_, AudioEngine>) -> Result<u32, bool> {
     Ok(sample_rate)
 }
 
+#[derive(Serialize)]
+pub struct DeviceInfo {
+    name: String,
+}
+
+#[tauri::command(async)]
+async fn get_output_devices() -> Result<Vec<DeviceInfo>, String> {
+    println!("getting output devices from cpal");
+
+    // Set up CPAL.
+    let host = cpal::default_host();
+    let devices = host.output_devices().map_err(|e| e.to_string())?;
+
+    let mut device_list = Vec::new();
+
+    for device in devices {
+        let name = device.name().map_err(|e| e.to_string())?.to_string();
+        device_list.push(DeviceInfo { name });
+    }
+
+    Ok(device_list)
+}
+
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
     let resource_path = handle
         .path()
@@ -284,6 +308,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            get_output_devices,
             play_audio,
             stop_audio,
             add_synth,
