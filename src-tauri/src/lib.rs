@@ -200,7 +200,6 @@ async fn add_synth(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, b
 #[tauri::command(async)]
 async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, String> {
     let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
-    println!("adding synth in Rust");
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate().0;
