@@ -28,4 +28,5 @@ crossbeam = "0.8.4"
 dasp = "0.11.0"
 dasp_signal = "0.11.0"
 slab = "0.4.12"
+midir = "0.11.0"
 

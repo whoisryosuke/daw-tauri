@@ -5,6 +5,7 @@ mod audio_engine;
 mod audio_node;
 mod composition;
 mod math;
+mod midi;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
