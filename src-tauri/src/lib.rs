@@ -30,6 +30,9 @@ use crate::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
     update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
+use crate::midi::{
+    connect_to_midi_input_device, get_midi_input_devices, start_midi_connection, MIDIStore,
+};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -312,6 +315,7 @@ pub fn run() {
             let mut audio_cache = AudioCache::new(Mutex::new(HashMap::new()));
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
             let composition_store = Mutex::new(CompositionStore::new());
+            let midi_store = Mutex::new(MIDIStore::new());
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
@@ -319,6 +323,7 @@ pub fn run() {
             app.manage(audio_cache);
             app.manage(asset_store);
             app.manage(composition_store);
+            app.manage(midi_store);
 
             println!("app setup success");
 
@@ -334,6 +339,7 @@ pub fn run() {
             get_sample_rate,
             get_assets,
             get_sample_waveform,
+            // Composition
             reset_composition,
             add_track,
             update_track_gain,
@@ -341,7 +347,11 @@ pub fn run() {
             update_track_effect,
             add_track_clip,
             update_track_clip_time,
-            add_clip
+            add_clip,
+            // MIDI
+            get_midi_input_devices,
+            start_midi_connection,
+            connect_to_midi_input_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

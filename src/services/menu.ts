@@ -2,6 +2,7 @@ import { Menu, MenuItem, Submenu } from "@tauri-apps/api/menu";
 import { store } from "../store/store";
 import { settingsModalVisibleStore } from "../store/app";
 import { newFile } from "./composition";
+import { startMIDIConnection } from "./midi";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -46,9 +47,22 @@ const editSubmenu = await Submenu.new({
   ],
 });
 
+const midiSubmenu = await Submenu.new({
+  text: "MIDI",
+  items: [
+    await MenuItem.new({
+      id: "midi-connect",
+      text: "Connect to default MIDI Device",
+      action: () => {
+        startMIDIConnection();
+      },
+    }),
+  ],
+});
+
 export async function createDesktopMenu() {
   const menu = await Menu.new({
-    items: [fileSubmenu, editSubmenu],
+    items: [fileSubmenu, editSubmenu, midiSubmenu],
   });
 
   // If a window was not created with an explicit menu or had one set explicitly,
