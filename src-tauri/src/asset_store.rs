@@ -16,11 +16,15 @@ pub async fn get_assets(asset_store: State<'_, AssetStore>) -> Result<Vec<MediaA
         .collect())
 }
 
+/// Media that's been loaded from disk.
+/// For example, audio files get stored as a `MediaAsset` and buffer data in `AudioCache`.
+/// This allows us to have other types of "media", like MIDI
 #[derive(Clone, Serialize)]
 pub struct MediaAsset {
     name: String,
     path: String,
     duration: f64,
+    // @TODO: Add an enum for "type"
 }
 
 impl MediaAsset {
@@ -33,6 +37,9 @@ impl MediaAsset {
     }
 }
 
+/// Store for media loaded from disk (like audio files, MIDI, etc).
+/// This only contains the file path for reference (to load into a specific store like `AudioCache`)
+/// and other metadata that can be shared between all media types.
 pub struct AssetStore {
     assets: Mutex<HashMap<String, Arc<MediaAsset>>>,
 }

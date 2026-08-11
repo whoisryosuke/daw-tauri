@@ -36,6 +36,7 @@ pub async fn get_sample_waveform(
 /// The filename of the audio sample
 type AssetId = String;
 
+/// Cache for audio buffers that are loaded to disk and associated with an audio file (aka `MediaAsset`).
 pub struct AudioCache {
     buffers: Mutex<HashMap<AssetId, Arc<AudioBuffer>>>,
 }
