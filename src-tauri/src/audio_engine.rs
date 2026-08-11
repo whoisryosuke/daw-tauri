@@ -17,6 +17,7 @@ use cpal::{
     Device, SampleRate, SupportedBufferSize, SupportedStreamConfig,
 };
 use crossbeam::channel::{Receiver, Sender};
+use slab::Slab;
 use tauri::{window::Effect, AppHandle, Emitter, Manager};
 
 use crate::{
@@ -27,11 +28,13 @@ use crate::{
     math::seconds_to_frames,
 };
 
+const MAX_CALLBACK_FRAMES: usize = 8192;
+
 pub struct MixerTrack {
     current_node: usize,
 
-    nodes: Vec<AudioNodeTypes>,
-    fx: Vec<EffectNodeTypes>,
+    nodes: Slab<AudioNodeTypes>,
+    fx: Slab<EffectNodeTypes>,
 
     /// Scratch buffer to do track-specific operations on signal
     process_buffer: Vec<f32>,
@@ -39,10 +42,10 @@ pub struct MixerTrack {
 }
 
 impl MixerTrack {
-    pub fn new() -> Self {
-        let nodes = Vec::new();
-        let fx = Vec::new();
-        let process_buffer = Vec::new();
+    pub fn new(buffer_size: usize) -> Self {
+        let nodes = Slab::with_capacity(24);
+        let fx = Slab::with_capacity(24);
+        let process_buffer = Vec::with_capacity(buffer_size);
 
         Self {
             current_node: 0usize,
@@ -66,7 +69,7 @@ pub struct Mixer {
 
 impl Mixer {
     pub fn new(buffer_size: usize) -> Self {
-        let mut tracks = std::array::from_fn(|_| MixerTrack::new());
+        let mut tracks = std::array::from_fn(|_| MixerTrack::new(buffer_size));
 
         // Pre-allocate memory for each track based on audio device's max buffer size
         for track in tracks.iter_mut() {
@@ -97,15 +100,15 @@ impl Mixer {
                     self.playing = true;
                 }
                 AudioCommand::AddSample(track_index, node) => {
-                    self.tracks[track_index].nodes.push(node);
+                    self.tracks[track_index].nodes.insert(node);
                 }
                 AudioCommand::AddEffect(track_index, node) => {
-                    self.tracks[track_index].fx.push(node);
+                    self.tracks[track_index].fx.insert(node);
                 }
                 AudioCommand::AddSynth(track_index) => {
                     self.tracks[track_index]
                         .nodes
-                        .push(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
+                        .insert(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
                 AudioCommand::RemoveSynth(track_index, id) => {
@@ -139,26 +142,40 @@ impl Mixer {
         // TODO: I'm skeptical of this, here for testing to avoid accumulation
         output.fill(0.0);
 
+        let buffer_size = output.len();
+
         // Process all nodes (aka play audio, apply effects like gain, etc)
         // First we loop through each "track" and run processing locally
         for track in self.tracks.iter_mut() {
-            for node in track.nodes.iter_mut() {
-                node.process(&mut track.process_buffer, current_time);
+            // If needed, resize scratch buffer. Minimal allocation, only happens once per device.
+            if buffer_size > track.process_buffer.len() {
+                track.process_buffer.resize(buffer_size, 0.0);
+            }
+
+            // Grab a slice of our track's process buffer that matches current output length
+            // This lets us have a larger buffer to accomodate varying output/block size
+            let mut scratch_buffer = &mut track.process_buffer[..buffer_size];
+
+            // Reset buffer to prevent accumulation
+            scratch_buffer.fill(0.0);
+
+            for (node_id, node) in track.nodes.iter_mut() {
+                node.process(&mut scratch_buffer, current_time);
             }
             // Then I need to loop over fx and provide result from above
-            for fx in track.fx.iter_mut() {
-                fx.process(&mut track.process_buffer, current_time);
+            for (fx_id, fx) in track.fx.iter_mut() {
+                fx.process(&mut scratch_buffer, current_time);
             }
 
             // Any final track operations (e.g. track-based gain)
             if track.gain < 1.0 {
-                for sample in track.process_buffer.iter_mut() {
+                for sample in scratch_buffer.iter_mut() {
                     *sample *= track.gain;
                 }
             }
 
             // Then we combine (or "mix") all the signals together
-            for (i, sample) in track.process_buffer.iter().enumerate() {
+            for (i, sample) in scratch_buffer.iter().enumerate() {
                 output[i] += *sample;
             }
         }
@@ -407,9 +424,9 @@ impl AudioEngine {
         // We use this to allocate memory for "scratch" buffers (like one for each track)
         let buffer_size_result = self.config.buffer_size();
         let buffer_size = if let SupportedBufferSize::Range { min: _, max } = buffer_size_result {
-            *max as usize
+            (*max as usize).min(MAX_CALLBACK_FRAMES)
         } else {
-            1024 as usize
+            MAX_CALLBACK_FRAMES
         };
 
         // Create a mixer

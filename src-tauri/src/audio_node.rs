@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 // use std::fmt;
 
 /// Audio node that transmits sample data (e.g. static buffers, virtual synths, etc)
+/// The `output` represents the audio data the node will write to
+/// The `current_frame` is the playback time in frames.
 pub trait AudioNode {
     fn process(&mut self, output: &mut [f32], current_frame: u64);
 }
