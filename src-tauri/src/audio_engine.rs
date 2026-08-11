@@ -14,7 +14,7 @@ use std::{
 
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SampleRate, SupportedStreamConfig,
+    Device, SampleRate, SupportedBufferSize, SupportedStreamConfig,
 };
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{window::Effect, AppHandle, Emitter, Manager};
@@ -65,9 +65,18 @@ pub struct Mixer {
 }
 
 impl Mixer {
-    pub fn new() -> Self {
+    pub fn new(buffer_size: usize) -> Self {
+        let mut tracks = std::array::from_fn(|_| MixerTrack::new());
+
+        // Pre-allocate memory for each track based on audio device's max buffer size
+        for track in tracks.iter_mut() {
+            if track.process_buffer.len() != buffer_size {
+                track.process_buffer.resize(buffer_size, 0.0);
+            }
+        }
+
         Self {
-            tracks: std::array::from_fn(|_| MixerTrack::new()),
+            tracks,
             playing: false,
         }
     }
@@ -133,13 +142,6 @@ impl Mixer {
         // Process all nodes (aka play audio, apply effects like gain, etc)
         // First we loop through each "track" and run processing locally
         for track in self.tracks.iter_mut() {
-            // Allocate memory
-            // TODO: Get this out of here!! just expose buffer size and allocate on track init
-            if track.process_buffer.len() != output.len() {
-                track.process_buffer.resize(output.len(), 0.0);
-            }
-            track.process_buffer.fill(0.0);
-
             for node in track.nodes.iter_mut() {
                 node.process(&mut track.process_buffer, current_time);
             }
@@ -401,8 +403,17 @@ impl AudioEngine {
         // Create a new audio config for this specific device
         self.config = device.default_output_config().map_err(|e| e.to_string())?;
 
+        // Figure out output buffer size
+        // We use this to allocate memory for "scratch" buffers (like one for each track)
+        let buffer_size_result = self.config.buffer_size();
+        let buffer_size = if let SupportedBufferSize::Range { min: _, max } = buffer_size_result {
+            *max as usize
+        } else {
+            1024 as usize
+        };
+
         // Create a mixer
-        let mut mixer = Mixer::new();
+        let mut mixer = Mixer::new(buffer_size);
 
         let SampleRate(sample_rate) = self.config.sample_rate();
 
