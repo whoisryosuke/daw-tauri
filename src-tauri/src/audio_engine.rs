@@ -29,6 +29,7 @@ use crate::{
 };
 
 const MAX_CALLBACK_FRAMES: usize = 8192;
+const MAX_NODES: usize = 24;
 
 pub struct MixerTrack {
     current_node: usize,
@@ -39,13 +40,17 @@ pub struct MixerTrack {
     /// Scratch buffer to do track-specific operations on signal
     process_buffer: Vec<f32>,
     gain: f32,
+
+    /// Small collection to keep track of removed node IDs when they finish playing
+    remove_node_handles: Vec<Option<usize>>,
 }
 
 impl MixerTrack {
     pub fn new(buffer_size: usize) -> Self {
-        let nodes = Slab::with_capacity(24);
-        let fx = Slab::with_capacity(24);
+        let nodes = Slab::with_capacity(MAX_NODES);
+        let fx = Slab::with_capacity(MAX_NODES);
         let process_buffer = Vec::with_capacity(buffer_size);
+        let remove_node_handles = Vec::with_capacity(MAX_NODES);
 
         Self {
             current_node: 0usize,
@@ -53,6 +58,7 @@ impl MixerTrack {
             fx,
             process_buffer,
             gain: 1.0,
+            remove_node_handles,
         }
     }
 }
@@ -121,7 +127,8 @@ impl Mixer {
                 }
                 AudioCommand::ClearNodes => {
                     for track in self.tracks.each_mut() {
-                        // @TODO: Clear each node and make it silent
+                        track.nodes.clear();
+                        track.fx.clear();
                     }
                 }
                 AudioCommand::SetMixerGain(track_index, gain) => {
@@ -177,6 +184,35 @@ impl Mixer {
             // Then we combine (or "mix") all the signals together
             for (i, sample) in scratch_buffer.iter().enumerate() {
                 output[i] += *sample;
+            }
+
+            // Remove any finished nodes
+            for (node_id, node) in track.nodes.iter_mut() {
+                // The only nodes that currently finish are audio buffers
+                if let AudioNodeTypes::StaticBuffer(sample_node) = node {
+                    if sample_node.finished {
+                        // Find an empty handle to use
+                        let handle_id_result = track
+                            .remove_node_handles
+                            .iter()
+                            .enumerate()
+                            .find(|(id, handle)| **handle != None);
+
+                        // Got one? Add this node ID to it
+                        if let Some((handle_id, _)) = handle_id_result {
+                            track.remove_node_handles[handle_id] = Some(node_id);
+                        }
+                    }
+                }
+            }
+
+            // Loop over finished nodes we need to remove from track
+            for handle in track.remove_node_handles.iter_mut() {
+                if let Some(handle_id) = handle {
+                    track.nodes.remove(*handle_id);
+
+                    *handle = None;
+                }
             }
         }
 
