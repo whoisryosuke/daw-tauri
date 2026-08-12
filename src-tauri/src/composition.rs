@@ -126,6 +126,7 @@ pub struct CompositionStore {
     pub track_clips: TrackClips,
     pub clips: HashMap<String, Clip>,
     pub track_effects: TrackEffects,
+    pub play_midi_track: String,
 }
 
 impl CompositionStore {

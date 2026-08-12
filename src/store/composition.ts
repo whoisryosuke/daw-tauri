@@ -100,6 +100,11 @@ export const tracksAtom = atom<TrackData[]>(generateTracksDefaultData());
 export const trackClipsAtom = atom<TrackClipData[]>([]);
 export const trackEffectsAtom = atom<TrackEffect[]>([]);
 export const selectedTrackAtom = atom<string>("");
+/**
+ * The MIDI track the backend will use to play audio when user presses keys
+ * even when not recording as a preview. aka "Armed" in Ableton.
+ */
+export const playMidiTrackAtom = atom<string>("");
 
 /**
  * CLIPS

@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { Box, Stack } from "../../../../styled-system/jsx";
 import Text from "../../ui/Typography/Text";
 import { css, cva, cx } from "../../../../styled-system/css";
-import { TrackData } from "../../../store/composition";
+import { playMidiTrackAtom, TrackData } from "../../../store/composition";
 import Slider from "../../ui/Slider/Slider";
 import { SliderRootProps } from "@base-ui/react/slider";
 import { invoke } from "@tauri-apps/api/core";
 import { setSelectedTrack } from "../../../services/media";
+import { useSetAtom } from "jotai";
 
 const trackControlContainer = cva({
   base: {
@@ -42,10 +43,12 @@ const headingStyle = css({
 
 type Props = TrackData & {
   selected: boolean;
+  playMidi: boolean;
 };
 
-const TrackControl = ({ id, name, selected }: Props) => {
+const TrackControl = ({ id, name, selected, playMidi }: Props) => {
   const [volume, setVolume] = useState(1.0);
+  const setPlayMidiTrack = useSetAtom(playMidiTrackAtom);
 
   const handleVolumeChange: SliderRootProps["onValueChange"] = (newVal) => {
     if (!Array.isArray(newVal)) {
@@ -58,6 +61,12 @@ const TrackControl = ({ id, name, selected }: Props) => {
 
   const handleSelectTrack = () => {
     setSelectedTrack(id);
+  };
+
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setPlayMidiTrack(e.currentTarget.checked ? id : "");
+
+    // Sync with backend
   };
 
   return (
@@ -74,6 +83,9 @@ const TrackControl = ({ id, name, selected }: Props) => {
           max={1}
           onValueChange={handleVolumeChange}
         />
+      </Box>
+      <Box>
+        <input type="checkbox" checked={playMidi} onChange={handleChange} />
       </Box>
     </Stack>
   );
