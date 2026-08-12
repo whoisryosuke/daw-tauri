@@ -1,8 +1,59 @@
-use std::sync::Mutex;
-
+use crossbeam::channel::{Receiver, Sender};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use std::{sync::Mutex, thread, time::Duration};
+use tauri::{AppHandle, Emitter, State};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MidiCommand {
+    NoteOn,
+    NoteOff,
+    Unknown,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct MIDIInputEvent {
+    pub command: MidiCommand,
+    pub channel: u8,
+    pub note: u8,
+    pub velocity: u8,
+}
+
+impl MIDIInputEvent {
+    /// Parse a raw MIDI byte slice into a MIDIInputEvent
+    /// midir returns array of 3 nums: note on/off, MIDI note index, and velocity
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        // Note On and Note Off messages are 3 bytes long
+        if bytes.len() < 3 {
+            return None;
+        }
+
+        let status_byte = bytes[0];
+
+        // The high nibble (top 4 bits) is the command type
+        // 0x90 is Note On, 0x80 is Note Off
+        // @see: midir test_play example for reference
+        let command = match status_byte & 0xF0 {
+            0x90 => MidiCommand::NoteOn,
+            0x80 => MidiCommand::NoteOff,
+            _ => MidiCommand::Unknown,
+        };
+
+        // The low nibble (bottom 4 bits) is the MIDI channel (0-15)
+        let channel = status_byte & 0x0F;
+
+        // The note and velocity are just numbers in array slots 2 and 3
+        let note = bytes[1];
+        let velocity = bytes[2];
+
+        Some(MIDIInputEvent {
+            command,
+            channel,
+            note,
+            velocity,
+        })
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct InputDeviceSelection {
@@ -14,14 +65,22 @@ pub type InputDeviceSelectionResult = Vec<InputDeviceSelection>;
 pub struct MIDIStore {
     input_connection: Option<MidiInputConnection<()>>,
     selected_input_device: String,
+    input_producer: Sender<MIDIInputEvent>,
 }
 
 impl MIDIStore {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(app: AppHandle) -> Self {
+        let (input_producer, input_receiver) = crossbeam::channel::bounded::<MIDIInputEvent>(128);
+
+        Self::spawn_sync_thread(app, input_receiver);
+
+        let store = Self {
             input_connection: None,
             selected_input_device: "".into(),
-        }
+            input_producer,
+        };
+
+        store
     }
 
     /// Get a list of input devices
@@ -108,12 +167,16 @@ impl MIDIStore {
 
         // Establish MIDI input connection
         // This is where input actually comes in and gets stored
+        let input_producer = self.input_producer.clone();
         let _conn_in = midi_in
             .connect(
                 &in_port,
                 "midir-read-input",
                 move |stamp, message, _| {
                     println!("{}: {:?} (len = {})", stamp, message, message.len());
+                    if let Some(event) = MIDIInputEvent::from_bytes(message) {
+                        input_producer.send(event);
+                    }
                 },
                 (),
             )
@@ -128,6 +191,19 @@ impl MIDIStore {
         );
 
         Ok(())
+    }
+
+    fn spawn_sync_thread(app: AppHandle, receiver: Receiver<MIDIInputEvent>) {
+        thread::spawn(move || {
+            loop {
+                // Handle commands
+                while let Ok(input_data) = receiver.try_recv() {
+                    let _ = app.emit("midi-input", input_data.clone());
+                }
+
+                thread::sleep(Duration::from_millis(16)); // ~60 FPS
+            }
+        });
     }
 }
 
