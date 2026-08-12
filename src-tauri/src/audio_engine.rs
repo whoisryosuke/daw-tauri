@@ -243,6 +243,7 @@ pub enum AudioCommand {
 }
 
 pub struct AudioEngineMessaging {
+    app: AppHandle,
     producer: Sender<AudioCommand>,
     playback_time: Arc<AtomicU64>,
 }
@@ -256,6 +257,7 @@ impl AudioEngineMessaging {
         Self::spawn_waveform_thread(app, waveform, playback_time.clone());
 
         Self {
+            app,
             producer,
             playback_time: playback_time.clone(),
         }
@@ -312,6 +314,10 @@ impl AudioEngineMessaging {
 
         // Tell audio thread to start playing now that it has audio nodes
         self.send_command(AudioCommand::Play);
+    }
+
+    pub fn play_midi_input(&self) {
+        // self.app.state::<>();
     }
 
     pub fn update_mixer_track_gain(&self, track_index: usize, gain: f32) {

@@ -2,7 +2,9 @@ use crossbeam::channel::{Receiver, Sender};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use serde::{Deserialize, Serialize};
 use std::{sync::Mutex, thread, time::Duration};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+use crate::audio_engine::AudioEngineMessaging;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MidiCommand {
@@ -66,6 +68,7 @@ pub struct MIDIStore {
     input_connection: Option<MidiInputConnection<()>>,
     selected_input_device: String,
     input_producer: Sender<MIDIInputEvent>,
+    app: AppHandle,
 }
 
 impl MIDIStore {
@@ -75,6 +78,7 @@ impl MIDIStore {
         Self::spawn_sync_thread(app, input_receiver);
 
         let store = Self {
+            app,
             input_connection: None,
             selected_input_device: "".into(),
             input_producer,
@@ -168,6 +172,7 @@ impl MIDIStore {
         // Establish MIDI input connection
         // This is where input actually comes in and gets stored
         let input_producer = self.input_producer.clone();
+        let app = self.app.clone();
         let _conn_in = midi_in
             .connect(
                 &in_port,
@@ -176,6 +181,8 @@ impl MIDIStore {
                     println!("{}: {:?} (len = {})", stamp, message, message.len());
                     if let Some(event) = MIDIInputEvent::from_bytes(message) {
                         input_producer.send(event);
+                        let messaging = app.state::<AudioEngineMessaging>();
+                        messaging.play_midi_input();
                     }
                 },
                 (),
