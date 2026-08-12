@@ -17,6 +17,7 @@ import {
 import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
 import { TrackEffect } from "../store/composition";
 import SettingsModal from "./features/SettingsModal/SettingsModal";
+import MIDISync from "./features/Input/MIDISync";
 
 type Props = {};
 
@@ -111,6 +112,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
         {children}
         <SettingsModal />
         <PlaybackTimeSync />
+        <MIDISync />
       </StoreProvider>
     </DndContext>
   );

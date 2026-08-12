@@ -26,7 +26,7 @@ const MIDISync = (props: Props) => {
           updateStore((prev) => ({
             ...prev,
             [input.note]: {
-              pressed: input.command,
+              pressed: input.command == "NoteOn" ? true : false,
               velocity: input.velocity,
             },
           }));
@@ -39,7 +39,7 @@ const MIDISync = (props: Props) => {
     return () => {
       if (listenerRef.current) listenerRef.current();
     };
-  });
+  }, []);
   return <div>MIDISync</div>;
 };
 

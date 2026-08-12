@@ -315,7 +315,7 @@ pub fn run() {
             let mut audio_cache = AudioCache::new(Mutex::new(HashMap::new()));
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
             let composition_store = Mutex::new(CompositionStore::new());
-            let midi_store = Mutex::new(MIDIStore::new());
+            let midi_store = Mutex::new(MIDIStore::new(app.handle().clone()));
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
