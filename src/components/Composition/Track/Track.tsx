@@ -19,7 +19,7 @@ type Props = TrackData & {
   width: number;
 };
 
-const Track = ({ id, name, width }: Props) => {
+const Track = ({ id, name, trackType, width }: Props) => {
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
   const localClips = trackClips.filter((trackClip) => trackClip.track_id == id);
 
@@ -27,6 +27,7 @@ const Track = ({ id, name, width }: Props) => {
     id: `TRACK_${id}`,
     data: {
       id,
+      trackType,
     },
   });
 

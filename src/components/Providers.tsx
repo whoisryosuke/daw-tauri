@@ -71,6 +71,9 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
 
         // Handle creating a new track clip and adding to track
         case "CLIP": {
+          // Clips only allowed on audio tracks
+          if (trackData.trackType != "Sample") return;
+
           // Drop point should match the cursor position exactly
           const mediaBrowserDragData = event.active.data
             .current as MediaBrowserDragData;

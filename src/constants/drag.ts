@@ -1,4 +1,4 @@
-import type { Clip } from "../store/composition";
+import type { Clip, TrackType } from "../store/composition";
 
 export const DRAG_TYPES = {
   // This could be a sample, MIDI notes, etc. Represents something that goes into Track.
@@ -27,6 +27,7 @@ export type MediaBrowserDragData = BaseDragData & {
 
 export type TrackDragEvent = {
   id: string;
+  trackType: TrackType;
 };
 
 /**
