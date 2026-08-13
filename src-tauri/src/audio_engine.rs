@@ -32,6 +32,11 @@ use crate::{
 const MAX_CALLBACK_FRAMES: usize = 8192;
 const MAX_NODES: usize = 24;
 
+pub struct PlaybackNode {
+    id: u8,
+    node: AudioNodeTypes,
+}
+
 pub struct MixerTrack {
     current_node: usize,
 
@@ -41,9 +46,6 @@ pub struct MixerTrack {
     /// Scratch buffer to do track-specific operations on signal
     process_buffer: Vec<f32>,
     gain: f32,
-
-    /// Small collection to keep track of removed node IDs when they finish playing
-    remove_node_handles: Vec<Option<usize>>,
 }
 
 impl MixerTrack {
@@ -51,7 +53,6 @@ impl MixerTrack {
         let nodes = Slab::with_capacity(MAX_NODES);
         let fx = Slab::with_capacity(MAX_NODES);
         let process_buffer = Vec::with_capacity(buffer_size);
-        let remove_node_handles = Vec::with_capacity(MAX_NODES);
 
         Self {
             current_node: 0usize,
@@ -59,7 +60,6 @@ impl MixerTrack {
             fx,
             process_buffer,
             gain: 1.0,
-            remove_node_handles,
         }
     }
 }
@@ -70,6 +70,12 @@ impl MixerTrack {
  * The queue is controlled by `AudioCommand`s
  */
 pub struct Mixer {
+    playback_nodes: Slab<AudioNodeTypes>,
+    /// Maps MIDI keys to slab handles containing nodes
+    playback_map: HashMap<u8, usize>,
+    playback_process_buffer: Vec<f32>,
+    /// Small collection to keep track of removed node IDs when they finish playing
+    remove_node_handles: Vec<Option<usize>>,
     tracks: [MixerTrack; 20],
     playing: bool,
 }
@@ -77,6 +83,10 @@ pub struct Mixer {
 impl Mixer {
     pub fn new(buffer_size: usize) -> Self {
         let mut tracks = std::array::from_fn(|_| MixerTrack::new(buffer_size));
+        let playback_nodes = Slab::with_capacity(MAX_NODES);
+        let playback_process_buffer = Vec::with_capacity(buffer_size);
+        let playback_map = HashMap::with_capacity(MAX_NODES);
+        let remove_node_handles = Vec::with_capacity(MAX_NODES);
 
         // Pre-allocate memory for each track based on audio device's max buffer size
         for track in tracks.iter_mut() {
@@ -86,6 +96,10 @@ impl Mixer {
         }
 
         Self {
+            playback_nodes,
+            playback_map,
+            playback_process_buffer,
+            remove_node_handles,
             tracks,
             playing: false,
         }
@@ -135,6 +149,72 @@ impl Mixer {
                 AudioCommand::SetMixerGain(track_index, gain) => {
                     self.tracks[track_index].gain = gain;
                 }
+
+                AudioCommand::AddPlaybackSample(id, node) => {
+                    let handle = self.playback_nodes.insert(node);
+                    self.playback_map.insert(id, handle);
+                }
+
+                AudioCommand::StopPlaybackNode(id) => {
+                    if let Some(&key) = self.playback_map.get(&id) {
+                        if let Some(node) = self.playback_nodes.get_mut(key) {
+                            // TODO: Start the release phase of envelope.
+                        }
+                    }
+                }
+            }
+        }
+
+        // Zero out output
+        // TODO: I'm skeptical of this, here for testing to avoid accumulation
+        output.fill(0.0);
+
+        let buffer_size = output.len();
+
+        // If needed, resize scratch buffer. Minimal allocation, only happens once per device.
+        if buffer_size > self.playback_process_buffer.len() {
+            self.playback_process_buffer.resize(buffer_size, 0.0);
+        }
+
+        // Grab a slice of our track's process buffer that matches current output length
+        // This lets us have a larger buffer to accomodate varying output/block size
+        let playback_scratch_buffer = &mut self.playback_process_buffer[..buffer_size];
+
+        // Handle any immediate playback
+        for (_, playback_node) in self.playback_nodes.iter_mut() {
+            playback_node.process(playback_scratch_buffer, 0);
+        }
+
+        for (i, sample) in self.playback_process_buffer.iter().enumerate() {
+            output[i] += *sample;
+        }
+
+        // Remove any finished nodes
+        for (node_id, node) in self.playback_nodes.iter_mut() {
+            // The only nodes that currently finish are audio buffers
+            if let AudioNodeTypes::StaticBuffer(sample_node) = node {
+                if sample_node.finished {
+                    // Find an empty handle to use
+                    let handle_id_result = self
+                        .remove_node_handles
+                        .iter()
+                        .enumerate()
+                        .find(|(id, handle)| **handle != None);
+
+                    // Got one? Add this node ID to it
+                    if let Some((handle_id, _)) = handle_id_result {
+                        self.remove_node_handles[handle_id] = Some(node_id);
+                    }
+                }
+            }
+        }
+
+        // Loop over finished nodes we need to remove from track
+        for handle in self.remove_node_handles.iter_mut() {
+            if let Some(handle_id) = handle {
+                self.playback_nodes.remove(*handle_id);
+
+                *handle = None;
             }
         }
 
@@ -145,12 +225,6 @@ impl Mixer {
 
         // Get current time for playback
         let current_time = playback_time.load(Ordering::Relaxed);
-
-        // Zero out output
-        // TODO: I'm skeptical of this, here for testing to avoid accumulation
-        output.fill(0.0);
-
-        let buffer_size = output.len();
 
         // Process all nodes (aka play audio, apply effects like gain, etc)
         // First we loop through each "track" and run processing locally
@@ -193,7 +267,7 @@ impl Mixer {
                 if let AudioNodeTypes::StaticBuffer(sample_node) = node {
                     if sample_node.finished {
                         // Find an empty handle to use
-                        let handle_id_result = track
+                        let handle_id_result = self
                             .remove_node_handles
                             .iter()
                             .enumerate()
@@ -201,14 +275,14 @@ impl Mixer {
 
                         // Got one? Add this node ID to it
                         if let Some((handle_id, _)) = handle_id_result {
-                            track.remove_node_handles[handle_id] = Some(node_id);
+                            self.remove_node_handles[handle_id] = Some(node_id);
                         }
                     }
                 }
             }
 
             // Loop over finished nodes we need to remove from track
-            for handle in track.remove_node_handles.iter_mut() {
+            for handle in self.remove_node_handles.iter_mut() {
                 if let Some(handle_id) = handle {
                     track.nodes.remove(*handle_id);
 
@@ -241,6 +315,9 @@ pub enum AudioCommand {
     Pause,
     ClearNodes,
     SetMixerGain(usize, f32),
+    /// Queue an audio node for immediate playback. Requires an index
+    AddPlaybackSample(u8, AudioNodeTypes),
+    StopPlaybackNode(u8),
 }
 
 pub struct AudioEngineMessaging {
@@ -317,7 +394,7 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::Play);
     }
 
-    pub fn play_midi_input(&self) -> Result<(), String> {
+    pub fn play_midi_input(&self, midi_key: u8) -> Result<(), String> {
         // Get composition state and selected MIDI track
         let composition_handle = self.app.state::<Mutex<CompositionStore>>();
 
@@ -355,9 +432,15 @@ impl AudioEngineMessaging {
         };
 
         // Create and queue node
-        self.create_sample_node(clip_data.samples.clone(), 0, 0);
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), 0));
+
+        self.send_command(AudioCommand::AddPlaybackSample(midi_key, node));
 
         return Ok(());
+    }
+
+    pub fn stop_midi_input(&self, midi_key: u8) {
+        self.send_command(AudioCommand::StopPlaybackNode(midi_key));
     }
 
     pub fn update_mixer_track_gain(&self, track_index: usize, gain: f32) {
