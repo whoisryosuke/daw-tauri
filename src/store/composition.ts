@@ -91,7 +91,13 @@ export const compositionAtom = atom<CompositionData>(
 export type AddTrackPayload = {
   trackId: string;
   name: string;
-  trackType: TrackType;
+  trackType:
+    | "Sample"
+    | {
+        Midi: {
+          clip: string | null;
+        };
+      };
 };
 
 export const generateTrackData = (name = "Track 1"): TrackData => ({

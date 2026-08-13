@@ -185,7 +185,7 @@ impl Mixer {
             playback_node.process(playback_scratch_buffer, 0);
         }
 
-        for (i, sample) in self.playback_process_buffer.iter().enumerate() {
+        for (i, sample) in playback_scratch_buffer.iter().enumerate() {
             output[i] += *sample;
         }
 
@@ -397,11 +397,12 @@ impl AudioEngineMessaging {
         let composition_handle = self.app.state::<Mutex<CompositionStore>>();
 
         let Ok(composition) = composition_handle.lock() else {
+            println!("Couldn't lock composition");
             return;
         };
 
         let Some(midi_track_id) = &composition.play_midi_track else {
-            // TODO: Handle error
+            println!("No MIDI track set");
             return;
         };
 
@@ -409,26 +410,31 @@ impl AudioEngineMessaging {
 
         // Get selected the MIDI track for the `clip`
         let Some(track) = composition.tracks.get(&midi_track_id_key) else {
+            println!("Can't find MIDI track");
             // TODO: Handle error
             return;
         };
         let TrackType::Midi(midi_data) = &track.track_type else {
+            println!("Can't get MIDI data from track");
             return;
         };
 
         // Get Clip by ID
-        let Some(clip) = composition.clips.get(&midi_data.clip) else {
+        let Some(clip_id) = &midi_data.clip else {
+            return;
+        };
+
+        let Some(clip) = composition.clips.get(&clip_id.clone()) else {
+            println!("Can't get clip for MIDI");
             return;
         };
 
         // Get audio buffer from cache
-        let audio_cache_handle = self.app.state::<Mutex<AudioCache>>();
-        let Ok(audio_cache) = audio_cache_handle.lock() else {
-            return;
-        };
+        let audio_cache = self.app.state::<AudioCache>();
 
         let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
             // TODO: Handle error "Couldn't find that asset"
+            println!("Can't find audio cache for MIDI");
             return;
         };
 

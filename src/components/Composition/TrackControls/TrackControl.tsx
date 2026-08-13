@@ -67,6 +67,10 @@ const TrackControl = ({ id, name, selected, trackType, playMidi }: Props) => {
     setPlayMidiTrack(e.currentTarget.checked ? id : "");
 
     // Sync with backend
+    invoke("set_midi_track_as_playable", {
+      // Rust uses `Option` so pass `null` for `None`
+      trackId: e.currentTarget.checked ? id : null,
+    });
   };
 
   return (

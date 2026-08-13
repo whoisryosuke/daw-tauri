@@ -8,6 +8,7 @@ import {
 import { useAtomValue } from "jotai";
 import Text from "../../ui/Typography/Text";
 import { useDroppable } from "@dnd-kit/core";
+import { Box, Stack } from "../../../../styled-system/jsx";
 
 type DropZoneProps = {
   track: TrackData;
@@ -36,13 +37,20 @@ const MidiModule = (props: Props) => {
 
   if (!currentTrack || trackType != "Midi") return <div></div>;
 
-  if (!clipId || clipId == "") return <DropZone track={currentTrack} />;
+  const showDrop = !clipId || clipId == "";
 
   return (
-    <div>
-      <Text>Current clip</Text>
-      <Text>{currentClip?.name}</Text>
-    </div>
+    <Stack flexDir="row">
+      {showDrop ? (
+        <DropZone track={currentTrack} />
+      ) : (
+        <Box>
+          <Text>Current clip</Text>
+          <Text>{currentClip?.name}</Text>
+        </Box>
+      )}
+      <Box>Sampler piano</Box>
+    </Stack>
   );
 };
 

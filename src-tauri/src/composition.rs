@@ -15,7 +15,7 @@ type TrackId = String;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MidiTrackData {
-    pub clip: String,
+    pub clip: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -188,6 +188,8 @@ pub async fn add_track(
 ) -> Result<bool, String> {
     let store_result = composition_store.lock();
 
+    println!("Adding track...");
+
     if let Ok(mut store) = store_result {
         let index = store.tracks.len();
         if index > 20 {
@@ -197,6 +199,9 @@ pub async fn add_track(
         let new_track = Track::new(name, false, index, track_type);
         store.tracks.insert(track_id.clone(), new_track);
         store.track_clips.insert(track_id, Vec::new());
+
+        println!("Added new track!");
+
         return Ok(true);
     }
 
@@ -359,11 +364,25 @@ pub async fn update_midi_track_clip(
     if let Some(track) = store.tracks.get_mut(&track_id) {
         // Update value in Composition store ("Track")
         if let TrackType::Midi(midi_data) = &mut track.track_type {
-            midi_data.clip = clip_id;
+            midi_data.clip = Some(clip_id);
         }
 
         return Ok(true);
     } else {
         Err("Couldn't find that track".to_string())
     }
+}
+
+#[tauri::command()]
+pub async fn set_midi_track_as_playable(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: Option<String>,
+) -> Result<(), String> {
+    let mut store = composition_store
+        .lock()
+        .map_err(|_| "Couldn't lock composition store")?;
+
+    store.play_midi_track = track_id;
+
+    Ok(())
 }

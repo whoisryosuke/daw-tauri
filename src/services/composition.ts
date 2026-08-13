@@ -44,19 +44,30 @@ function resetFrontendComposition() {
 
 // --- Tracks ---
 
-export function addTrack(name: string, trackType: TrackType) {
+export function addTrack(name: string, trackTypeKey: TrackType) {
   const newTrack: TrackData = {
     id: generateSimpleHash(),
     name,
     muted: false,
-    trackType,
+    trackType: trackTypeKey,
   };
+
+  // The backend uses an `enum` with the associated MIDI clip inside
+  // so we setup that struct here
+  const backendTrackType =
+    trackTypeKey == "Midi"
+      ? {
+          Midi: {
+            clip: null,
+          },
+        }
+      : trackTypeKey;
 
   // Update backend with new track
   invoke<AddTrackPayload>("add_track", {
     trackId: newTrack.id,
     name,
-    trackType,
+    trackType: backendTrackType,
   });
 
   // Update client-side
