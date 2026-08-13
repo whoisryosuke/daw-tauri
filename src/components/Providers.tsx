@@ -1,5 +1,5 @@
 import { Provider as StoreProvider } from "jotai";
-import React, { type PropsWithChildren } from "react";
+import React, { useEffect, type PropsWithChildren } from "react";
 import { store } from "../store/store";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
@@ -18,10 +18,16 @@ import PlaybackTimeSync from "./Sync/PlaybackTimeSync";
 import { TrackEffect } from "../store/composition";
 import SettingsModal from "./features/SettingsModal/SettingsModal";
 import MIDISync from "./features/Input/MIDISync";
+import { newFile } from "../services/composition";
 
 type Props = {};
 
 const Providers = ({ children }: PropsWithChildren<Props>) => {
+  // DEBUG: on refresh, new file
+  useEffect(() => {
+    newFile();
+  }, []);
+
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("item dragged!!", event);
 

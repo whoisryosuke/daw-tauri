@@ -8,10 +8,17 @@ export type CompositionData = {
   zoom: number;
 };
 
+export type TrackType = "Sample" | "Midi";
 export type TrackData = {
   id: string;
   name: string;
   muted: boolean;
+  trackType: TrackType;
+
+  /**
+   * For MIDI tracks only, the selected clip for playback.
+   */
+  clip?: string;
 };
 
 // Effects for tracks
@@ -77,10 +84,21 @@ export const compositionAtom = atom<CompositionData>(
 /**
  * TRACKS
  */
+
+/**
+ * Payload for `add_track` backend command
+ */
+export type AddTrackPayload = {
+  trackId: string;
+  name: string;
+  trackType: TrackType;
+};
+
 export const generateTrackData = (name = "Track 1"): TrackData => ({
   id: generateSimpleHash(),
   name,
   muted: false,
+  trackType: "Sample",
 });
 
 export function generateTracksDefaultData() {
@@ -90,7 +108,11 @@ export function generateTracksDefaultData() {
     newTracks.push(newTrack);
 
     // Update backend with new track
-    invoke("add_track", { trackId: newTrack.id, name: newTrack.name });
+    invoke<AddTrackPayload>("add_track", {
+      trackId: newTrack.id,
+      name: newTrack.name,
+      trackType: "Sample",
+    });
   });
 
   return newTracks;

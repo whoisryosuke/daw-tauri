@@ -10,9 +10,7 @@ type MIDIInputPayload = {
   velocity: number;
 };
 
-type Props = {};
-
-const MIDISync = (props: Props) => {
+const MIDISync = () => {
   const updateStore = useSetAtom(inputStore);
   const listenerRef = useRef<UnlistenFn>(null);
 
@@ -40,7 +38,7 @@ const MIDISync = (props: Props) => {
       if (listenerRef.current) listenerRef.current();
     };
   }, []);
-  return <div>MIDISync</div>;
+  return <></>;
 };
 
 export default MIDISync;

@@ -1,15 +1,19 @@
 import { invoke } from "@tauri-apps/api/core";
 import { store } from "../store/store";
 import {
+  AddTrackPayload,
   clipsAtom,
   compositionAtom,
   generateCompositionDefaultData,
   generateTracksDefaultData,
   selectedTrackAtom,
   trackClipsAtom,
+  TrackData,
   trackEffectsAtom,
   tracksAtom,
+  TrackType,
 } from "../store/composition";
+import { generateSimpleHash } from "../utils/hash";
 
 // --- Composition ---
 
@@ -39,3 +43,23 @@ function resetFrontendComposition() {
 }
 
 // --- Tracks ---
+
+export function addTrack(name: string, trackType: TrackType) {
+  const newTrack: TrackData = {
+    id: generateSimpleHash(),
+    name,
+    muted: false,
+    trackType,
+  };
+
+  // Update backend with new track
+  invoke<AddTrackPayload>("add_track", {
+    trackId: newTrack.id,
+    name,
+    trackType,
+  });
+
+  // Update client-side
+  console.log("adding track to store", newTrack);
+  store.set(tracksAtom, (prev) => [...prev, newTrack]);
+}

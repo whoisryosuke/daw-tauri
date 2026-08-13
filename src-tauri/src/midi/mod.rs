@@ -75,10 +75,10 @@ impl MIDIStore {
     pub fn new(app: AppHandle) -> Self {
         let (input_producer, input_receiver) = crossbeam::channel::bounded::<MIDIInputEvent>(128);
 
-        Self::spawn_sync_thread(app, input_receiver);
+        Self::spawn_sync_thread(app.clone(), input_receiver);
 
         let store = Self {
-            app,
+            app: app.clone(),
             input_connection: None,
             selected_input_device: "".into(),
             input_producer,
@@ -207,8 +207,6 @@ impl MIDIStore {
                 while let Ok(input_data) = receiver.try_recv() {
                     let _ = app.emit("midi-input", input_data.clone());
                 }
-
-                thread::sleep(Duration::from_millis(16)); // ~60 FPS
             }
         });
     }

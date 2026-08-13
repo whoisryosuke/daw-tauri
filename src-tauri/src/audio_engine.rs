@@ -254,10 +254,10 @@ impl AudioEngineMessaging {
         waveform: Receiver<f32>,
         playback_time: Arc<AtomicU64>,
     ) -> Self {
-        Self::spawn_waveform_thread(app, waveform, playback_time.clone());
+        Self::spawn_waveform_thread(app.clone(), waveform, playback_time.clone());
 
         Self {
-            app,
+            app: app.clone(),
             producer,
             playback_time: playback_time.clone(),
         }

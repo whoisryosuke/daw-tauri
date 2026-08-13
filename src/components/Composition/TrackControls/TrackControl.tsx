@@ -46,7 +46,7 @@ type Props = TrackData & {
   playMidi: boolean;
 };
 
-const TrackControl = ({ id, name, selected, playMidi }: Props) => {
+const TrackControl = ({ id, name, selected, trackType, playMidi }: Props) => {
   const [volume, setVolume] = useState(1.0);
   const setPlayMidiTrack = useSetAtom(playMidiTrackAtom);
 
@@ -84,9 +84,16 @@ const TrackControl = ({ id, name, selected, playMidi }: Props) => {
           onValueChange={handleVolumeChange}
         />
       </Box>
-      <Box>
-        <input type="checkbox" checked={playMidi} onChange={handleChange} />
-      </Box>
+      {trackType == "Midi" && (
+        <Box>
+          <input
+            type="checkbox"
+            title="Enable Playback"
+            checked={playMidi}
+            onChange={handleChange}
+          />
+        </Box>
+      )}
     </Stack>
   );
 };

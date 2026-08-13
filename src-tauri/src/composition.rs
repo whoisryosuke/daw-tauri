@@ -13,6 +13,17 @@ use crate::{
 /// and used as a primary key for associations (like a relational DB)
 type TrackId = String;
 
+#[derive(Clone, Serialize, Deserialize)]
+struct MidiTrackData {
+    clip: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub enum TrackType {
+    Sample,
+    Midi(MidiTrackData),
+}
+
 /// A track that can be associated with `TrackClip` and `TrackEffect`
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Track {
@@ -21,15 +32,17 @@ pub struct Track {
     pub pool_index: usize,
     pub muted: bool,
     pub gain: f32,
+    pub track_type: TrackType,
 }
 
 impl Track {
-    pub fn new(name: TrackId, muted: bool, pool_index: usize) -> Self {
+    pub fn new(name: TrackId, muted: bool, pool_index: usize, track_type: TrackType) -> Self {
         Self {
             name,
             pool_index,
             muted,
             gain: 1.0,
+            track_type,
         }
     }
 }
@@ -126,7 +139,7 @@ pub struct CompositionStore {
     pub track_clips: TrackClips,
     pub clips: HashMap<String, Clip>,
     pub track_effects: TrackEffects,
-    pub play_midi_track: String,
+    pub play_midi_track: Option<String>,
 }
 
 impl CompositionStore {
@@ -143,6 +156,7 @@ impl CompositionStore {
             track_clips,
             clips,
             track_effects,
+            play_midi_track: None,
         }
     }
 
@@ -170,6 +184,7 @@ pub async fn add_track(
     composition_store: State<'_, Mutex<CompositionStore>>,
     track_id: String,
     name: String,
+    track_type: TrackType,
 ) -> Result<bool, String> {
     let store_result = composition_store.lock();
 
@@ -179,7 +194,7 @@ pub async fn add_track(
             return Err("Max 20 tracks".to_string());
         }
 
-        let new_track = Track::new(name, false, index);
+        let new_track = Track::new(name, false, index, track_type);
         store.tracks.insert(track_id.clone(), new_track);
         store.track_clips.insert(track_id, Vec::new());
         return Ok(true);
