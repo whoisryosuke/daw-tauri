@@ -180,6 +180,9 @@ impl Mixer {
         // This lets us have a larger buffer to accomodate varying output/block size
         let playback_scratch_buffer = &mut self.playback_process_buffer[..buffer_size];
 
+        // Reset buffer to prevent accumulation
+        playback_scratch_buffer.fill(0.0);
+
         // Handle any immediate playback
         for (_, playback_node) in self.playback_nodes.iter_mut() {
             playback_node.process(playback_scratch_buffer, 0);
