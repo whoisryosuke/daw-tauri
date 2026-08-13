@@ -243,26 +243,8 @@ impl Mixer {
 
             for (node_id, node) in track.nodes.iter_mut() {
                 node.process(&mut scratch_buffer, current_time);
-            }
-            // Then I need to loop over fx and provide result from above
-            for (fx_id, fx) in track.fx.iter_mut() {
-                fx.process(&mut scratch_buffer, current_time);
-            }
 
-            // Any final track operations (e.g. track-based gain)
-            if track.gain < 1.0 {
-                for sample in scratch_buffer.iter_mut() {
-                    *sample *= track.gain;
-                }
-            }
-
-            // Then we combine (or "mix") all the signals together
-            for (i, sample) in scratch_buffer.iter().enumerate() {
-                output[i] += *sample;
-            }
-
-            // Remove any finished nodes
-            for (node_id, node) in track.nodes.iter_mut() {
+                // Remove any finished nodes
                 // The only nodes that currently finish are audio buffers
                 if let AudioNodeTypes::StaticBuffer(sample_node) = node {
                     if sample_node.finished {
@@ -279,6 +261,22 @@ impl Mixer {
                         }
                     }
                 }
+            }
+            // Then I need to loop over fx and provide result from above
+            for (fx_id, fx) in track.fx.iter_mut() {
+                fx.process(&mut scratch_buffer, current_time);
+            }
+
+            // Any final track operations (e.g. track-based gain)
+            if track.gain < 1.0 {
+                for sample in scratch_buffer.iter_mut() {
+                    *sample *= track.gain;
+                }
+            }
+
+            // Then we combine (or "mix") all the signals together
+            for (i, sample) in scratch_buffer.iter().enumerate() {
+                output[i] += *sample;
             }
 
             // Loop over finished nodes we need to remove from track
@@ -394,49 +392,50 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::Play);
     }
 
-    pub fn play_midi_input(&self, midi_key: u8) -> Result<(), String> {
+    pub fn play_midi_input(&self, midi_key: u8) {
         // Get composition state and selected MIDI track
         let composition_handle = self.app.state::<Mutex<CompositionStore>>();
 
-        let composition = composition_handle
-            .lock()
-            .map_err(|_| "Couldn't unlock composition")?;
+        let Ok(composition) = composition_handle.lock() else {
+            return;
+        };
 
         let Some(midi_track_id) = &composition.play_midi_track else {
-            return Ok(());
+            // TODO: Handle error
+            return;
         };
 
         let midi_track_id_key = midi_track_id.clone();
 
         // Get selected the MIDI track for the `clip`
         let Some(track) = composition.tracks.get(&midi_track_id_key) else {
-            return Err("Couldn't find that track ID".into());
+            // TODO: Handle error
+            return;
         };
         let TrackType::Midi(midi_data) = &track.track_type else {
-            return Ok(());
+            return;
         };
 
         // Get Clip by ID
         let Some(clip) = composition.clips.get(&midi_data.clip) else {
-            return Ok(());
+            return;
         };
 
         // Get audio buffer from cache
         let audio_cache_handle = self.app.state::<Mutex<AudioCache>>();
-        let audio_cache = audio_cache_handle
-            .lock()
-            .map_err(|_| "Couldn't unlock asset store")?;
+        let Ok(audio_cache) = audio_cache_handle.lock() else {
+            return;
+        };
 
         let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
-            return Err("Couldn't find that asset".into());
+            // TODO: Handle error "Couldn't find that asset"
+            return;
         };
 
         // Create and queue node
         let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), 0));
 
         self.send_command(AudioCommand::AddPlaybackSample(midi_key, node));
-
-        return Ok(());
     }
 
     pub fn stop_midi_input(&self, midi_key: u8) {

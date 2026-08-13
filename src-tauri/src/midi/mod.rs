@@ -180,13 +180,15 @@ impl MIDIStore {
                 move |stamp, message, _| {
                     println!("{}: {:?} (len = {})", stamp, message, message.len());
                     if let Some(event) = MIDIInputEvent::from_bytes(message) {
+                        let command = event.command.clone();
+                        let note = event.note.clone();
                         input_producer.send(event);
                         let messaging = app.state::<AudioEngineMessaging>();
-                        match event.command {
-                            MidiCommand::NoteOn => messaging.play_midi_input(),
-                            MidiCommand::NoteOff => {}
+                        match command {
+                            MidiCommand::NoteOn => messaging.play_midi_input(note),
+                            MidiCommand::NoteOff => messaging.stop_midi_input(note),
                             MidiCommand::Unknown => {}
-                        }
+                        };
                     }
                 },
                 (),
