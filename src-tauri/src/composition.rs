@@ -14,8 +14,8 @@ use crate::{
 type TrackId = String;
 
 #[derive(Clone, Serialize, Deserialize)]
-struct MidiTrackData {
-    clip: String,
+pub struct MidiTrackData {
+    pub clip: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -344,4 +344,26 @@ pub async fn add_clip(
     }
 
     Err("Couldn't lock composition store".to_string())
+}
+
+#[tauri::command()]
+pub async fn update_midi_track_clip(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    clip_id: String,
+) -> Result<bool, String> {
+    let mut store = composition_store
+        .lock()
+        .map_err(|_| "Couldn't lock composition store")?;
+
+    if let Some(track) = store.tracks.get_mut(&track_id) {
+        // Update value in Composition store ("Track")
+        if let TrackType::Midi(midi_data) = &mut track.track_type {
+            midi_data.clip = clip_id;
+        }
+
+        return Ok(true);
+    } else {
+        Err("Couldn't find that track".to_string())
+    }
 }

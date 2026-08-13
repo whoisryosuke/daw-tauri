@@ -30,6 +30,10 @@ export type TrackDragEvent = {
   trackType: TrackType;
 };
 
+export type MidiModuleDragEvent = {
+  trackId: string;
+};
+
 /**
  * When we drag track clips from track to same or different track
  */

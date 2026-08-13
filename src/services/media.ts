@@ -118,11 +118,7 @@ export const setSelectedTrack = (trackId: string) => {
   store.set(selectedTrackAtom, trackId);
 };
 
-export const addClipToTrack = async (
-  id: string,
-  item: MediaBrowserDragData,
-  dragPosition: DragPositionData,
-) => {
+async function getOrCreateClip(item: MediaBrowserDragData) {
   // Load media if needed and cache
   const media = await loadMedia(item);
 
@@ -138,6 +134,18 @@ export const addClipToTrack = async (
   // Rust is strict on data structure so we remove props before sending
   const { id: clipId, type: clip_type, ...clip_data } = clip;
   invoke("add_clip", { clipId, clipData: { clip_type, ...clip_data } });
+
+  return clip;
+}
+
+export const addClipToTrack = async (
+  id: string,
+  item: MediaBrowserDragData,
+  dragPosition: DragPositionData,
+) => {
+  // Create a clip if necessary
+  const clip = await getOrCreateClip(item);
+  if (!clip) return;
 
   // Calculate the start time based on drag placement
   const startTime = calculateStartTimeFromDrag(dragPosition);
@@ -239,3 +247,30 @@ export const addEffectToTrack = (
     },
   });
 };
+
+export async function addClipToMidiTrack(
+  trackId: string,
+  item: MediaBrowserDragData,
+) {
+  // Create a clip if necessary
+  const clip = await getOrCreateClip(item);
+
+  if (!clip) return;
+
+  // Update client-side
+  store.set(tracksAtom, (prev) =>
+    prev.map((item) => {
+      // Same track? Update clip ID
+      if (item.id == trackId) {
+        return {
+          ...item,
+          clip: clip.id,
+        };
+      }
+      return item;
+    }),
+  );
+
+  // Update backend
+  invoke("update_midi_track_clip", { trackId, clipId: clip.id });
+}

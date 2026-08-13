@@ -3,6 +3,7 @@ import React, { useEffect, type PropsWithChildren } from "react";
 import { store } from "../store/store";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
+  addClipToMidiTrack,
   addClipToTrack,
   addEffectToTrack,
   DragPositionData,
@@ -11,6 +12,7 @@ import {
 import {
   BaseDragData,
   MediaBrowserDragData,
+  MidiModuleDragEvent,
   TrackClipDragData,
   TrackDragEvent,
 } from "../constants/drag";
@@ -38,7 +40,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
 
     // Handle tracks
     let overId = event.over.id.toString();
-    if (overId.includes("TRACK_")) {
+    if (overId.startsWith("TRACK_")) {
       let trackData = event.over.data.current as TrackDragEvent;
 
       // The draggable element's "initial" position
@@ -113,6 +115,15 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
           );
         }
       }
+    }
+
+    if (overId.startsWith("MIDI_MODULE")) {
+      console.log("dropped on MIDI module!");
+      let moduleData = event.over.data.current as MidiModuleDragEvent;
+      let dragData = event.active.data.current as MediaBrowserDragData;
+
+      // Add to MIDI to clip
+      addClipToMidiTrack(moduleData.trackId, dragData);
     }
   };
   return (

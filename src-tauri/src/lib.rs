@@ -28,7 +28,8 @@ use crate::audio_engine::{AudioCommand, AudioEngine, AudioEngineMessaging};
 use crate::audio_node::AudioNode;
 use crate::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
-    update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
+    update_midi_track_clip, update_track_clip_time, update_track_effect, update_track_gain,
+    CompositionStore,
 };
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, start_midi_connection, MIDIStore,
@@ -347,6 +348,7 @@ pub fn run() {
             update_track_effect,
             add_track_clip,
             update_track_clip_time,
+            update_midi_track_clip,
             add_clip,
             // MIDI
             get_midi_input_devices,

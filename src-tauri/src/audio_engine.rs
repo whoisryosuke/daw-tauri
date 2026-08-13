@@ -21,10 +21,11 @@ use slab::Slab;
 use tauri::{window::Effect, AppHandle, Emitter, Manager};
 
 use crate::{
+    asset_store::AssetStore,
     audio_buffer::AudioBuffer,
     audio_cache::AudioCache,
     audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
-    composition::{CompositionStore, Track, TrackClip, TrackClipType},
+    composition::{CompositionStore, Track, TrackClip, TrackClipType, TrackType},
     math::seconds_to_frames,
 };
 
@@ -316,8 +317,47 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::Play);
     }
 
-    pub fn play_midi_input(&self) {
-        // self.app.state::<>();
+    pub fn play_midi_input(&self) -> Result<(), String> {
+        // Get composition state and selected MIDI track
+        let composition_handle = self.app.state::<Mutex<CompositionStore>>();
+
+        let composition = composition_handle
+            .lock()
+            .map_err(|_| "Couldn't unlock composition")?;
+
+        let Some(midi_track_id) = &composition.play_midi_track else {
+            return Ok(());
+        };
+
+        let midi_track_id_key = midi_track_id.clone();
+
+        // Get selected the MIDI track for the `clip`
+        let Some(track) = composition.tracks.get(&midi_track_id_key) else {
+            return Err("Couldn't find that track ID".into());
+        };
+        let TrackType::Midi(midi_data) = &track.track_type else {
+            return Ok(());
+        };
+
+        // Get Clip by ID
+        let Some(clip) = composition.clips.get(&midi_data.clip) else {
+            return Ok(());
+        };
+
+        // Get audio buffer from cache
+        let audio_cache_handle = self.app.state::<Mutex<AudioCache>>();
+        let audio_cache = audio_cache_handle
+            .lock()
+            .map_err(|_| "Couldn't unlock asset store")?;
+
+        let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
+            return Err("Couldn't find that asset".into());
+        };
+
+        // Create and queue node
+        self.create_sample_node(clip_data.samples.clone(), 0, 0);
+
+        return Ok(());
     }
 
     pub fn update_mixer_track_gain(&self, track_index: usize, gain: f32) {
@@ -356,11 +396,16 @@ impl AudioEngineMessaging {
         };
 
         let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
-        let node =
-            AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), start_time));
-
         println!("Creating audio node {}", clip.name);
-        self.send_command(AudioCommand::AddSample(track.pool_index, node));
+
+        self.create_sample_node(clip_data.samples.clone(), start_time, track.pool_index);
+    }
+
+    /// Creates a sample node and send to mixer
+    fn create_sample_node(&self, samples: Arc<Vec<f32>>, start_time: u64, track_index: usize) {
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(samples.clone(), start_time));
+
+        self.send_command(AudioCommand::AddSample(track_index, node));
     }
 
     pub fn add_synth(&self, track_index: usize) {

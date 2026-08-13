@@ -182,7 +182,11 @@ impl MIDIStore {
                     if let Some(event) = MIDIInputEvent::from_bytes(message) {
                         input_producer.send(event);
                         let messaging = app.state::<AudioEngineMessaging>();
-                        messaging.play_midi_input();
+                        match event.command {
+                            MidiCommand::NoteOn => messaging.play_midi_input(),
+                            MidiCommand::NoteOff => {}
+                            MidiCommand::Unknown => {}
+                        }
                     }
                 },
                 (),
