@@ -27,6 +27,7 @@ use crate::{
     audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
     composition::{CompositionStore, Track, TrackClip, TrackClipType, TrackType},
     math::seconds_to_frames,
+    music::sampler::Sampler,
 };
 
 const MAX_CALLBACK_FRAMES: usize = 8192;
@@ -325,6 +326,7 @@ pub struct AudioEngineMessaging {
     app: AppHandle,
     producer: Sender<AudioCommand>,
     playback_time: Arc<AtomicU64>,
+    sampler: Sampler,
 }
 impl AudioEngineMessaging {
     pub fn new(
@@ -332,13 +334,17 @@ impl AudioEngineMessaging {
         producer: Sender<AudioCommand>,
         waveform: Receiver<f32>,
         playback_time: Arc<AtomicU64>,
+        sample_rate: u32,
     ) -> Self {
         Self::spawn_waveform_thread(app.clone(), waveform, playback_time.clone());
+
+        let sampler = Sampler::new(60, sample_rate as f32);
 
         Self {
             app: app.clone(),
             producer,
             playback_time: playback_time.clone(),
+            sampler,
         }
     }
 
@@ -441,8 +447,14 @@ impl AudioEngineMessaging {
             return;
         };
 
+        // Resample audio for playback
+        let buffer = clip_data.samples.clone();
+        let Ok(pitched_buffer) = self.sampler.pitch_shift(&buffer, midi_key) else {
+            return;
+        };
+
         // Create and queue node
-        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(clip_data.samples.clone(), 0));
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(Arc::new(pitched_buffer), 0));
 
         self.send_command(AudioCommand::AddPlaybackSample(midi_key, node));
     }
@@ -559,15 +571,6 @@ impl AudioEngine {
         // Allocate atomic memory for some shared state (like playback time)
         let playback_time = Arc::new(AtomicU64::new(0));
 
-        // Create the messaging layer between UI and AudioEngine
-        let messaging = AudioEngineMessaging::new(
-            app.app_handle().clone(),
-            producer,
-            waveform_consumer,
-            playback_time.clone(),
-        );
-        app.manage(messaging);
-
         // Set up CPAL.
         let host = cpal::default_host();
         let device = host
@@ -579,6 +582,18 @@ impl AudioEngine {
         let config = device
             .default_output_config()
             .expect("Couldn't load config");
+
+        let sample_rate = config.sample_rate().0;
+
+        // Create the messaging layer between UI and AudioEngine
+        let messaging = AudioEngineMessaging::new(
+            app.app_handle().clone(),
+            producer,
+            waveform_consumer,
+            playback_time.clone(),
+            sample_rate,
+        );
+        app.manage(messaging);
 
         let mut engine = Self {
             config,

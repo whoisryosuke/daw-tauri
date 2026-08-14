@@ -9,6 +9,7 @@ import { useAtomValue } from "jotai";
 import Text from "../../ui/Typography/Text";
 import { useDroppable } from "@dnd-kit/core";
 import { Box, Stack } from "../../../../styled-system/jsx";
+import PianoKeys from "../../features/Input/PianoKeys/PianoKeys";
 
 type DropZoneProps = {
   track: TrackData;
@@ -49,7 +50,9 @@ const MidiModule = (props: Props) => {
           <Text>{currentClip?.name}</Text>
         </Box>
       )}
-      <Box>Sampler piano</Box>
+      <Box>
+        <PianoKeys />
+      </Box>
     </Stack>
   );
 };
