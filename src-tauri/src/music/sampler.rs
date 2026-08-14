@@ -1,5 +1,6 @@
 use rubato::{
-    audioadapter_buffers::direct::InterleavedSlice, Fft, FixedSync, Resampler, WindowFunction,
+    audioadapter_buffers::direct::InterleavedSlice, Async, Fft, FixedAsync, FixedSync, Resampler,
+    SincInterpolationParameters, SincInterpolationType, WindowFunction,
 };
 
 pub struct Sampler {
@@ -19,13 +20,39 @@ impl Sampler {
     /// Ratio 1.0 = original pitch
     /// Ratio 2.0 = one octave up (double speed)
     /// Ratio 0.5 = one octave down (half speed)
-    fn midi_to_ratio(&self, target_midi_note: u8) -> f64 {
-        let semitones = target_midi_note as f64 - self.base_midi_note as f64;
+    fn midi_to_ratio(&self, target_midi_note: u8) -> f32 {
+        let semitones = target_midi_note as f32 - self.base_midi_note as f32;
 
         // Calculate the frequency ratio
         // Logarithmic Formula: ratio = 2^(n/12)
         // If n=12 (one octave up), ratio = 2.0
-        2.0f64.powf(semitones / 12.0)
+        2.0f32.powf(semitones / 12.0)
+    }
+
+    fn pitch_shift_simple(&self, input_buffer: &[f32], target_midi_note: u8) -> Vec<f32> {
+        // Based on current MIDI key, what's pitch multiplier (e.g. 1 octave up = 2x faster)
+        let pitch_ratio = self.midi_to_ratio(target_midi_note);
+        let input_len = input_buffer.len();
+
+        // Calculate new length based on ratio
+        let output_len = (input_len as f32 / pitch_ratio) as usize;
+        let mut output = Vec::with_capacity(output_len);
+
+        for i in 0..output_len {
+            let pos = i as f32 * pitch_ratio;
+            let index = pos.floor() as usize;
+            // The "animation" variable that powers the interpolation
+            let frac = pos - index as f32;
+
+            if index + 1 < input_len {
+                // Linear interpolation formula: (1 - f)*a + f*b
+                let sample = (1.0 - frac) * input_buffer[index] + frac * input_buffer[index + 1];
+                output.push(sample);
+            } else if index < input_len {
+                output.push(input_buffer[index]);
+            }
+        }
+        output
     }
 
     /// Resamples the input buffer to the new pitch
@@ -37,42 +64,43 @@ impl Sampler {
         // Based on current MIDI key, what's pitch multiplier (e.g. 1 octave up = 2x faster)
         let pitch_ratio = self.midi_to_ratio(target_midi_note);
 
-        // Determine the "virtual" input rate.
-        // To make the sample sound higher, we pretend it was recorded at a higher rate.
-        // If we want to pitch up by 2x, we tell rubato the input is 96kHz
-        // and the output is 48kHz.
-        let virtual_input_rate = (self.sample_rate as f64 * pitch_ratio) as usize;
+        // Resample ratio = output_rate / input_rate.
+        // Since we start with a C4 sample, output_rate is 1.0.
+        let resample_ratio = 1.0 / pitch_ratio;
 
-        // 4. Initialize the Resampler with new pitch
+        // Initialize the Resampler with new pitch
         // @TODO: Cache if note doesn't change
         let channels = 2;
         let chunk_size = 1024; // Smaller = lower latency, but worse quality/aliasing
 
-        let mut resampler = Fft::<f64>::new_custom(
-            virtual_input_rate,
-            self.sample_rate as usize,
+        let params = SincInterpolationParameters {
+            sinc_len: 128, // quality vs. speed; 64-256 is typical
+            f_cutoff: Some(0.95),
+            interpolation: SincInterpolationType::Linear, // cheaper than Cubic
+            oversampling_factor: 128, // lower = faster, more interpolation error
+            window: WindowFunction::BlackmanHarris2,
+        };
+
+        let mut resampler = Async::<f32>::new_sinc(
+            resample_ratio.into(),
+            2.0,
+            &params,
             chunk_size,
-            1,
             channels,
-            WindowFunction::BlackmanHarris,
-            FixedSync::Both,
+            FixedAsync::Input,
         )?;
 
-        // 5. Perform the resampling
+        // Perform the resampling
         let input_frames = input_buffer.len() / channels;
 
-        let f64_buffer: Vec<f64> = input_buffer.iter().map(|&sample| sample as f64).collect();
-        // Wrap the raw slice in an adapter so rubato knows how to read it.
-        let input_adapter = InterleavedSlice::new(&f64_buffer, channels, input_frames)?;
+        // rubato allows for generic types (like f64 vs f32) - but requires this wrapper "adapter"
+        let input_adapter = InterleavedSlice::new(&input_buffer, channels, input_frames)?;
 
         // Resample audio using rubato resampler
         let resampled_buffer = resampler.process_all(&input_adapter, input_frames, None)?;
 
-        let output: Vec<f32> = resampled_buffer
-            .take_data()
-            .iter()
-            .map(|&sample| sample as f32)
-            .collect();
+        // Pull our samples out of the adapter
+        let output: Vec<f32> = resampled_buffer.take_data();
 
         Ok(output)
     }
