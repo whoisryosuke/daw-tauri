@@ -2,6 +2,9 @@ import React from "react";
 import { Note, NOTES_BLACK, WhiteNotes } from "../../../../constants/music";
 import PianoKeyBlack from "./PianoKeyBlack";
 import { sva } from "../../../../../styled-system/css";
+import { useAtomValue } from "jotai";
+import { inputStore } from "../../../../store/input";
+import { noteToMidi } from "../../../../utils/midi";
 
 const pianoWhiteKeyRecipe = sva({
   slots: ["container", "whiteKey"],
@@ -38,19 +41,33 @@ const pianoWhiteKeyRecipe = sva({
 
 type Props = {
   note: WhiteNotes;
-  play: (note: Note) => void;
+  play: (midi: number) => void;
 };
 
 const PianoKeyWhite = ({ note, play }: Props) => {
-  const styles = pianoWhiteKeyRecipe({ pressed: false });
+  const input = useAtomValue(inputStore);
+  const midi = noteToMidi(note, 4);
+  const blackMidi = midi + 1;
+  const isSelected = input[midi].pressed;
+  const isBlackSelected = input[blackMidi].pressed;
+  const styles = pianoWhiteKeyRecipe({ pressed: isSelected });
   // We also render a black key if needed
   const showBlackKey = NOTES_BLACK.find((blackNote) =>
     blackNote.includes(note),
   );
+
+  const handlePlay = () => {
+    play(midi);
+  };
+
   return (
     <div className={styles.container}>
-      <div className={styles.whiteKey}>{note}</div>
-      {showBlackKey && <PianoKeyBlack note={note} play={play} />}
+      <div className={styles.whiteKey} onClick={handlePlay}>
+        {note}
+      </div>
+      {showBlackKey && (
+        <PianoKeyBlack note={note} play={play} selected={isBlackSelected} />
+      )}
     </div>
   );
 };

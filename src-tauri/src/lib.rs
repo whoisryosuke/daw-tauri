@@ -33,7 +33,8 @@ use crate::composition::{
     update_track_effect, update_track_gain, CompositionStore,
 };
 use crate::midi::{
-    connect_to_midi_input_device, get_midi_input_devices, start_midi_connection, MIDIStore,
+    connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
+    MIDIStore,
 };
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
@@ -355,7 +356,8 @@ pub fn run() {
             // MIDI
             get_midi_input_devices,
             start_midi_connection,
-            connect_to_midi_input_device
+            connect_to_midi_input_device,
+            play_midi_key
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

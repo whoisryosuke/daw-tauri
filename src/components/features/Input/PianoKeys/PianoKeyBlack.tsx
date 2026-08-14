@@ -1,6 +1,7 @@
 import React from "react";
-import { Note, WhiteNotes } from "../../../../constants/music";
+import { BaseNote, Note, WhiteNotes } from "../../../../constants/music";
 import { css } from "../../../../../styled-system/css";
+import { noteToMidi } from "../../../../utils/midi";
 
 const blackKeyStyle = css({
   position: "absolute",
@@ -20,16 +21,31 @@ const blackKeyStyle = css({
   borderWidth: 1,
   borderStyle: "solid",
   borderRadius: 3,
+
+  "&[data-pressed='true']": {
+    bg: "blue.6",
+  },
 });
 
 type Props = {
   note: WhiteNotes;
-  play: (note: Note) => void;
+  play: (midi: number) => void;
+  selected: boolean;
 };
 
-const PianoKeyBlack = ({ note, play }: Props) => {
-  const blackNote = `${note}#`;
-  return <div className={blackKeyStyle}>{blackNote}</div>;
+const PianoKeyBlack = ({ note, play, selected }: Props) => {
+  const blackNote = `${note}#` as BaseNote;
+  const midi = noteToMidi(blackNote, 4);
+
+  const handlePlay = () => {
+    play(midi);
+  };
+
+  return (
+    <div className={blackKeyStyle} data-pressed={selected} onClick={handlePlay}>
+      {blackNote}
+    </div>
+  );
 };
 
 export default PianoKeyBlack;

@@ -262,3 +262,14 @@ pub async fn connect_to_midi_input_device(
 
     Ok(())
 }
+
+/// Simulates MIDI playback from frontend
+#[tauri::command()]
+pub async fn play_midi_key(
+    messaging: State<'_, AudioEngineMessaging>,
+    midi: u8,
+) -> Result<(), String> {
+    messaging.play_midi_input(midi);
+
+    Ok(())
+}
