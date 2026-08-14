@@ -21,6 +21,8 @@ import { TrackEffect } from "../store/composition";
 import SettingsModal from "./features/SettingsModal/SettingsModal";
 import MIDISync from "./features/Input/MIDISync";
 import { newFile } from "../services/composition";
+import { Toast } from "@base-ui/react";
+import ToastList from "./ui/Toast/ToastList";
 
 type Props = {};
 
@@ -127,14 +129,17 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
     }
   };
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <StoreProvider store={store}>
-        {children}
-        <SettingsModal />
-        <PlaybackTimeSync />
-        <MIDISync />
-      </StoreProvider>
-    </DndContext>
+    <Toast.Provider>
+      <DndContext onDragEnd={handleDragEnd}>
+        <StoreProvider store={store}>
+          {children}
+          <SettingsModal />
+          <PlaybackTimeSync />
+          <MIDISync />
+          <ToastList />
+        </StoreProvider>
+      </DndContext>
+    </Toast.Provider>
   );
 };
 
