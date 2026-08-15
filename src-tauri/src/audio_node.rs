@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use dasp_signal::{self as signal, ConstHz, Signal, Sine};
 use serde::{Deserialize, Serialize};
+
+use crate::effects::shared::asdr::Adsr;
 // use std::fmt;
 
 /// Audio node that transmits sample data (e.g. static buffers, virtual synths, etc)
@@ -104,6 +106,13 @@ impl AudioNodeTypes {
             AudioNodeTypes::Synthesizer(node) => node.process(output, params),
         }
     }
+}
+
+// This is a special node that we use for immediate playback.
+// It has a built-in ADSR so we can fade out a clip gracefully if stopped.
+pub struct PlaybackNode {
+    adsr: Adsr,
+    node: SampleNode,
 }
 
 /// Effect node that takes input data, processes it, and overrides the output

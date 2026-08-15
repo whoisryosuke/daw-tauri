@@ -4,6 +4,7 @@ mod audio_cache;
 mod audio_engine;
 mod audio_node;
 mod composition;
+mod effects;
 mod math;
 mod midi;
 mod music;
