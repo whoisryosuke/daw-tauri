@@ -7,6 +7,7 @@ mod composition;
 mod math;
 mod midi;
 mod music;
+mod utils;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
