@@ -106,6 +106,60 @@ impl Mixer {
         }
     }
 
+    fn process_playback(&mut self, output: &mut [f32]) {
+        let buffer_size = output.len();
+
+        // If needed, resize scratch buffer. Minimal allocation, only happens once per device.
+        if buffer_size > self.playback_process_buffer.len() {
+            self.playback_process_buffer.resize(buffer_size, 0.0);
+        }
+
+        // Grab a slice of our track's process buffer that matches current output length
+        // This lets us have a larger buffer to accomodate varying output/block size
+        let playback_scratch_buffer = &mut self.playback_process_buffer[..buffer_size];
+
+        // Reset buffer to prevent accumulation
+        playback_scratch_buffer.fill(0.0);
+
+        // Handle any immediate playback
+        for (_, playback_node) in self.playback_nodes.iter_mut() {
+            playback_node.process(playback_scratch_buffer, 0);
+        }
+
+        for (i, sample) in playback_scratch_buffer.iter().enumerate() {
+            output[i] += *sample;
+        }
+
+        // Remove any finished nodes
+        for (node_id, node) in self.playback_nodes.iter_mut() {
+            // The only nodes that currently finish are audio buffers
+            if let AudioNodeTypes::StaticBuffer(sample_node) = node {
+                if sample_node.finished {
+                    // Find an empty handle to use
+                    let handle_id_result = self
+                        .remove_node_handles
+                        .iter()
+                        .enumerate()
+                        .find(|(id, handle)| **handle != None);
+
+                    // Got one? Add this node ID to it
+                    if let Some((handle_id, _)) = handle_id_result {
+                        self.remove_node_handles[handle_id] = Some(node_id);
+                    }
+                }
+            }
+        }
+
+        // Loop over finished nodes we need to remove from track
+        for handle in self.remove_node_handles.iter_mut() {
+            if let Some(handle_id) = handle {
+                self.playback_nodes.remove(*handle_id);
+
+                *handle = None;
+            }
+        }
+    }
+
     pub fn process(
         &mut self,
         output: &mut [f32],
@@ -170,57 +224,8 @@ impl Mixer {
         // TODO: I'm skeptical of this, here for testing to avoid accumulation
         output.fill(0.0);
 
-        let buffer_size = output.len();
-
-        // If needed, resize scratch buffer. Minimal allocation, only happens once per device.
-        if buffer_size > self.playback_process_buffer.len() {
-            self.playback_process_buffer.resize(buffer_size, 0.0);
-        }
-
-        // Grab a slice of our track's process buffer that matches current output length
-        // This lets us have a larger buffer to accomodate varying output/block size
-        let playback_scratch_buffer = &mut self.playback_process_buffer[..buffer_size];
-
-        // Reset buffer to prevent accumulation
-        playback_scratch_buffer.fill(0.0);
-
-        // Handle any immediate playback
-        for (_, playback_node) in self.playback_nodes.iter_mut() {
-            playback_node.process(playback_scratch_buffer, 0);
-        }
-
-        for (i, sample) in playback_scratch_buffer.iter().enumerate() {
-            output[i] += *sample;
-        }
-
-        // Remove any finished nodes
-        for (node_id, node) in self.playback_nodes.iter_mut() {
-            // The only nodes that currently finish are audio buffers
-            if let AudioNodeTypes::StaticBuffer(sample_node) = node {
-                if sample_node.finished {
-                    // Find an empty handle to use
-                    let handle_id_result = self
-                        .remove_node_handles
-                        .iter()
-                        .enumerate()
-                        .find(|(id, handle)| **handle != None);
-
-                    // Got one? Add this node ID to it
-                    if let Some((handle_id, _)) = handle_id_result {
-                        self.remove_node_handles[handle_id] = Some(node_id);
-                    }
-                }
-            }
-        }
-
-        // Loop over finished nodes we need to remove from track
-        for handle in self.remove_node_handles.iter_mut() {
-            if let Some(handle_id) = handle {
-                self.playback_nodes.remove(*handle_id);
-
-                *handle = None;
-            }
-        }
+        // Handle any "immediate" playback like MIDI input, audio previews, etc
+        self.process_playback(output);
 
         // Not playing? Don't update samples
         if self.playing == false {
@@ -229,6 +234,7 @@ impl Mixer {
 
         // Get current time for playback
         let current_time = playback_time.load(Ordering::Relaxed);
+        let buffer_size = output.len();
 
         // Process all nodes (aka play audio, apply effects like gain, etc)
         // First we loop through each "track" and run processing locally
