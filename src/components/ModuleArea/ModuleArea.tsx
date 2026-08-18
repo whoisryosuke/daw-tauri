@@ -10,15 +10,13 @@ type Props = {};
 
 const ModuleArea = (props: Props) => {
   return (
-    <Box minHeight="200px">
-      <Stack flexDir="row" gap="0" height="100%" p={2}>
-        <ToastButton />
-        <Waveform />
-        <MidiModule />
-        <EffectModules />
-        {/* <DebugSynthControls /> */}
-      </Stack>
-    </Box>
+    <Stack flexDir="row" gap="0" height="100%" p={2}>
+      <ToastButton />
+      <Waveform />
+      <MidiModule />
+      <EffectModules />
+      {/* <DebugSynthControls /> */}
+    </Stack>
   );
 };
 

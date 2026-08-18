@@ -11,11 +11,11 @@ function App() {
   return (
     <Stack height="100dvh" bg="gray.1" overflow="hidden">
       <TopNavigation />
-      <Stack flexDir="row" flex={1}>
+      <Stack flexDir="row" flex={1} minHeight={0}>
         <MediaBrowser />
         <Composition />
       </Stack>
-      <Stack flexDir="row">
+      <Stack flexDir="row" minHeight="200px">
         <ModuleArea />
       </Stack>
     </Stack>

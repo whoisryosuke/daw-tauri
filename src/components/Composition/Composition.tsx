@@ -43,36 +43,39 @@ const Composition = (props: Props) => {
   const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
 
   return (
-    <Stack flexDirection="row" flex={1} gap={0} minWidth={0} style={{ width }}>
-      {/* Left Side */}
-      <Stack width="150px" gap={0}>
-        <Box
-          width="100%"
-          height="50px"
-          bg="gray.2"
-          className={cornerBoxStyle}
-        />
-        <TrackControls />
-      </Stack>
+    <Box flex={1} gap={0} minWidth={0} style={{ width }}>
+      <Stack
+        flexDirection="row"
+        minWidth="100%"
+        height="100%"
+        overflowX="scroll"
+        overflowY="visible"
+        position="relative"
+        whiteSpace="nowrap"
+        className={timelineWindowStyle}
+        gap={0}
+      >
+        {/* Left Side */}
+        <Box width="150px" gap={0} position="sticky" left="0">
+          <Box
+            width="100%"
+            height="50px"
+            bg="gray.2"
+            className={cornerBoxStyle}
+          />
+          <TrackControls />
+        </Box>
 
-      {/* Timeline */}
-      <Box flex={1} overflow="hidden" position="relative" minWidth={0}>
-        <Box
-          minWidth="100%"
-          height="100%"
-          overflowX="scroll"
-          position="relative"
-          whiteSpace="nowrap"
-          className={timelineWindowStyle}
-        >
-          <Stack style={{ width }} gap={0}>
-            <TimeMarkers containerWidth={width} />
+        {/* Timeline */}
+        <Box flex={1} position="relative" minWidth={0}>
+          <TimeMarkers containerWidth={width} />
+          <PlaybackHead containerWidth={width} />
+          <Stack position="relative" style={{ width }} mt={"50px"} gap={0}>
             <Tracks containerWidth={width} />
-            <PlaybackHead containerWidth={width} />
           </Stack>
         </Box>
-      </Box>
-    </Stack>
+      </Stack>
+    </Box>
   );
 };
 
