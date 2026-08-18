@@ -22,8 +22,8 @@ const pianoWhiteKeyRecipe = sva({
       justifyContent: "flex-end",
       fontSize: 1,
       bg: { base: "gray.9", _hover: "blue.6" },
-      borderColor: { base: "gray.10", _hover: "blue.7" },
-      color: { base: "gray.2", _hover: "blue.2" },
+      borderColor: { base: "gray.10", _hover: "blue.8" },
+      color: { base: "gray.2", _hover: "blue.11" },
       borderWidth: 1,
       borderStyle: "solid",
       borderRadius: 3,
@@ -43,8 +43,8 @@ const pianoWhiteKeyRecipe = sva({
       true: {
         whiteKey: {
           bg: "blue.6",
-          color: "blue.2",
-          borderColor: "blue.7",
+          color: "blue.11",
+          borderColor: "blue.8",
         },
       },
     },
