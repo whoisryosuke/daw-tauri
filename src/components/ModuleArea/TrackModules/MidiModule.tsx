@@ -10,18 +10,23 @@ import Text from "../../ui/Typography/Text";
 import { useDroppable } from "@dnd-kit/core";
 import { Box, Stack } from "../../../../styled-system/jsx";
 import PianoKeys from "../../features/Input/PianoKeys/PianoKeys";
+import DropZone from "../../ui/DropZone/DropZone";
+import { FaFileAudio } from "react-icons/fa6";
 
 type DropZoneProps = {
   track: TrackData;
 };
-const DropZone = ({ track }: DropZoneProps) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `MIDI_MODULE`,
-    data: {
-      trackId: track.id,
-    },
-  });
-  return <div ref={setNodeRef}>Drop zone</div>;
+const MIDIDropZone = ({ track }: DropZoneProps) => {
+  return (
+    <DropZone
+      id={`MIDI_MODULE`}
+      data={{
+        trackId: track.id,
+      }}
+      text="Drop a sample here"
+      icon={<FaFileAudio size={24} />}
+    />
+  );
 };
 
 type Props = {};
@@ -43,7 +48,7 @@ const MidiModule = (props: Props) => {
   return (
     <Stack flexDir="row">
       {showDrop ? (
-        <DropZone track={currentTrack} />
+        <MIDIDropZone track={currentTrack} />
       ) : (
         <Box>
           <Text>Current clip</Text>
