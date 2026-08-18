@@ -11,6 +11,7 @@ import ContextMenu, { ContextMenuItem } from "../../ui/ContextMenu/ContextMenu";
 import { addTrack } from "../../../services/composition";
 import { PiPianoKeys } from "react-icons/pi";
 import { FaFileAudio } from "react-icons/fa6";
+import { css } from "../../../../styled-system/css";
 
 type Props = {};
 
@@ -53,7 +54,10 @@ const TrackControls = (props: Props) => {
   return (
     <Stack gap={0}>
       {renderItems}
-      <ContextMenu items={contextMenuItems} />
+      <ContextMenu
+        items={contextMenuItems}
+        triggerClass={css({ bg: "gray.2" })}
+      />
     </Stack>
   );
 };
