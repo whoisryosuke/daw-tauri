@@ -18,14 +18,17 @@ const timelineWindowStyle = css({
     backgroundColor: "gray.3",
   },
   "&::-webkit-scrollbar-thumb": {
-    background: {
+    backgroundColor: {
       base: "gray.6",
       _hover: "gray.8",
     },
     borderRadius: 1,
   },
   "&::-webkit-scrollbar-thumb:hover": {
-    background: "#555",
+    backgroundColor: "#555",
+  },
+  "&::-webkit-scrollbar-corner": {
+    backgroundColor: "gray.3",
   },
 });
 
@@ -56,7 +59,7 @@ const Composition = (props: Props) => {
         gap={0}
       >
         {/* Left Side */}
-        <Box width="150px" gap={0} position="sticky" left="0">
+        <Box width="150px" gap={0} position="sticky" left="0" zIndex={999}>
           <Box
             width="100%"
             height="50px"
