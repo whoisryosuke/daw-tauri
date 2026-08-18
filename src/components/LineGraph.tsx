@@ -17,9 +17,9 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
   const bgColor = colorMode === "dark" ? "#111" : "#EEE";
   const lineColor = colorMode === "dark" ? "blue" : "blue";
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const data = useRef<number[]>([]);
+  const data = useRef<number[]>(new Array(128).fill(0));
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
-    null
+    null,
   );
   const prevTime = useRef(0);
   const listenerRef = useRef<UnlistenFn>(null);
@@ -74,7 +74,7 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
       ctx.strokeStyle = lineColor;
       for (let i = 0; i < canvasWidth; i++) {
         const index = Math.floor(
-          mapRange(i, 0, canvasWidth, 0, data.current.length)
+          mapRange(i, 0, canvasWidth, 0, data.current.length),
         );
         const x = i;
         // We scale the audio values to 0-1 to make it easier
@@ -91,7 +91,7 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
 
       if (animated) animationRef.current = requestAnimationFrame(draw);
     },
-    [data, lineColor, bgColor, animated, fps]
+    [data, lineColor, bgColor, animated, fps],
   );
 
   useEffect(() => {
