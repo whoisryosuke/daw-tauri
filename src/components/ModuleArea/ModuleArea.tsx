@@ -78,7 +78,7 @@ const ModuleArea = (props: Props) => {
         <div className={classes.tabPanelContainer}>
           {trackType && (
             <Tabs.Panel value="type" className={classes.tabPanel}>
-              <MidiModule />
+              <MidiModule currentTrack={currentTrack} />
             </Tabs.Panel>
           )}
           <Tabs.Panel value="effects" className={classes.tabPanel}>

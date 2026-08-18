@@ -29,19 +29,17 @@ const MIDIDropZone = ({ track }: DropZoneProps) => {
   );
 };
 
-type Props = {};
+type Props = {
+  currentTrack: TrackData;
+};
 
-const MidiModule = (props: Props) => {
-  const selectedTrackId = useAtomValue(selectedTrackAtom);
-  const tracks = useAtomValue(tracksAtom);
+const MidiModule = ({ currentTrack }: Props) => {
   const clips = useAtomValue(clipsAtom);
 
-  const currentTrack = tracks.find((track) => track.id == selectedTrackId);
-  const trackType = currentTrack?.trackType;
   const clipId = currentTrack?.clip;
   const currentClip = clips.find((item) => item.id == clipId);
 
-  if (!currentTrack || trackType != "Midi") return <div></div>;
+  if (!currentTrack || currentTrack.trackType != "Midi") return <div></div>;
 
   const showDrop = !clipId || clipId == "";
 
