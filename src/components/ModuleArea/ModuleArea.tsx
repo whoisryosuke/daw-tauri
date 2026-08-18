@@ -15,7 +15,7 @@ const styles = sva({
     tabRoot: {
       display: "flex",
       flexDirection: "column",
-      gap: 2,
+      gap: 1,
     },
     tabPanelContainer: {
       display: "flex",
@@ -29,6 +29,7 @@ const styles = sva({
     tabList: {
       display: "flex",
       gap: 1,
+      fontSize: 1,
     },
     tabButton: {
       px: 3,
