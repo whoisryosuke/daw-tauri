@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import { ContextMenu as BaseMenu } from "@base-ui/react/context-menu";
 import { cx, sva } from "../../../../styled-system/css";
 
@@ -18,9 +18,10 @@ export const contextMenuRecipe = sva({
     popup: {
       transformOrigin: "var(--transform-origin)",
       borderWidth: "1px",
-      borderColor: "gray.9",
-      bg: "white",
+      borderColor: "gray.6",
+      bg: "gray.2",
       paddingY: "1",
+      borderRadius: 3,
       color: "gray.9",
       boxShadow: "0.25rem 0.25rem 0px rgba(0, 0, 0, 0.12)",
       outline: "none",
@@ -34,25 +35,36 @@ export const contextMenuRecipe = sva({
     },
     item: {
       display: "flex",
+      alignItems: "center",
+      gap: 2,
       cursor: "default",
-      paddingY: "2",
-      paddingRight: "8",
-      paddingLeft: "4",
+      py: 3,
+      paddingRight: 14,
+      paddingLeft: 4,
       fontSize: "sm",
-      lineHeight: "4",
       outline: "none",
       userSelect: "none",
+      color: "gray.9",
+
+      _motionSafe: {
+        transitionProperty: "background-color, color, border-color",
+        transitionTimingFunction: "ease-in-out",
+        transitionDuration: "fast",
+      },
+
       "&[data-highlighted]": {
         position: "relative",
         zIndex: 0,
-        color: "white",
+        color: "gray.12",
+
         _before: {
           content: '""',
           position: "absolute",
           insetX: 1,
           insetY: 0,
           zIndex: -1,
-          bg: "gray.9",
+          bg: "gray.4",
+          borderRadius: 2,
         },
       },
       "&[data-disabled]": {
@@ -71,6 +83,7 @@ export const contextMenuRecipe = sva({
 export type ContextMenuItem = {
   title: string;
   onClick: () => void;
+  icon?: ReactElement;
 };
 
 type Props = {
@@ -90,7 +103,7 @@ const ContextMenu = ({ items, triggerClass }: Props) => {
           <BaseMenu.Popup className={styles.popup}>
             {items.map((item) => (
               <BaseMenu.Item className={styles.item} onClick={item.onClick}>
-                {item.title}
+                {item.icon} {item.title}
               </BaseMenu.Item>
             ))}
           </BaseMenu.Popup>
