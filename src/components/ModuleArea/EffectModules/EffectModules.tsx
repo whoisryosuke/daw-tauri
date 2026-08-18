@@ -6,6 +6,7 @@ import {
   trackEffectsAtom,
 } from "../../../store/composition";
 import GainModule from "./modules/GainModule/GainModule";
+import { Stack } from "../../../../styled-system/jsx";
 
 const EFFECT_MODULE_MAP: Record<
   TrackEffect["effect"],
@@ -31,7 +32,11 @@ const EffectModules = (props: Props) => {
     return <EffectComponent {...effect} />;
   });
 
-  return <div>{render}</div>;
+  return (
+    <Stack gap={2} flexDir="row">
+      {render}
+    </Stack>
+  );
 };
 
 export default EffectModules;
