@@ -53,7 +53,7 @@ const MidiModule = ({ currentTrack }: Props) => {
           <Text>{currentClip?.name}</Text>
         </Box>
       )}
-      <Box>
+      <Box display="flex">
         <PianoKeys />
       </Box>
     </Stack>

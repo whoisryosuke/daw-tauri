@@ -9,7 +9,6 @@ const blackKeyStyle = css({
   flexDirection: "column",
   justifyContent: "flex-end",
   alignItems: "center",
-  color: "gray.11",
   top: 0,
   left: "66.6%",
   width: "75%",
@@ -17,10 +16,20 @@ const blackKeyStyle = css({
   zIndex: 420,
   fontSize: 1,
   bg: { base: "gray.2", _hover: "blue.6" },
-  borderColor: "gray.3",
+  borderColor: { base: "gray.3", _hover: "blue.7" },
+  color: { base: "gray.11", _hover: "blue.11" },
   borderWidth: 1,
   borderStyle: "solid",
   borderRadius: 3,
+
+  userSelect: "none",
+  cursor: "pointer",
+
+  _motionSafe: {
+    transitionProperty: "background-color, color, border-color",
+    transitionTimingFunction: "ease-in-out",
+    transitionDuration: "fast",
+  },
 
   "&[data-pressed='true']": {
     bg: "blue.6",
