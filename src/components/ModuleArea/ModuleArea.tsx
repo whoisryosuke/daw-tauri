@@ -72,7 +72,7 @@ const ModuleArea = (props: Props) => {
   const classes = styles();
 
   return (
-    <Stack flexDir="row" gap="0" height="100%" p={2}>
+    <Stack flexDir="row" gap={2} height="100%" p={2}>
       <Waveform />
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>
@@ -84,9 +84,11 @@ const ModuleArea = (props: Props) => {
           </Tabs.Panel>
         </div>
         <Tabs.List className={classes.tabList}>
-          <Tabs.Tab value="type" className={classes.tabButton}>
-            {trackType}
-          </Tabs.Tab>
+          {trackType && (
+            <Tabs.Tab value="type" className={classes.tabButton}>
+              {trackType}
+            </Tabs.Tab>
+          )}
           <Tabs.Tab value="effects" className={classes.tabButton}>
             Effects
           </Tabs.Tab>
