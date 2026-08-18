@@ -3,13 +3,14 @@ import React from "react";
 import {
   playMidiTrackAtom,
   selectedTrackAtom,
-  TrackData,
   tracksAtom,
 } from "../../../store/composition";
 import TrackControl from "./TrackControl";
 import { Stack } from "../../../../styled-system/jsx";
 import ContextMenu, { ContextMenuItem } from "../../ui/ContextMenu/ContextMenu";
 import { addTrack } from "../../../services/composition";
+import { PiPianoKeys } from "react-icons/pi";
+import { FaFileAudio } from "react-icons/fa6";
 
 type Props = {};
 
@@ -37,8 +38,16 @@ const TrackControls = (props: Props) => {
   ));
 
   const contextMenuItems: ContextMenuItem[] = [
-    { title: "Add Audio Track", onClick: handleAddAudioTrack },
-    { title: "Add MIDI Track", onClick: handleAddMIDITrack },
+    {
+      icon: <FaFileAudio />,
+      title: "Add Audio Track",
+      onClick: handleAddAudioTrack,
+    },
+    {
+      icon: <PiPianoKeys />,
+      title: "Add MIDI Track",
+      onClick: handleAddMIDITrack,
+    },
   ];
 
   return (
