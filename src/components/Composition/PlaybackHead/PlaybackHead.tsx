@@ -15,10 +15,9 @@ const styles = sva({
   base: {
     container: {
       position: "absolute",
-      top: 0,
+      top: "-10px",
       left: 0,
-
-      height: "100%",
+      height: "calc(100% + 10px)",
     },
     line: {
       position: "absolute",

@@ -72,8 +72,8 @@ const Composition = (props: Props) => {
         {/* Timeline */}
         <Box flex={1} position="relative" minWidth={0}>
           <TimeMarkers containerWidth={width} />
-          <PlaybackHead containerWidth={width} />
           <Stack position="relative" style={{ width }} mt={"50px"} gap={0}>
+            <PlaybackHead containerWidth={width} />
             <Tracks containerWidth={width} />
           </Stack>
         </Box>
