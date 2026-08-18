@@ -9,6 +9,7 @@ export const contextMenuRecipe = sva({
       display: "flex",
       width: "100%",
       userSelect: "none",
+      height: "150px",
     },
     positioner: {
       outline: "none",
@@ -80,9 +81,9 @@ const ContextMenu = ({ items, triggerClass }: Props) => {
   const styles = contextMenuRecipe();
   return (
     <BaseMenu.Root>
-      <BaseMenu.Trigger className={cx(styles.trigger, triggerClass)}>
-        Right click here
-      </BaseMenu.Trigger>
+      <BaseMenu.Trigger
+        className={cx(styles.trigger, triggerClass)}
+      ></BaseMenu.Trigger>
       <BaseMenu.Portal>
         <BaseMenu.Positioner className={styles.positioner}>
           <BaseMenu.Popup className={styles.popup}>
