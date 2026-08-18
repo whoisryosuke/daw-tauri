@@ -76,9 +76,11 @@ const ModuleArea = (props: Props) => {
       <Waveform />
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>
-          <Tabs.Panel value="type" className={classes.tabPanel}>
-            <MidiModule />
-          </Tabs.Panel>
+          {trackType && (
+            <Tabs.Panel value="type" className={classes.tabPanel}>
+              <MidiModule />
+            </Tabs.Panel>
+          )}
           <Tabs.Panel value="effects" className={classes.tabPanel}>
             <EffectModules />
           </Tabs.Panel>
