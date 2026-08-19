@@ -26,12 +26,11 @@ const ClipDragHandle = (props: Props) => {
   const callback: useDragHandleCallback = (delta) => {
     console.log("delta", delta);
   };
-  const { dragging, handleMouseDown } = useDragHandle(callback);
+  const { dragging, handlePointerDown } = useDragHandle(callback);
   return (
     <div
       className={clipDragHandleStyle}
-      onMouseDown={handleMouseDown}
-      onPointerDown={(e) => e.stopPropagation()}
+      onPointerDownCapture={handlePointerDown}
     />
   );
 };
