@@ -63,6 +63,7 @@ export type Clip = {
   name: string;
   duration: number;
   type: ClipType;
+  range?: number[];
 
   /**
    * The ID of the associated clip type (e.g. id of sample in cache)

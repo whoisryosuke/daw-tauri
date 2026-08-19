@@ -1,16 +1,22 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAtomValue } from "jotai";
 import React, { useEffect, useState } from "react";
-import { compositionAtom } from "../../../../store/composition";
-import LineGraph from "../../../LineGraph";
+import { Clip, compositionAtom } from "../../../../store/composition";
 import Waveform from "../../../viz/Waveform";
 
 type Props = {
   path: string;
   width: number;
+  duration: Clip["duration"];
+  range: Clip["range"];
 };
 
-const SampleClipWaveform = ({ path, width }: Props) => {
+const SampleClipWaveform = ({
+  path,
+  width,
+  duration,
+  range: clipRange,
+}: Props) => {
   const { range } = useAtomValue(compositionAtom);
   const [buffer, setBuffer] = useState<number[]>([]);
 
@@ -26,9 +32,19 @@ const SampleClipWaveform = ({ path, width }: Props) => {
 
   useEffect(() => {
     fetchBuffer();
-  }, [width, range]);
+  }, [width, range, clipRange]);
 
-  return <Waveform data={buffer} width={width} height={100} />;
+  const bufferRange = clipRange ? clipRange : [0, duration];
+
+  return (
+    <Waveform
+      data={buffer}
+      width={width}
+      height={100}
+      duration={duration}
+      range={bufferRange}
+    />
+  );
 };
 
 export default SampleClipWaveform;

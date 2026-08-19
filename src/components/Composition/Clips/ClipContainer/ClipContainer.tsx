@@ -48,10 +48,13 @@ type Props = Clip & {
 
 const ClipContainer = ({
   trackId,
+  id,
   name,
   color = "blue",
   children,
   width,
+  duration,
+  range,
   x,
 }: PropsWithChildren<Props>) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -65,6 +68,7 @@ const ClipContainer = ({
   const colorStyle = css({
     colorPalette: color,
   });
+
   return (
     <motion.div
       className={cx(containerStyle, colorStyle)}
@@ -94,7 +98,7 @@ const ClipContainer = ({
         }}
         zIndex={420}
       />
-      <ClipDragHandle />
+      <ClipDragHandle id={id} range={range} duration={duration} />
     </motion.div>
   );
 };

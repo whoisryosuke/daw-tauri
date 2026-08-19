@@ -26,6 +26,7 @@ import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
 import mapRange from "../utils/map";
 import { EFFECT_LIST } from "../constants/effects";
+import { TIMELINE_DEFAULT_SPACING } from "../constants/composition";
 
 export type DragPositionData = {
   x: number;
@@ -110,6 +111,24 @@ function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
   const startTime = mapRange(dragPosition.x, 0, dragPosition.width, start, end);
 
   console.log("calculated start time", startTime);
+
+  return startTime;
+}
+
+export function getTimelineWidth() {
+  const { zoom, range } = store.get(compositionAtom);
+  const timelineDistance = range[1] - range[0];
+  const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
+
+  return width;
+}
+
+export function getTimeBasedOnTimelinePosition(x: number) {
+  const [start, end] = store.get(compositionAtom).range;
+  const width = getTimelineWidth();
+
+  const startTime = mapRange(x, 0, width, start, end);
+  console.log("calculated width", x, startTime);
 
   return startTime;
 }

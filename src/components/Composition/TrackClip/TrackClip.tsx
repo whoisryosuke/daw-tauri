@@ -40,7 +40,9 @@ const TrackClip = ({
     }
     const x = mapRange(startTime, range[0], range[1], 0, width);
     const clipWidth = mapRange(
-      currentClip.duration,
+      currentClip.range
+        ? currentClip.range[1] - currentClip.range[0]
+        : currentClip.duration,
       range[0],
       range[1],
       0,

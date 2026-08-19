@@ -6,14 +6,26 @@ import SampleClipWaveform from "./SampleClipWaveform";
 
 type Props = TrackClipComponentProps & {};
 
-const SampleClip = ({ id, name, clip_id: data, width }: Props) => {
+const SampleClip = ({
+  id,
+  name,
+  clip_id: data,
+  width,
+  range,
+  duration,
+}: Props) => {
   const samples = useAtomValue(samplesAtom);
   const sample = samples.find((sampleItem) => sampleItem.path == data);
 
   if (sample) {
     return (
       <div>
-        <SampleClipWaveform path={sample.path} width={width} />
+        <SampleClipWaveform
+          path={sample.path}
+          width={width}
+          range={range}
+          duration={duration}
+        />
       </div>
     );
   }

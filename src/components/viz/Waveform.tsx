@@ -8,18 +8,24 @@ import {
 import mapRange from "../../utils/map";
 import { useAtomValue } from "jotai";
 import { colorModeStore } from "../../store/theme";
-
-// Assuming numbers are 0-1
-type GraphData = number[];
-const DEFAULT_AUDIO_HEIGHT = 128;
+import { Clip } from "../../store/composition";
 
 type Props = ComponentPropsWithoutRef<"canvas"> & {
   data: number[];
   animated?: boolean;
   fps?: number;
+  duration: Clip["duration"];
+  range: number[];
 };
 
-const Waveform = ({ data, animated, fps, ...props }: Props) => {
+const Waveform = ({
+  data,
+  animated,
+  fps,
+  duration,
+  range,
+  ...props
+}: Props) => {
   const colorMode = useAtomValue(colorModeStore);
 
   const bgColor = colorMode === "dark" ? "rgba(17, 17, 17, 0.0)" : "#fcfcfcff";
@@ -53,8 +59,10 @@ const Waveform = ({ data, animated, fps, ...props }: Props) => {
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
-      // Get audio data
-      // if (!data.current) return;
+      // Clip waveform to range
+      const [start, end] = range;
+      const startIndex = (start / duration) * data.length;
+      const endIndex = (end / duration) * data.length;
 
       // Clear drawing
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -65,7 +73,9 @@ const Waveform = ({ data, animated, fps, ...props }: Props) => {
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = lineColor;
       for (let i = 0; i < canvasWidth; i++) {
-        const index = Math.floor(mapRange(i, 0, canvasWidth, 0, data.length));
+        const index = Math.floor(
+          mapRange(i, 0, canvasWidth, startIndex, endIndex),
+        );
         const x = i;
         // We scale the audio values to 0-1 to make it easier
         const amplitude = mapRange(data[index], -1, 1, 0, 1) * 10 - 4.5;
