@@ -57,14 +57,15 @@ const ClipDragHandle = ({ id, range, duration }: Props) => {
       // Only set if we go less than current value (since clip is clearly max)
       if (direction) return;
       // We add here because time is negative
-      const newRange = Math.min(duration + newTime, duration);
+      const newRange = Math.max(Math.min(duration + newTime, duration), 0);
 
       setClips(updateClipRange(id, newRange));
       return;
     }
 
     const [start, end] = range;
-    const newRangeEnd = Math.min(end + newTime, duration);
+    // Limit to min (duration) and max (0 - can't have negative clips)
+    const newRangeEnd = Math.max(Math.min(end + newTime, duration), 0);
 
     setClips(updateClipRange(id, newRangeEnd));
   };
