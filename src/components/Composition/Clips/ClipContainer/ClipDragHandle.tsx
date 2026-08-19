@@ -18,30 +18,42 @@ const clipDragHandleStyle = css({
 
   bg: {
     base: "transparent",
-    _hover: "gray.4",
-    _active: "blue.6",
+    _hover: "gray.alpha-4",
+    _active: "blue.alpha-6",
   },
   zIndex: 999,
+
+  "&[data-left='true']": {
+    right: "auto",
+    left: 0,
+  },
 });
 
 type Props = {
   id: Clip["id"];
   range: Clip["range"];
   duration: Clip["duration"];
+  left?: boolean;
 };
 
-const updateClipRange = (id: Clip["id"], newRange: number) => (items: Clip[]) =>
-  items.map((item) => {
-    if (item.id == id) {
-      return {
-        ...item,
-        range: [0, newRange],
-      };
-    }
-    return item;
-  });
+const updateClipRange =
+  (id: Clip["id"], duration: number, newRange: number, start?: boolean) =>
+  (items: Clip[]) =>
+    items.map((item) => {
+      if (item.id == id) {
+        return {
+          ...item,
+          // Range is optional, we need to check or provide a default to initialize
+          // Default is always `[0, duration]`
+          range: start
+            ? [newRange, item.range ? item.range[1] : duration]
+            : [item.range ? item.range[0] : 0, newRange],
+        };
+      }
+      return item;
+    });
 
-const ClipDragHandle = ({ id, range, duration }: Props) => {
+const ClipDragHandle = ({ id, range, duration, left }: Props) => {
   const setClips = useSetAtom(clipsAtom);
 
   const callback: useDragHandleCallback = (delta) => {
@@ -59,15 +71,17 @@ const ClipDragHandle = ({ id, range, duration }: Props) => {
       // We add here because time is negative
       const newRange = Math.max(Math.min(duration + newTime, duration), 0);
 
-      setClips(updateClipRange(id, newRange));
+      setClips(updateClipRange(id, duration, newRange, left));
       return;
     }
 
+    // Start or end of range (aka left or right)
     const [start, end] = range;
+    let rangeSide = left ? start : end;
     // Limit to min (duration) and max (0 - can't have negative clips)
-    const newRangeEnd = Math.max(Math.min(end + newTime, duration), 0);
+    const newRangeEnd = Math.max(Math.min(rangeSide + newTime, duration), 0);
 
-    setClips(updateClipRange(id, newRangeEnd));
+    setClips(updateClipRange(id, duration, newRangeEnd, left));
   };
   const { dragging, handlePointerDown } = useDragHandle(callback);
 
@@ -75,6 +89,7 @@ const ClipDragHandle = ({ id, range, duration }: Props) => {
     <div
       className={clipDragHandleStyle}
       onPointerDownCapture={handlePointerDown}
+      data-left={left}
     />
   );
 };

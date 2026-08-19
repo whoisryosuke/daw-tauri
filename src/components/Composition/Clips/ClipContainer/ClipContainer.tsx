@@ -98,6 +98,7 @@ const ClipContainer = ({
         }}
         zIndex={420}
       />
+      <ClipDragHandle id={id} range={range} duration={duration} left />
       <ClipDragHandle id={id} range={range} duration={duration} />
     </motion.div>
   );
