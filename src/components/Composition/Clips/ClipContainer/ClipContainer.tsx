@@ -7,6 +7,7 @@ import { ColorPalette } from "../../../../../styled-system/tokens";
 import { motion } from "motion/react";
 import { useDraggable } from "@dnd-kit/core";
 import { TrackClipDragData } from "../../../../constants/drag";
+import ClipDragHandle from "./ClipDragHandle";
 
 const textStyle = css({
   fontSize: 1,
@@ -91,7 +92,9 @@ const ClipContainer = ({
           base: "transparent",
           _hover: "gray.2",
         }}
+        zIndex={420}
       />
+      <ClipDragHandle />
     </motion.div>
   );
 };

@@ -6,65 +6,47 @@ import React, {
   type MouseEventHandler,
   type SetStateAction,
 } from "react";
-import styles from "./ExpandablePanel.module.css";
 import type { ExpandablePanelSize } from "./types";
+import { css } from "../../../../styled-system/css";
+import {
+  useDragHandle,
+  useDragHandleCallback,
+} from "../../../hooks/useDragHandle";
+
+const handleStyle = css({
+  position: "absolute",
+  top: 0,
+  right: 0,
+
+  width: "10px",
+  height: "100%",
+  bg: {
+    base: "transparent",
+    _hover: "gray.4",
+    _active: "blue.6",
+  },
+});
 
 type Props = {
   setSize: Dispatch<SetStateAction<ExpandablePanelSize>>;
 };
 
 const ExpandablePanelDragHandle = ({ setSize }: Props) => {
-  const [dragging, setDragging] = useState(false);
-  const mousePos = useRef({
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastY: 0,
-  });
-
-  const handleMouseUp = (e: MouseEvent) => {
-    setDragging(false);
-  };
-  const handleMouseDown: MouseEventHandler<HTMLDivElement> = (e) => {
-    mousePos.current.startX = e.clientX;
-    mousePos.current.startY = e.clientY;
-    mousePos.current.lastX = e.clientX;
-    mousePos.current.lastY = e.clientY;
-
-    setDragging(true);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-    mousePos.current.lastX = e.clientX;
-    mousePos.current.lastY = e.clientY;
-
-    // Measure distance
-    const width = mousePos.current.lastX - mousePos.current.startX;
-    console.log("dragging panel", e.clientX);
-    // const height = mousePos.current.lastY - mousePos.current.startY;
+  const callback: useDragHandleCallback = (delta) =>
     setSize((prev) => ({
-      width: prev.width + width,
+      width: prev.width + delta.x,
       height: prev.height,
       //   height: prev.height + height,
     }));
+  const { dragging, handleMouseDown } = useDragHandle(callback);
 
-    // Since we synced -- reset the "start"
-    mousePos.current.startX = e.clientX;
-    mousePos.current.startY = e.clientY;
-  };
-
-  useEffect(() => {
-    if (!dragging) return;
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, [dragging]);
-
-  return <div className={styles.DragHandle} onMouseDown={handleMouseDown} />;
+  return (
+    <div
+      className={handleStyle}
+      onMouseDown={handleMouseDown}
+      data-dragging={dragging}
+    />
+  );
 };
 
 export default ExpandablePanelDragHandle;

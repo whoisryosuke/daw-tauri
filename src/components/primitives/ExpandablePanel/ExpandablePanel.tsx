@@ -1,8 +1,14 @@
 import React, { CSSProperties, useState, type PropsWithChildren } from "react";
-import styles from "./ExpandablePanel.module.css";
 import ExpandablePanelDragHandle from "./ExpandablePanelDragHandle";
 import type { ExpandablePanelSize } from "./types";
 import { Box, BoxProps } from "../../../../styled-system/jsx";
+import { css } from "../../../../styled-system/css";
+
+const panelStyle = css({
+  position: "relative",
+  width: "var(--width)",
+  minWidth: " 200px",
+});
 
 const MIN_WIDTH = 200;
 
@@ -24,7 +30,7 @@ const ExpandablePanel = ({
 
   return (
     <Box
-      className={styles.ExpandablePanel}
+      className={panelStyle}
       style={{ "--width": `${widthVar}px`, ...style } as CSSProperties}
       {...props}
     >
