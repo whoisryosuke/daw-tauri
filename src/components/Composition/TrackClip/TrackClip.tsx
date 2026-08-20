@@ -58,7 +58,11 @@ const TrackClip = ({
         width={clipWidth}
         range={trackClipRange}
       >
-        <ClipComponent {...currentClip} width={clipWidth} />
+        <ClipComponent
+          {...currentClip}
+          width={clipWidth}
+          range={trackClipRange}
+        />
       </ClipContainer>
     );
   }

@@ -1,14 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAtomValue } from "jotai";
 import React, { useEffect, useState } from "react";
-import { Clip, compositionAtom } from "../../../../store/composition";
+import {
+  Clip,
+  compositionAtom,
+  TrackClipData,
+} from "../../../../store/composition";
 import Waveform from "../../../viz/Waveform";
 
 type Props = {
   path: string;
   width: number;
   duration: Clip["duration"];
-  range: Clip["range"];
+  range: TrackClipData["range"];
 };
 
 const SampleClipWaveform = ({
