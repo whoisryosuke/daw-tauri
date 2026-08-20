@@ -22,6 +22,7 @@ const TrackClip = ({
   clip_id: clipId,
   start_time: startTime,
   enabled,
+  range: trackClipRange,
   width,
 }: Props) => {
   const { range } = useAtomValue(compositionAtom);
@@ -40,8 +41,8 @@ const TrackClip = ({
     }
     const x = mapRange(startTime, range[0], range[1], 0, width);
     const clipWidth = mapRange(
-      currentClip.range
-        ? currentClip.range[1] - currentClip.range[0]
+      trackClipRange
+        ? trackClipRange[1] - trackClipRange[0]
         : currentClip.duration,
       range[0],
       range[1],
@@ -50,7 +51,13 @@ const TrackClip = ({
     );
 
     return (
-      <ClipContainer trackId={id} {...currentClip} x={x} width={clipWidth}>
+      <ClipContainer
+        trackId={id}
+        {...currentClip}
+        x={x}
+        width={clipWidth}
+        range={trackClipRange}
+      >
         <ClipComponent {...currentClip} width={clipWidth} />
       </ClipContainer>
     );

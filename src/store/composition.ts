@@ -54,6 +54,7 @@ export type TrackClipData = {
   clip_id: string;
   start_time: number;
   enabled: boolean;
+  range?: number[];
 };
 
 export type ClipType = "Sample" | "Midi";
@@ -63,7 +64,6 @@ export type Clip = {
   name: string;
   duration: number;
   type: ClipType;
-  range?: number[];
 
   /**
    * The ID of the associated clip type (e.g. id of sample in cache)

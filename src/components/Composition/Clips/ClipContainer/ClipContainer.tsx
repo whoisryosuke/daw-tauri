@@ -44,11 +44,11 @@ type Props = Clip & {
   width: number;
   color: ColorPalette;
   trackId: TrackClipData["id"];
+  range: TrackClipData["range"];
 };
 
 const ClipContainer = ({
   trackId,
-  id,
   name,
   color = "blue",
   children,
@@ -98,8 +98,13 @@ const ClipContainer = ({
         }}
         zIndex={420}
       />
-      <ClipDragHandle id={id} range={range} duration={duration} left />
-      <ClipDragHandle id={id} range={range} duration={duration} />
+      <ClipDragHandle
+        trackId={trackId}
+        range={range}
+        duration={duration}
+        left
+      />
+      <ClipDragHandle trackId={trackId} range={range} duration={duration} />
     </motion.div>
   );
 };

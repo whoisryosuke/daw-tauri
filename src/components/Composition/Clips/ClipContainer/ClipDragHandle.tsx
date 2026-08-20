@@ -6,7 +6,12 @@ import {
 import { css } from "../../../../../styled-system/css";
 import mapRange from "../../../../utils/map";
 import { getTimeBasedOnTimelinePosition } from "../../../../services/media";
-import { Clip, clipsAtom } from "../../../../store/composition";
+import {
+  Clip,
+  clipsAtom,
+  TrackClipData,
+  trackClipsAtom,
+} from "../../../../store/composition";
 import { useAtomValue, useSetAtom } from "jotai";
 
 const clipDragHandleStyle = css({
@@ -30,31 +35,41 @@ const clipDragHandleStyle = css({
 });
 
 type Props = {
-  id: Clip["id"];
-  range: Clip["range"];
+  trackId: TrackClipData["id"];
+  range: TrackClipData["range"];
   duration: Clip["duration"];
   left?: boolean;
 };
 
 const updateClipRange =
-  (id: Clip["id"], duration: number, newRange: number, start?: boolean) =>
-  (items: Clip[]) =>
+  (
+    id: TrackClipData["id"],
+    duration: number,
+    newRange: number,
+    start?: boolean,
+  ) =>
+  (items: TrackClipData[]) =>
     items.map((item) => {
       if (item.id == id) {
+        const defaultStartRange = item.range ? item.range[0] : 0;
+
         return {
           ...item,
           // Range is optional, we need to check or provide a default to initialize
           // Default is always `[0, duration]`
           range: start
             ? [newRange, item.range ? item.range[1] : duration]
-            : [item.range ? item.range[0] : 0, newRange],
+            : [defaultStartRange, newRange],
+          start_time: start
+            ? Math.max(item.start_time + (defaultStartRange - newRange) * -1, 0)
+            : item.start_time,
         };
       }
       return item;
     });
 
-const ClipDragHandle = ({ id, range, duration, left }: Props) => {
-  const setClips = useSetAtom(clipsAtom);
+const ClipDragHandle = ({ trackId: id, range, duration, left }: Props) => {
+  const setClips = useSetAtom(trackClipsAtom);
 
   const callback: useDragHandleCallback = (delta) => {
     // Convert distance to seconds
@@ -66,10 +81,16 @@ const ClipDragHandle = ({ id, range, duration, left }: Props) => {
 
     // No range set yet?
     if (!range) {
+      let [start, end] = [0, duration];
+      let prevRange = left ? start : end;
       // Only set if we go less than current value (since clip is clearly max)
-      if (direction) return;
-      // We add here because time is negative
-      const newRange = Math.max(Math.min(duration + newTime, duration), 0);
+      if (left && !direction) return;
+      if (!left && direction) return;
+
+      let newRange = Math.max(Math.min(prevRange + newTime, duration), 0.1);
+      // Limit clips to be 0.1 long minimum
+      if (left && end - newRange < 0.1) newRange = 0.1;
+      if (!left && newRange - start < 0.1) newRange = duration - 0.1;
 
       setClips(updateClipRange(id, duration, newRange, left));
       return;
@@ -79,7 +100,7 @@ const ClipDragHandle = ({ id, range, duration, left }: Props) => {
     const [start, end] = range;
     let rangeSide = left ? start : end;
     // Limit to min (duration) and max (0 - can't have negative clips)
-    const newRangeEnd = Math.max(Math.min(rangeSide + newTime, duration), 0);
+    const newRangeEnd = Math.max(Math.min(rangeSide + newTime, duration), 0.1);
 
     setClips(updateClipRange(id, duration, newRangeEnd, left));
   };
