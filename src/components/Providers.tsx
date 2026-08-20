@@ -29,6 +29,7 @@ import MIDISync from "./features/Input/MIDISync";
 import { newFile } from "../services/composition";
 import { Toast } from "@base-ui/react";
 import ToastList from "./ui/Toast/ToastList";
+import Hotkeys from "./features/Hotkeys/Hotkeys";
 
 type Props = {};
 
@@ -154,6 +155,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
           <PlaybackTimeSync />
           <MIDISync />
           <ToastList />
+          <Hotkeys />
         </StoreProvider>
       </DndContext>
     </Toast.Provider>
