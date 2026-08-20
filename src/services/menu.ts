@@ -1,8 +1,13 @@
 import { Menu, MenuItem, Submenu } from "@tauri-apps/api/menu";
 import { store } from "../store/store";
 import { settingsModalVisibleStore } from "../store/app";
-import { newFile } from "./composition";
+import {
+  deleteSelectedTrackClip,
+  deleteTrackClip,
+  newFile,
+} from "./composition";
 import { startMIDIConnection } from "./midi";
+import { selectedTrackClipAtom } from "../store/composition";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -47,6 +52,19 @@ const editSubmenu = await Submenu.new({
   ],
 });
 
+const compositionSubmenu = await Submenu.new({
+  text: "Composition",
+  items: [
+    await MenuItem.new({
+      id: "delete-track-clip",
+      text: "Delete Track Clip",
+      action: () => {
+        deleteSelectedTrackClip();
+      },
+    }),
+  ],
+});
+
 const midiSubmenu = await Submenu.new({
   text: "MIDI",
   items: [
@@ -62,7 +80,7 @@ const midiSubmenu = await Submenu.new({
 
 export async function createDesktopMenu() {
   const menu = await Menu.new({
-    items: [fileSubmenu, editSubmenu, midiSubmenu],
+    items: [fileSubmenu, editSubmenu, compositionSubmenu, midiSubmenu],
   });
 
   // If a window was not created with an explicit menu or had one set explicitly,

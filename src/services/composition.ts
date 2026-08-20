@@ -7,6 +7,7 @@ import {
   generateCompositionDefaultData,
   generateTracksDefaultData,
   selectedTrackAtom,
+  selectedTrackClipAtom,
   trackClipsAtom,
   TrackData,
   trackEffectsAtom,
@@ -73,4 +74,19 @@ export function addTrack(name: string, trackTypeKey: TrackType) {
   // Update client-side
   console.log("adding track to store", newTrack);
   store.set(tracksAtom, (prev) => [...prev, newTrack]);
+}
+
+// --- Track Clips ---
+
+export function deleteSelectedTrackClip() {
+  const id = store.get(selectedTrackClipAtom);
+  if (id) deleteTrackClip(id);
+}
+
+export function deleteTrackClip(id: string) {
+  store.set(trackClipsAtom, (prev) => prev.filter((item) => item.id !== id));
+
+  // @TODO: Clear cache
+  // if no other track clip uses clip, remove clip from "loaded" cache
+  // and likely the media asset as well + backend syncs
 }
