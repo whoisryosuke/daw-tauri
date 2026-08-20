@@ -22,6 +22,7 @@ const textStyle = css({
 
   color: "colorPalette.8",
   backgroundColor: "colorPalette.2",
+  userSelect: "none",
 });
 
 const containerStyle = css({
