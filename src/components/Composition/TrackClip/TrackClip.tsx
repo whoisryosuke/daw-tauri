@@ -1,10 +1,11 @@
-import React, { type JSX } from "react";
+import React, { MouseEventHandler, type JSX } from "react";
 import {
   clipsAtom,
   compositionAtom,
+  selectedTrackClipAtom,
   type TrackClipData,
 } from "../../../store/composition";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import type { TrackClipComponent } from "./types";
 import MIDISequenceClip from "../Clips/MIDISequenceClip/MIDISequenceClip";
 import SampleClip from "../Clips/SampleClip/SampleClip";
@@ -25,9 +26,21 @@ const TrackClip = ({
   range: trackClipRange,
   width,
 }: Props) => {
+  const [selectedTrackClip, setSelectedTrackClip] = useAtom(
+    selectedTrackClipAtom,
+  );
   const { range } = useAtomValue(compositionAtom);
   const clips = useAtomValue(clipsAtom);
   const currentClip = clips.find((clip) => clip.id == clipId);
+  const isTrackClipSelected = selectedTrackClip == id;
+
+  const handleSelectTrackClip = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    console.log("clicked!");
+    setSelectedTrackClip(id);
+  };
+
+  console.log("is track clip selected?", selectedTrackClip);
 
   if (currentClip) {
     let ClipComponent: TrackClipComponent = DefaultClip;
@@ -57,6 +70,8 @@ const TrackClip = ({
         x={x}
         width={clipWidth}
         range={trackClipRange}
+        onClick={handleSelectTrackClip}
+        selected={isTrackClipSelected}
       >
         <ClipComponent
           {...currentClip}

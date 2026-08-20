@@ -38,6 +38,13 @@ const containerStyle = css({
   borderStyle: "solid",
   borderRadius: 2,
   overflow: "hidden",
+
+  "&[data-selected='true']": {
+    outlineWidth: "3px",
+    outlineColor: "colorPalette.alpha-4",
+    outlineStyle: "solid",
+    // outlineOffset: "-3px",
+  },
 });
 
 type Props = Clip & {
@@ -46,6 +53,8 @@ type Props = Clip & {
   color: ColorPalette;
   trackId: TrackClipData["id"];
   range: TrackClipData["range"];
+  selected: boolean;
+  onClick: () => void;
 };
 
 const ClipContainer = ({
@@ -57,6 +66,8 @@ const ClipContainer = ({
   duration,
   range,
   x,
+  selected,
+  ...props
 }: PropsWithChildren<Props>) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -83,8 +94,10 @@ const ClipContainer = ({
       transition={{
         duration: 0,
       }}
+      data-selected={selected}
       {...listeners}
       {...attributes}
+      {...props}
     >
       <Text className={textStyle}>{name}</Text>
       {children}

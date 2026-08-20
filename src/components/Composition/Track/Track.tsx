@@ -1,5 +1,9 @@
-import { trackClipsAtom, type TrackData } from "../../../store/composition";
-import { useAtom } from "jotai";
+import {
+  selectedTrackClipAtom,
+  trackClipsAtom,
+  type TrackData,
+} from "../../../store/composition";
+import { useAtom, useSetAtom } from "jotai";
 import TrackClip from "../TrackClip/TrackClip";
 import { useDroppable } from "@dnd-kit/core";
 import { Box, Stack } from "../../../../styled-system/jsx";
@@ -20,6 +24,7 @@ type Props = TrackData & {
 };
 
 const Track = ({ id, name, trackType, width }: Props) => {
+  const setSelectedTrackClip = useSetAtom(selectedTrackClipAtom);
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
   const localClips = trackClips.filter((trackClip) => trackClip.track_id == id);
 
@@ -31,12 +36,18 @@ const Track = ({ id, name, trackType, width }: Props) => {
     },
   });
 
+  const handleClick = () => {
+    console.log("track clicked");
+    setSelectedTrackClip("");
+  };
+
   return (
     <Stack
       width="100%"
       position="relative"
       flexDirection="row"
       className={containerStyle}
+      onClick={handleClick}
     >
       <Stack
         ref={setNodeRef}

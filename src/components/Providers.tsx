@@ -1,7 +1,13 @@
 import { Provider as StoreProvider } from "jotai";
 import React, { useEffect, type PropsWithChildren } from "react";
 import { store } from "../store/store";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import {
   addClipToMidiTrack,
   addClipToTrack,
@@ -31,6 +37,17 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
   useEffect(() => {
     newFile();
   }, []);
+
+  // Drag and drop functionality
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // The drag won't start until the pointer has moved 5px.
+        // This allows a simple click to register as an onClick event.
+        distance: 5,
+      },
+    }),
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("item dragged!!", event);
@@ -130,7 +147,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
   };
   return (
     <Toast.Provider>
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <StoreProvider store={store}>
           {children}
           <SettingsModal />
