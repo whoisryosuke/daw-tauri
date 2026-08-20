@@ -310,6 +310,7 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_prevent_default::init())
         .setup(|app| {
             // Set up audio backend (aka CPAL)
             let engine = AudioEngine::new(app.handle().clone());

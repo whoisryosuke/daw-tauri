@@ -30,4 +30,5 @@ dasp_signal = "0.11.0"
 slab = "0.4.12"
 midir = "0.11.0"
 rubato = "5.0.0"
+tauri-plugin-prevent-default = {version = "5.0.2", features = ["platform-windows"] }
 
