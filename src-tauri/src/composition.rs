@@ -356,6 +356,7 @@ pub async fn update_track_clip_range(
                 .find(|track_clip| &track_clip.id == &id)
             {
                 current_clip.range = range;
+
                 return Ok(true);
             }
         }

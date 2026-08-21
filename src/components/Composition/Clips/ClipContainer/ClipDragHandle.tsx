@@ -13,6 +13,7 @@ import {
   trackClipsAtom,
 } from "../../../../store/composition";
 import { useAtomValue, useSetAtom } from "jotai";
+import { invoke } from "@tauri-apps/api/core";
 
 const clipDragHandleStyle = css({
   position: "absolute",
@@ -35,13 +36,14 @@ const clipDragHandleStyle = css({
 });
 
 type Props = {
-  trackId: TrackClipData["id"];
+  trackId: TrackClipData["track_id"];
+  trackClipId: TrackClipData["id"];
   range: TrackClipData["range"];
   duration: Clip["duration"];
   left?: boolean;
 };
 
-const updateClipRange =
+const updateTrackClipRange =
   (
     id: TrackClipData["id"],
     duration: number,
@@ -68,7 +70,13 @@ const updateClipRange =
       return item;
     });
 
-const ClipDragHandle = ({ trackId: id, range, duration, left }: Props) => {
+const ClipDragHandle = ({
+  trackId,
+  trackClipId: id,
+  range,
+  duration,
+  left,
+}: Props) => {
   const setClips = useSetAtom(trackClipsAtom);
 
   const callback: useDragHandleCallback = (delta) => {
@@ -92,7 +100,15 @@ const ClipDragHandle = ({ trackId: id, range, duration, left }: Props) => {
       if (left && end - newRange < 0.1) newRange = 0.1;
       if (!left && newRange - start < 0.1) newRange = duration - 0.1;
 
-      setClips(updateClipRange(id, duration, newRange, left));
+      setClips(updateTrackClipRange(id, duration, newRange, left));
+
+      // Update backend
+      invoke("update_track_clip_range", {
+        trackId,
+        id,
+        range: newRange,
+      });
+
       return;
     }
 
@@ -102,7 +118,14 @@ const ClipDragHandle = ({ trackId: id, range, duration, left }: Props) => {
     // Limit to min (duration) and max (0 - can't have negative clips)
     const newRangeEnd = Math.max(Math.min(rangeSide + newTime, duration), 0.1);
 
-    setClips(updateClipRange(id, duration, newRangeEnd, left));
+    setClips(updateTrackClipRange(id, duration, newRangeEnd, left));
+
+    // Update backend
+    invoke("update_track_clip_range", {
+      trackId,
+      id,
+      range: left ? [newRangeEnd, end] : [start, newRangeEnd],
+    });
   };
   const { dragging, handlePointerDown } = useDragHandle(callback);
 

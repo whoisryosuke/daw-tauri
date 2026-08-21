@@ -25,7 +25,7 @@ use crate::{
     audio_buffer::AudioBuffer,
     audio_cache::AudioCache,
     audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
-    composition::{CompositionStore, Track, TrackClip, TrackClipType, TrackType},
+    composition::{CompositionStore, Track, TrackClip, TrackClipRange, TrackClipType, TrackType},
     math::seconds_to_frames,
     music::sampler::Sampler,
 };
@@ -460,7 +460,7 @@ impl AudioEngineMessaging {
         };
 
         // Create and queue node
-        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(Arc::new(pitched_buffer), 0));
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(Arc::new(pitched_buffer), 0, None));
 
         self.send_command(AudioCommand::AddPlaybackSample(midi_key, node));
     }
@@ -505,14 +505,40 @@ impl AudioEngineMessaging {
         };
 
         let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
+
+        // Handle clip start/end time
+        let frame_range = track_clip.range.map(|(start, end)| {
+            // Convert seconds to frames
+            // This assumes audio buffer from clip matches sample rate of app
+            let start_frame = seconds_to_frames(start, sample_rate).unwrap_or(0);
+            let end_frame = seconds_to_frames(end, sample_rate).unwrap_or(0);
+
+            return (start_frame as usize, end_frame as usize);
+        });
+
         println!("Creating audio node {}", clip.name);
 
-        self.create_sample_node(clip_data.samples.clone(), start_time, track.pool_index);
+        self.create_sample_node(
+            clip_data.samples.clone(),
+            start_time,
+            track.pool_index,
+            frame_range,
+        );
     }
 
     /// Creates a sample node and send to mixer
-    fn create_sample_node(&self, samples: Arc<Vec<f32>>, start_time: u64, track_index: usize) {
-        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(samples.clone(), start_time));
+    fn create_sample_node(
+        &self,
+        samples: Arc<Vec<f32>>,
+        start_time: u64,
+        track_index: usize,
+        track_clip_range: Option<(usize, usize)>,
+    ) {
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(
+            samples.clone(),
+            start_time,
+            track_clip_range,
+        ));
 
         self.send_command(AudioCommand::AddSample(track_index, node));
     }

@@ -13,23 +13,29 @@ pub trait AudioNode {
     fn process(&mut self, output: &mut [f32], current_frame: u64);
 }
 
+pub type SampleNodeRange = Option<(usize, usize)>;
+
 pub struct SampleNode {
     pub start_frame: u64,
     data: Arc<Vec<f32>>,
     position: usize,
     pub finished: bool,
+    pub range: (usize, usize),
 }
 
 impl SampleNode {
-    pub fn new(data: Arc<Vec<f32>>, start_frame: u64) -> Self {
-        let position = 0;
+    pub fn new(data: Arc<Vec<f32>>, start_frame: u64, node_range: SampleNodeRange) -> Self {
+        let position = node_range.map_or(0, |(start, _)| start);
         let finished = false;
+
+        let range = node_range.unwrap_or((0, data.len()));
 
         Self {
             start_frame,
             data,
             position,
             finished,
+            range,
         }
     }
 }
@@ -46,7 +52,7 @@ impl AudioNode for SampleNode {
             let index = self.position;
 
             // Check if we're done - if not, keep incrementing
-            if index >= self.data.len() {
+            if index >= self.range.1 {
                 self.finished = true;
             } else {
                 // Increment position for next sample

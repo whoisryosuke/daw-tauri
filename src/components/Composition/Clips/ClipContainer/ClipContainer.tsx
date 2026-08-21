@@ -51,7 +51,8 @@ type Props = Clip & {
   x: number;
   width: number;
   color: ColorPalette;
-  trackId: TrackClipData["id"];
+  trackId: TrackClipData["track_id"];
+  trackClipId: TrackClipData["id"];
   range: TrackClipData["range"];
   selected: boolean;
   onClick: () => void;
@@ -59,6 +60,7 @@ type Props = Clip & {
 
 const ClipContainer = ({
   trackId,
+  trackClipId,
   name,
   color = "blue",
   children,
@@ -71,9 +73,9 @@ const ClipContainer = ({
 }: PropsWithChildren<Props>) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
-      id: `TRACK_CLIP_${trackId}`,
+      id: `TRACK_CLIP_${trackClipId}`,
       data: {
-        id: trackId,
+        id: trackClipId,
         action: "TRACK_CLIP",
       } as TrackClipDragData,
     });
@@ -114,11 +116,17 @@ const ClipContainer = ({
       />
       <ClipDragHandle
         trackId={trackId}
+        trackClipId={trackClipId}
         range={range}
         duration={duration}
         left
       />
-      <ClipDragHandle trackId={trackId} range={range} duration={duration} />
+      <ClipDragHandle
+        trackId={trackId}
+        trackClipId={trackClipId}
+        range={range}
+        duration={duration}
+      />
     </motion.div>
   );
 };

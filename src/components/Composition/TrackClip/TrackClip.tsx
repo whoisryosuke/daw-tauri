@@ -22,6 +22,7 @@ const TrackClip = ({
   id,
   clip_id: clipId,
   start_time: startTime,
+  track_id: trackId,
   enabled,
   range: trackClipRange,
   width,
@@ -65,7 +66,8 @@ const TrackClip = ({
 
     return (
       <ClipContainer
-        trackId={id}
+        trackId={trackId}
+        trackClipId={id}
         {...currentClip}
         x={x}
         width={clipWidth}
