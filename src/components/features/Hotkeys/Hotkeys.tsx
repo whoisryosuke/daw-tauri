@@ -10,6 +10,7 @@ export type HotkeyModifier = "shift" | "ctrl";
 type HotkeyKey = string;
 
 // @TODO: Hardcoded for now - but ideally needs to be dynamic
+// @TODO: Also consider - scopes. Enable only if scope is active (good for delete clip vs delete node)
 const HOTKEY_MAP: Record<HotkeyKey, VoidFunction> = {
   delete: () => deleteSelectedTrackClip(),
 };
