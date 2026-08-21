@@ -5,7 +5,7 @@ import {
 } from "../../../../hooks/useDragHandle";
 import { css } from "../../../../../styled-system/css";
 import mapRange from "../../../../utils/map";
-import { getTimeBasedOnTimelinePosition } from "../../../../services/media";
+import { getTimeBasedOnTimelinePosition } from "../../../../services/composition";
 import {
   Clip,
   clipsAtom,

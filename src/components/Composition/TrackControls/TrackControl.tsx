@@ -6,8 +6,8 @@ import { playMidiTrackAtom, TrackData } from "../../../store/composition";
 import Slider from "../../ui/Slider/Slider";
 import { SliderRootProps } from "@base-ui/react/slider";
 import { invoke } from "@tauri-apps/api/core";
-import { setSelectedTrack } from "../../../services/media";
 import { useSetAtom } from "jotai";
+import { setSelectedTrack } from "../../../services/composition";
 
 const trackControlContainer = cva({
   base: {

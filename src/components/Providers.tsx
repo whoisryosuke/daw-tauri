@@ -14,7 +14,7 @@ import {
   addEffectToTrack,
   DragPositionData,
   moveTrackClip,
-} from "../services/media";
+} from "../services/composition";
 import {
   BaseDragData,
   MediaBrowserDragData,

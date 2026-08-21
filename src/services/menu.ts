@@ -1,11 +1,7 @@
 import { Menu, MenuItem, Submenu } from "@tauri-apps/api/menu";
 import { store } from "../store/store";
 import { settingsModalVisibleStore } from "../store/app";
-import {
-  deleteSelectedTrackClip,
-  deleteTrackClip,
-  newFile,
-} from "./composition";
+import { deleteSelectedTrackClip, newFile } from "./composition";
 import { startMIDIConnection } from "./midi";
 import { selectedTrackClipAtom } from "../store/composition";
 
