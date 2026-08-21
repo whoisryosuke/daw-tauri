@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { deleteSelectedTrackClip } from "../../../services/composition";
 
 export type HotkeyModifier = "shift" | "ctrl";
 
@@ -10,30 +11,21 @@ type HotkeyKey = string;
 
 // @TODO: Hardcoded for now - but ideally needs to be dynamic
 const HOTKEY_MAP: Record<HotkeyKey, VoidFunction> = {
-  c: () => console.log("c pressed"),
-  "ctrl+g": () => console.log("ctrl+g pressed"),
+  delete: () => deleteSelectedTrackClip(),
 };
 
 type Props = {};
 
 const Hotkeys = (props: Props) => {
   // If pressed key is our target key then set to true
-  function downHandler({
-    ctrlKey,
-    shiftKey,
-    metaKey,
-    key,
-    stopPropagation,
-    preventDefault,
-    stopImmediatePropagation,
-  }: KeyboardEvent): void {
+  function downHandler(e: KeyboardEvent): void {
     // Logic to parse event (e.g., checking event.ctrlKey + event.key)
     // For simplicity, we'll check exact matches for this example
     const pressed = [];
-    if (ctrlKey || metaKey) pressed.push("ctrl");
-    if (shiftKey) pressed.push("shift");
-    if (!["Control", "Meta", "Shift"].includes(key)) {
-      pressed.push(key.toLowerCase());
+    if (e.ctrlKey || e.metaKey) pressed.push("ctrl");
+    if (e.shiftKey) pressed.push("shift");
+    if (!["Control", "Meta", "Shift"].includes(e.key)) {
+      pressed.push(e.key.toLowerCase());
     }
 
     const currentCombo = pressed.join("+");
@@ -41,9 +33,9 @@ const Hotkeys = (props: Props) => {
     if (currentCombo in HOTKEY_MAP) {
       const hotkey = HOTKEY_MAP[currentCombo];
 
-      stopPropagation();
-      preventDefault();
-      stopImmediatePropagation();
+      e.stopPropagation();
+      e.preventDefault();
+      e.stopImmediatePropagation();
       hotkey();
     }
   }
