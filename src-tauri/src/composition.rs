@@ -68,6 +68,8 @@ pub enum TrackClipType {
     Synthesizer,
 }
 
+pub type TrackClipRange = Option<(f64, f64)>;
+
 /// A single "clip" on the track. This associates a `Track` with a `Clip`.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TrackClip {
@@ -76,6 +78,7 @@ pub struct TrackClip {
     pub clip_id: String,
     pub start_time: f64,
     pub enabled: bool,
+    pub range: TrackClipRange,
 }
 
 impl TrackClip {
@@ -92,6 +95,7 @@ impl TrackClip {
             start_time,
             enabled,
             track_clip_type,
+            range: None,
         }
     }
 }
@@ -327,6 +331,31 @@ pub async fn update_track_clip_time(
                 .find(|track_clip| &track_clip.id == &id)
             {
                 current_clip.start_time = time;
+                return Ok(true);
+            }
+        }
+    }
+
+    return Err("Couldn't update clip time".to_string());
+}
+
+/// Update track clip range (in seconds)
+#[tauri::command()]
+pub async fn update_track_clip_range(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    id: String,
+    range: TrackClipRange,
+) -> Result<bool, String> {
+    let store_result = composition_store.lock();
+
+    if let Ok(mut store) = store_result {
+        if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
+            if let Some(current_clip) = track_clips
+                .iter_mut()
+                .find(|track_clip| &track_clip.id == &id)
+            {
+                current_clip.range = range;
                 return Ok(true);
             }
         }
