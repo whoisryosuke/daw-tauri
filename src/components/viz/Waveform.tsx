@@ -34,6 +34,7 @@ const Waveform = ({
 
   const bgColor = colorMode === "dark" ? "rgba(17, 17, 17, 0.0)" : "#fcfcfcff";
   const lineColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
+  const fillColor = colorMode === "dark" ? "#0090ff88" : "#0090ff66";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
     null,
@@ -77,6 +78,7 @@ const Waveform = ({
       const channelCount = data.length;
       data.forEach((channelData, channelIndex) => {
         ctx.beginPath();
+        ctx.fillStyle = fillColor;
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = lineColor;
 
@@ -99,7 +101,10 @@ const Waveform = ({
             ctx.lineTo(x, y);
           }
         }
+
         ctx.stroke();
+        ctx.closePath();
+        ctx.fill();
       });
 
       if (animated) animationRef.current = requestAnimationFrame(draw);
