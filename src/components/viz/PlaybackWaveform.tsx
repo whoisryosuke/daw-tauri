@@ -1,10 +1,6 @@
 import { type ComponentProps, useCallback, useEffect, useRef } from "react";
-import mapRange from "../utils/map";
+import mapRange from "../../utils/map";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-
-// Assuming numbers are 0-1
-type GraphData = number[];
-const DEFAULT_AUDIO_HEIGHT = 128;
 
 type Props = {
   // waveform: number[];
@@ -12,7 +8,13 @@ type Props = {
   fps?: number;
 };
 
-const LineGraph = ({ animated, fps, ...props }: Props) => {
+/**
+ * Renders waveform of timeline audio playback from Rust backend.
+ * Does not render immediate audio playback.
+ * Great for debugging or visualizing output signal to user.
+ * @TODO: Add multi-channel support - signal is currently interleaved
+ */
+const PlaybackWaveform = ({ animated = true, fps, ...props }: Props) => {
   const colorMode = "dark";
   const bgColor = colorMode === "dark" ? "#111" : "#EEE";
   const lineColor = colorMode === "dark" ? "blue" : "blue";
@@ -105,4 +107,4 @@ const LineGraph = ({ animated, fps, ...props }: Props) => {
   return <canvas ref={canvasRef} {...props} />;
 };
 
-export default LineGraph;
+export default PlaybackWaveform;

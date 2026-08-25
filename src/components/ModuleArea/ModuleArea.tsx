@@ -1,5 +1,5 @@
 import React from "react";
-import Waveform from "../Waveform";
+import Waveform from "../viz/PlaybackWaveform";
 import DebugSynthControls from "../debug/DebugSynthControls";
 import { Box, Stack } from "../../../styled-system/jsx";
 import EffectModules from "./EffectModules/EffectModules";
