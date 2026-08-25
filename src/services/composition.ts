@@ -201,6 +201,8 @@ export function deleteTrackClip(id: string) {
   // @TODO: Clear cache
   // if no other track clip uses clip, remove clip from "loaded" cache
   // and likely the media asset as well + backend syncs
+
+  // @TODO: Delete clip in backend
 }
 
 export const addClipToTrack = async (
