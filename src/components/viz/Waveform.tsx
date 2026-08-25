@@ -11,13 +11,17 @@ import { colorModeStore } from "../../store/theme";
 import { Clip } from "../../store/composition";
 
 type Props = ComponentPropsWithoutRef<"canvas"> & {
-  data: number[];
+  data: number[][];
   animated?: boolean;
   fps?: number;
   duration: Clip["duration"];
   range: number[];
 };
 
+/**
+ * Multi-channel waveform. Renders each channel stacked as a line graph.
+ * Used for sample/audio clip previews.
+ */
 const Waveform = ({
   data,
   animated,
@@ -61,33 +65,42 @@ const Waveform = ({
 
       // Clip waveform to range
       const [start, end] = range;
-      const startIndex = (start / duration) * data.length;
-      const endIndex = (end / duration) * data.length;
+      const sampleCount = data[0]?.length ?? 0;
+      const startIndex = (start / duration) * sampleCount;
+      const endIndex = (end / duration) * sampleCount;
 
       // Clear drawing
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      ctx.beginPath();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = lineColor;
-      for (let i = 0; i < canvasWidth; i++) {
-        const index = Math.floor(
-          mapRange(i, 0, canvasWidth, startIndex, endIndex),
-        );
-        const x = i;
-        // We scale the audio values to 0-1 to make it easier
-        const amplitude = mapRange(data[index], -1, 1, 0, 1) * 10 - 4.5;
-        const y = (amplitude * canvasHeight) / 2 + canvasHeight / 4;
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
+      const channelCount = data.length;
+      data.forEach((channelData, channelIndex) => {
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = lineColor;
 
-      ctx.stroke();
+        for (let i = 0; i < canvasWidth; i++) {
+          const index = Math.floor(
+            mapRange(i, 0, canvasWidth, startIndex, endIndex),
+          );
+
+          const x = i;
+          // We scale the audio values to 0-1 to make it easier
+          const amplitude = mapRange(channelData[index], -1, 1, 0, 1);
+
+          const height = canvasHeight / channelCount;
+          const offset = height * channelIndex;
+
+          const y = amplitude * height + offset;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      });
 
       if (animated) animationRef.current = requestAnimationFrame(draw);
     },

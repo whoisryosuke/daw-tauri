@@ -8,29 +8,46 @@ use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
 use crate::{audio_buffer::AudioBuffer, math::map_range};
 
+/// Gets multi-channel waveform data from a specific sample in `AudioCache`
 #[tauri::command(async)]
 pub async fn get_sample_waveform(
     audio_cache: State<'_, AudioCache>,
     path: String,
     size: usize,
-) -> Result<Vec<f32>, String> {
+) -> Result<Vec<Vec<f32>>, String> {
     let buffer_option = audio_cache.get_buffer_by_id(&path);
-    let mut waveform = Vec::with_capacity(size);
+    let mut result = Vec::new();
 
-    // Reduce to necessary size
     if let Some(buffer) = buffer_option {
         let original_length = buffer.samples.len();
+        let single_channel_length = original_length / buffer.channel_count;
 
-        for index in (0..size) {
-            let buffer_index_raw =
-                map_range(index as f64, 0.0, size as f64, 0.0, original_length as f64);
-            let buffer_index = buffer_index_raw.floor() as usize;
-            let waveform_value = buffer.samples[buffer_index];
-            waveform.push(waveform_value);
+        // We use f64 for steps to have higher sampling accuracy
+        let step = (single_channel_length as f64) / (size as f64);
+
+        // Loop over each channel and get data
+        for channel_index in 0..buffer.channel_count {
+            let mut waveform = Vec::with_capacity(size);
+
+            // Reduce to necessary size (aka "sample" the samples)
+            for index in (0..size) {
+                let float_index =
+                    (index as f64 * step * buffer.channel_count as f64) + (channel_index as f64);
+                let buffer_index = float_index.floor() as usize;
+
+                // Safety check: ensure we don't go out of bounds due to rounding
+                if buffer_index < buffer.samples.len() {
+                    waveform.push(buffer.samples[buffer_index]);
+                } else {
+                    waveform.push(0.0);
+                }
+            }
+
+            result.push(waveform);
         }
     }
 
-    Ok(waveform)
+    Ok(result)
 }
 
 /// The filename of the audio sample

@@ -22,13 +22,13 @@ const SampleClipWaveform = ({
   range: clipRange,
 }: Props) => {
   const { range } = useAtomValue(compositionAtom);
-  const [buffer, setBuffer] = useState<number[]>([]);
+  const [buffer, setBuffer] = useState<number[][]>([]);
 
   const fetchBuffer = async () => {
     console.log("clip path for waveform", path);
-    const newBuffer = await invoke<number[]>("get_sample_waveform", {
+    const newBuffer = await invoke<number[][]>("get_sample_waveform", {
       path,
-      size: 1000,
+      size: 512,
     });
 
     setBuffer(newBuffer);
