@@ -8,6 +8,7 @@ import { Tabs } from "@base-ui/react";
 import { selectedTrackAtom, tracksAtom } from "../../store/composition";
 import { useAtomValue } from "jotai";
 import { sva } from "../../../styled-system/css";
+import DebugVST from "../debug/DebugVST";
 
 const styles = sva({
   slots: ["tabRoot", "tabPanelContainer", "tabPanel", "tabList", "tabButton"],
@@ -77,6 +78,7 @@ const ModuleArea = (props: Props) => {
   return (
     <Stack flexDir="row" gap={2} height="100%" p={2}>
       <Waveform />
+      <DebugVST />
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>
           {trackType && (

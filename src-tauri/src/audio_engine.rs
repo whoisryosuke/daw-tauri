@@ -469,6 +469,13 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::StopPlaybackNode(midi_key));
     }
 
+    pub fn play_immediate_audio(&self, buffer: Vec<f32>) {
+        // Create and queue node
+        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(Arc::new(buffer), 0, None));
+
+        self.send_command(AudioCommand::AddPlaybackSample(0, node));
+    }
+
     pub fn update_mixer_track_gain(&self, track_index: usize, gain: f32) {
         // Sync track gain to mixer track
         self.send_command(AudioCommand::SetMixerGain(track_index, gain));
