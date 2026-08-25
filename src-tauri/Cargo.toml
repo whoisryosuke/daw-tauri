@@ -22,7 +22,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-cpal = "0.16.0"
+cpal = "0.18.0"
 symphonia = { version = "0.5", features = ["mp3"] }
 crossbeam = "0.8.4"
 dasp = "0.11.0"

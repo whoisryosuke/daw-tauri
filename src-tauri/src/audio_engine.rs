@@ -609,13 +609,15 @@ impl AudioEngine {
             .default_output_device()
             .expect("no output device available");
 
-        let selected_device = device.name().unwrap_or("Default Device".to_string());
+        let selected_device = device
+            .description()
+            .map_or("Default Device".to_string(), |m| m.name().to_string());
 
         let config = device
             .default_output_config()
             .expect("Couldn't load config");
 
-        let sample_rate = config.sample_rate().0;
+        let sample_rate = config.sample_rate();
 
         // Create the messaging layer between UI and AudioEngine
         let messaging = AudioEngineMessaging::new(
@@ -657,17 +659,18 @@ impl AudioEngine {
         // Create a mixer
         let mut mixer = Mixer::new(buffer_size);
 
-        let SampleRate(sample_rate) = self.config.sample_rate();
+        let sample_rate = self.config.sample_rate();
 
         let channels = self.config.channels() as usize;
         let mut cloned_consumer = self.consumer.clone();
         let mut waveform_producer = self.waveform_producer.clone();
         let playback_time_clone = self.playback_time.clone();
+        let local_config = &self.config.clone();
 
         let stream = match self.config.sample_format() {
             cpal::SampleFormat::F32 => device
                 .build_output_stream(
-                    &self.config.clone().into(),
+                    local_config.config(),
                     move |output: &mut [f32], _| {
                         let playback_time_local_clone = playback_time_clone.clone();
                         // Run the mixer which runs any commands and
@@ -716,7 +719,11 @@ impl AudioEngine {
         let device = host
             .output_devices()
             .map_err(|e| e.to_string())?
-            .find(|d| d.name().unwrap_or("".to_string()) == device_name)
+            .find(|d| {
+                d.description()
+                    .map_or("".to_string(), |m| m.name().to_string())
+                    == device_name
+            })
             .ok_or("Device not found")?;
 
         // Recreate the stream using the engine's existing context

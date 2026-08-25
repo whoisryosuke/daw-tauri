@@ -174,7 +174,7 @@ async fn play_audio(
     let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
     println!("loading audio from Rust");
 
-    let sample_rate = engine.config.sample_rate().0;
+    let sample_rate = engine.config.sample_rate();
     let channel_count = engine.config.channels() as usize;
     let store = &composition
         .lock()
@@ -210,7 +210,7 @@ async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, S
     let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
 
     // Get samples from cache
-    let sample_rate = engine.config.sample_rate().0;
+    let sample_rate = engine.config.sample_rate();
 
     Ok(sample_rate)
 }
@@ -242,7 +242,11 @@ async fn get_output_devices(
     let mut device_list = Vec::new();
 
     for device in devices {
-        let name = device.name().map_err(|e| e.to_string())?.to_string();
+        let name = device
+            .description()
+            .map_err(|e| e.to_string())?
+            .name()
+            .to_string();
         let selected = *selected_device == name;
         device_list.push(DeviceInfo { name, selected });
     }
