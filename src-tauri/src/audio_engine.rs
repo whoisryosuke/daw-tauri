@@ -24,7 +24,7 @@ use crate::{
     asset_store::AssetStore,
     audio_buffer::AudioBuffer,
     audio_cache::AudioCache,
-    audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode},
+    audio_node::{AudioNode, AudioNodeTypes, EffectNodeTypes, SampleNode, SynthNode, VstNode},
     composition::{CompositionStore, Track, TrackClip, TrackClipRange, TrackClipType, TrackType},
     math::seconds_to_frames,
     music::sampler::Sampler,
@@ -175,7 +175,7 @@ impl Mixer {
                 AudioCommand::Play => {
                     self.playing = true;
                 }
-                AudioCommand::AddSample(track_index, node) => {
+                AudioCommand::AddAudioNode(track_index, node) => {
                     self.tracks[track_index].nodes.insert(node);
                 }
                 AudioCommand::AddEffect(track_index, node) => {
@@ -214,6 +214,19 @@ impl Mixer {
                     if let Some(&key) = self.playback_map.get(&id) {
                         if let Some(node) = self.playback_nodes.get_mut(key) {
                             // TODO: Start the release phase of envelope.
+                        }
+                    }
+                }
+
+                AudioCommand::ControlVST(id, midi_event) => {
+                    if let Some(&key) = self.playback_map.get(&id) {
+                        if let Some(node) = self.playback_nodes.get_mut(key) {
+                            match node {
+                                AudioNodeTypes::Vst(vst_node) => {
+                                    vst_node.control.send_midi(midi_event);
+                                }
+                                _ => {}
+                            }
                         }
                     }
                 }
@@ -316,7 +329,7 @@ impl Mixer {
 
 pub enum AudioCommand {
     Play,
-    AddSample(usize, AudioNodeTypes),
+    AddAudioNode(usize, AudioNodeTypes),
     AddSynth(usize),
     AddEffect(usize, EffectNodeTypes),
     RemoveSynth(usize, usize),
@@ -326,6 +339,8 @@ pub enum AudioCommand {
     /// Queue an audio node for immediate playback. Requires an index
     AddPlaybackSample(u8, AudioNodeTypes),
     StopPlaybackNode(u8),
+    // VST
+    ControlVST(u8, vst3_host::MidiEvent),
 }
 
 pub struct AudioEngineMessaging {
@@ -481,6 +496,17 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::SetMixerGain(track_index, gain));
     }
 
+    pub fn create_vst_node(&self, track_index: u8, sample_rate: f64) {
+        if let Ok(inner_node) = VstNode::new("".to_string(), sample_rate) {
+            let node = AudioNodeTypes::Vst(inner_node);
+            self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
+        };
+    }
+
+    pub fn control_vst_node(&self, track_index: usize, midi_event: vst3_host::MidiEvent) {
+        self.send_command(AudioCommand::ControlVST(track_index, midi_event));
+    }
+
     pub fn send_command(&self, command: AudioCommand) {
         // Wait until we can insert sample
         while self.producer.is_full() {
@@ -547,7 +573,7 @@ impl AudioEngineMessaging {
             track_clip_range,
         ));
 
-        self.send_command(AudioCommand::AddSample(track_index, node));
+        self.send_command(AudioCommand::AddAudioNode(track_index, node));
     }
 
     pub fn add_synth(&self, track_index: usize) {

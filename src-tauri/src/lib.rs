@@ -274,7 +274,7 @@ fn change_audio_device(
 }
 
 #[tauri::command]
-fn test_vst(
+fn create_vst(
     engine: State<'_, Mutex<AudioEngine>>,
     messaging: State<'_, AudioEngineMessaging>,
 ) -> Result<(), String> {
@@ -283,44 +283,21 @@ fn test_vst(
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
 
-    let plugin =
-        vst3_host::simple::load_plugin("C:/Program Files/Common Files/VST3/Analog Lab V.vst3")
-            .map_err(|e| e.to_string())?;
-    let (mut runner, mut control) = vst3_host::RealtimePluginRunner::new(plugin, 1024);
-    runner.start().map_err(|e| e.to_string())?;
+    messaging.create_vst_node(0, sample_rate as f64);
 
-    // Send `control` to your control thread; move `runner` onto the audio thread.
-    // In the audio callback (no locks): drain the queue + render one block.
-    let mut buffers = vst3_host::AudioBuffers::new(0, 2, 512, sample_rate as f64);
-    runner.process(&mut buffers).map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-    control.send_midi(vst3_host::MidiEvent::NoteOn {
-        channel: vst3_host::MidiChannel::Ch1,
-        note: 60,
-        velocity: 100,
-    });
-
-    let mut output_buffer = Vec::new();
-    let frames = buffers.outputs[0].len();
-    let channels = buffers.outputs.len();
-
-    println!("playing VST - frames {} - channels {}", frames, channels);
-
-    let mut max = 0 as f32;
-
-    for frame in 0..frames {
-        for ch in 0..channels {
-            let sample = buffers.outputs[ch][frame];
-            if sample > max {
-                max = sample;
-            }
-            output_buffer.push(sample);
-        }
-    }
-
-    println!("max: {}", max);
-
-    messaging.play_immediate_audio(output_buffer);
+#[tauri::command]
+fn test_vst(messaging: State<'_, AudioEngineMessaging>) -> Result<(), String> {
+    messaging.control_vst_node(
+        0,
+        vst3_host::MidiEvent::NoteOn {
+            channel: vst3_host::MidiChannel::Ch1,
+            note: 60,
+            velocity: 100,
+        },
+    );
 
     Ok(())
 }
@@ -419,6 +396,7 @@ pub fn run() {
             connect_to_midi_input_device,
             play_midi_key,
             // VST
+            create_vst,
             test_vst
         ])
         .run(tauri::generate_context!())

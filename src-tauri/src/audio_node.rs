@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use dasp_signal::{self as signal, ConstHz, Signal, Sine};
 use serde::{Deserialize, Serialize};
+use vst3_host::RtControl;
 
 use crate::effects::shared::asdr::Adsr;
 // use std::fmt;
@@ -88,6 +89,89 @@ impl AudioNode for SynthNode {
     }
 }
 
+pub struct VstNode {
+    processor: vst3_host::RealtimePluginRunner,
+    pub control: RtControl,
+    buffers: vst3_host::AudioBuffers,
+
+    channel_count: usize,
+    max_buffer_size: usize,
+
+    started: bool,
+    pub finished: bool,
+    pub active: bool,
+}
+
+impl VstNode {
+    pub fn new<P: AsRef<Path>>(path: P, sample_rate: f64) -> Result<Self, String> {
+        let plugin =
+            vst3_host::simple::load_plugin("C:/Program Files/Common Files/VST3/Analog Lab V.vst3")
+                .map_err(|e| e.to_string())?;
+        let (runner, control) = vst3_host::RealtimePluginRunner::new(plugin, 1024);
+        let channel_count = 2;
+        let max_buffer_size = 512;
+        let buffers = vst3_host::AudioBuffers::new(0, channel_count, max_buffer_size, sample_rate);
+
+        Ok(Self {
+            processor: runner,
+            control,
+            buffers,
+            max_buffer_size,
+            channel_count,
+            finished: false,
+            started: false,
+            active: true,
+        })
+    }
+}
+
+impl AudioNode for VstNode {
+    fn process(&mut self, output: &mut [f32], current_frame: u64) {
+        // Not active? Don't process
+        if !self.active {
+            // End processing if needed
+            if self.started {
+                let _ = self.processor.stop();
+                self.started = false;
+            }
+            return;
+        };
+
+        // Start processor if we need
+        if !self.started {
+            let _ = self.processor.start();
+            self.started = true;
+        }
+
+        // Block size (for single channel - since output is interleaved)
+        // Ideally should be using output channels, but since VST matches it, we should be ok
+        let block_size = (output.len() / self.channel_count).min(self.max_buffer_size);
+
+        // Resize buffers to block size
+        for ch in &mut self.buffers.outputs {
+            ch.resize(block_size, 0.0);
+        }
+        for ch in &mut self.buffers.inputs {
+            ch.resize(block_size, 0.0);
+        }
+
+        // Run the processor and get VST data
+        let _ = self.processor.process(&mut self.buffers);
+
+        // Override the output with VST output
+        let mut sample_index = 0;
+        for sample in output.iter_mut() {
+            for ch in 0..self.channel_count {
+                let new_sample = self.buffers.outputs[ch][sample_index];
+                *sample = new_sample;
+            }
+            if sample_index < block_size {
+                sample_index += 1;
+            }
+        }
+    }
+}
+
 // impl fmt::Debug for SynthNode {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         f.debug_struct("SynthNode")
@@ -101,6 +185,7 @@ pub enum AudioNodeTypes {
     StaticBuffer(SampleNode),
     Streaming(SampleNode),
     Synthesizer(SynthNode),
+    Vst(VstNode),
 }
 
 impl AudioNodeTypes {
@@ -110,6 +195,7 @@ impl AudioNodeTypes {
             AudioNodeTypes::StaticBuffer(node) => node.process(output, params),
             AudioNodeTypes::Streaming(node) => node.process(output, params),
             AudioNodeTypes::Synthesizer(node) => node.process(output, params),
+            AudioNodeTypes::Vst(node) => node.process(output, params),
         }
     }
 }
