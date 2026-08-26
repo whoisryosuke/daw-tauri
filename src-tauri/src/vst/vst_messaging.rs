@@ -39,6 +39,9 @@ impl VstMessaging {
 
             // Check for messages from other threads
             loop {
+                // @TODO: I need to handle "message pump" here (sending/receiving messages to window).
+                // This differs for each platform and gets really messy really quick.
+
                 // Handle commands
                 while let Ok(message) = consumer.try_recv() {
                     match message {
