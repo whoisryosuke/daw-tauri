@@ -33,3 +33,9 @@ rubato = "5.0.0"
 tauri-plugin-prevent-default = {version = "5.0.2", features = ["platform-windows"] }
 vst3-host = "0.9.0"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "processthreadsapi"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10"
+

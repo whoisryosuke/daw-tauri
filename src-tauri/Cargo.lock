@@ -944,6 +944,7 @@ dependencies = [
 name = "daw-tauri"
 version = "0.1.0"
 dependencies = [
+ "core-foundation",
  "cpal",
  "crossbeam",
  "dasp",
@@ -959,6 +960,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-prevent-default",
  "vst3-host",
+ "winapi",
 ]
 
 [[package]]

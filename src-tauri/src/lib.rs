@@ -328,13 +328,18 @@ fn open_vst_window(
     vst_messaging: State<'_, VstMessaging>,
 ) -> Result<(), String> {
     // Create plugin and store in cache
-    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
-    let id = "test".to_string();
+    let plugin = {
+        let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
+        let id = "test".to_string();
+        match vst_cache.plugins.get(&id) {
+            Some(plugin_data) => Some((id, plugin_data.plugin.clone())),
+            None => None,
+        }
+    };
 
-    match vst_cache.plugins.get_mut(&id) {
-        Some(plugin_data) => {
-            vst_messaging.send_message(VstCommand::CreateWindow(id, plugin_data.plugin.clone()));
-
+    match plugin {
+        Some((id, plugin)) => {
+            vst_messaging.send_message(VstCommand::CreateWindow(id, plugin));
             Ok(())
         }
         None => Err("Couldn't find that plugin".into()),
