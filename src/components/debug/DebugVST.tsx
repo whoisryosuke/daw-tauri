@@ -7,11 +7,15 @@ type Props = {};
 const DebugVST = (props: Props) => {
   const handleCreate = async () => {
     const result = await invoke("create_vst");
-    console.log("tested VST", result);
+    console.log("created VST", result);
   };
   const handlePlay = async () => {
     const result = await invoke("test_vst");
     console.log("tested VST", result);
+  };
+  const handleWindow = async () => {
+    const result = await invoke("open_vst_window");
+    console.log("opened VST window", result);
   };
   return (
     <div>
@@ -20,6 +24,9 @@ const DebugVST = (props: Props) => {
       </Button>
       <Button variant="default" size="small" onClick={handlePlay}>
         Play note
+      </Button>
+      <Button variant="default" size="small" onClick={handleWindow}>
+        Open Window
       </Button>
     </div>
   );

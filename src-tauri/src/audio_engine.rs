@@ -28,6 +28,7 @@ use crate::{
     composition::{CompositionStore, Track, TrackClip, TrackClipRange, TrackClipType, TrackType},
     math::seconds_to_frames,
     music::sampler::Sampler,
+    vst::vst_cache::VstPluginInstance,
 };
 
 const MAX_CALLBACK_FRAMES: usize = 8192;
@@ -217,19 +218,6 @@ impl Mixer {
                         }
                     }
                 }
-
-                AudioCommand::ControlVST(id, midi_event) => {
-                    if let Some(&key) = self.playback_map.get(&id) {
-                        if let Some(node) = self.playback_nodes.get_mut(key) {
-                            match node {
-                                AudioNodeTypes::Vst(vst_node) => {
-                                    vst_node.control.send_midi(midi_event);
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -339,8 +327,6 @@ pub enum AudioCommand {
     /// Queue an audio node for immediate playback. Requires an index
     AddPlaybackSample(u8, AudioNodeTypes),
     StopPlaybackNode(u8),
-    // VST
-    ControlVST(u8, vst3_host::MidiEvent),
 }
 
 pub struct AudioEngineMessaging {
@@ -496,15 +482,10 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::SetMixerGain(track_index, gain));
     }
 
-    pub fn create_vst_node(&self, track_index: u8, sample_rate: f64) {
-        if let Ok(inner_node) = VstNode::new("".to_string(), sample_rate) {
-            let node = AudioNodeTypes::Vst(inner_node);
-            self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
-        };
-    }
-
-    pub fn control_vst_node(&self, track_index: usize, midi_event: vst3_host::MidiEvent) {
-        self.send_command(AudioCommand::ControlVST(track_index, midi_event));
+    pub fn create_vst_node(&self, track_index: u8, sample_rate: f64, plugin: VstPluginInstance) {
+        let inner_node = VstNode::new(plugin, sample_rate);
+        let node = AudioNodeTypes::Vst(inner_node);
+        self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
     }
 
     pub fn send_command(&self, command: AudioCommand) {

@@ -9,6 +9,7 @@ mod math;
 mod midi;
 mod music;
 mod utils;
+mod vst;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
@@ -38,6 +39,9 @@ use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
     MIDIStore,
 };
+
+use crate::vst::vst_cache::VstCache;
+use crate::vst::vst_messaging::{VstCommand, VstMessaging};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -277,29 +281,64 @@ fn change_audio_device(
 fn create_vst(
     engine: State<'_, Mutex<AudioEngine>>,
     messaging: State<'_, AudioEngineMessaging>,
+    vst_cache: State<'_, Mutex<VstCache>>,
 ) -> Result<(), String> {
     let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
 
-    messaging.create_vst_node(0, sample_rate as f64);
+    // Create plugin and store in cache
+    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
+
+    let plugin = vst_cache.load_plugin("test".to_string(), "".to_string())?;
+
+    messaging.create_vst_node(0, sample_rate as f64, plugin);
 
     Ok(())
 }
 
 #[tauri::command]
-fn test_vst(messaging: State<'_, AudioEngineMessaging>) -> Result<(), String> {
-    messaging.control_vst_node(
-        0,
-        vst3_host::MidiEvent::NoteOn {
-            channel: vst3_host::MidiChannel::Ch1,
-            note: 60,
-            velocity: 100,
-        },
-    );
+fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
+    // Create plugin and store in cache
+    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
 
-    Ok(())
+    let id = "test".to_string();
+
+    match vst_cache.plugins.get_mut(&id) {
+        Some(plugin_data) => {
+            let mut plugin = plugin_data
+                .plugin
+                .lock()
+                .map_err(|_| "Couldn't lock VST cache")?;
+            let event = vst3_host::MidiEvent::NoteOn {
+                channel: vst3_host::MidiChannel::Ch1,
+                note: 60,
+                velocity: 100,
+            };
+            plugin.send_midi_event(event);
+            Ok(())
+        }
+        None => Err("Couldn't find that plugin".into()),
+    }
+}
+#[tauri::command]
+fn open_vst_window(
+    vst_cache: State<'_, Mutex<VstCache>>,
+    vst_messaging: State<'_, VstMessaging>,
+) -> Result<(), String> {
+    // Create plugin and store in cache
+    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
+    let id = "test".to_string();
+
+    match vst_cache.plugins.get_mut(&id) {
+        Some(plugin_data) => {
+            vst_messaging.send_message(VstCommand::CreateWindow(id, plugin_data.plugin.clone()));
+
+            Ok(())
+        }
+        None => Err("Couldn't find that plugin".into()),
+    }
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
@@ -355,6 +394,8 @@ pub fn run() {
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
             let composition_store = Mutex::new(CompositionStore::new());
             let midi_store = Mutex::new(MIDIStore::new(app.handle().clone()));
+            let vst_store = Mutex::new(VstCache::new());
+            let vst_messaging = VstMessaging::new();
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
@@ -363,6 +404,8 @@ pub fn run() {
             app.manage(asset_store);
             app.manage(composition_store);
             app.manage(midi_store);
+            app.manage(vst_store);
+            app.manage(vst_messaging);
 
             println!("app setup success");
 
@@ -397,7 +440,8 @@ pub fn run() {
             play_midi_key,
             // VST
             create_vst,
-            test_vst
+            test_vst,
+            open_vst_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
