@@ -20,7 +20,7 @@ type Props = {};
 
 const MediaEffectList = (props: Props) => {
   return (
-    <Stack>
+    <Stack gap={1}>
       {EFFECT_LIST_ITEMS.map((listItem) => (
         <MediaListItemDraggable key={listItem.id} {...listItem} />
       ))}

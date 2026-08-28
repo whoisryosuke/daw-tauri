@@ -6,7 +6,7 @@ import { Stack } from "../styled-system/jsx";
 
 function App() {
   return (
-    <Stack height="100dvh" bg="gray.1" overflow="hidden">
+    <Stack height="100dvh" bg="gray.3" overflow="hidden">
       <TopNavigation />
       <Stack flexDir="row" flex={1} minHeight={0}>
         <MediaBrowser />

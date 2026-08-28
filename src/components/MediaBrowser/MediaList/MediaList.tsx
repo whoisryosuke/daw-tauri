@@ -26,7 +26,7 @@ const MediaList = ({ selectedListItem, handleSelectedItem }: Props) => {
 
   return (
     <ExpandablePanel>
-      <Stack m="1">{renderList}</Stack>
+      <Stack gap={1}>{renderList}</Stack>
     </ExpandablePanel>
   );
 };

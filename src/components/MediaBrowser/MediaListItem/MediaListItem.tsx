@@ -23,14 +23,29 @@ const textStyle = css({
 const buttonStyle = cva({
   base: {
     position: "relative",
-    background: "transparent",
-    border: 0,
+    backgroundColor: {
+      base: "gray.alpha-1",
+      _hover: "gray.5",
+    },
+    // bgLinear: "to-b",
+    // gradientFrom: {
+    //   base: "gray.alpha-1",
+    //   _hover: "gray.4",
+    // },
+    // gradientTo: {
+    //   base: "gray.alpha-1",
+    //   _hover: "gray.6",
+    // },
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "gray.alpha-1",
     display: "flex",
     alignItems: "center",
     px: 2,
     py: 1,
     gap: 1,
     zIndex: 420,
+    borderRadius: 3,
 
     fontSize: 2,
     color: "gray.11",
@@ -42,8 +57,18 @@ const buttonStyle = cva({
   variants: {
     selected: {
       true: {
-        bg: "blue.4",
+        bgLinear: "to-b",
+        gradientFrom: {
+          base: "blue.3",
+          _hover: "blue.3",
+        },
+        gradientTo: {
+          base: "blue.4",
+          _hover: "blue.5",
+        },
         color: "blue.12",
+
+        borderColor: "blue.4",
       },
     },
   },

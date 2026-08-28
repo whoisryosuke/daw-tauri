@@ -49,7 +49,7 @@ const MediaSampleList = (props: Props) => {
   }, []);
 
   return (
-    <Stack>
+    <Stack gap={1}>
       {assets.map((listItem) => (
         <MediaListItemDraggable key={listItem.id} {...listItem} />
       ))}
