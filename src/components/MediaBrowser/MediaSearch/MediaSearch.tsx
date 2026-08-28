@@ -17,7 +17,8 @@ const styles = sva({
         base: "gray.5",
         _hover: "gray.6",
       },
-      p: 2,
+      px: 2,
+      py: 1,
 
       borderWidth: "1px",
       borderStyle: "solid",
