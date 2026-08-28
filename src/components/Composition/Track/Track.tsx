@@ -1,14 +1,17 @@
 import {
+  playMidiTrackAtom,
+  selectedTrackAtom,
   selectedTrackClipAtom,
   trackClipsAtom,
   type TrackData,
 } from "../../../store/composition";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import TrackClip from "../TrackClip/TrackClip";
 import { useDroppable } from "@dnd-kit/core";
 import { Box, Stack } from "../../../../styled-system/jsx";
 import Heading from "../../ui/Typography/Heading";
 import { css, cx } from "../../../../styled-system/css";
+import TrackControl from "../TrackControls/TrackControl";
 
 const MIN_HEIGHT = 129; // 125 + 4 = gap for border clip
 
@@ -19,20 +22,25 @@ const containerStyle = css({
   minHeight: MIN_HEIGHT,
 });
 
-type Props = TrackData & {
+type Props = {
   width: number;
+  track: TrackData;
 };
 
-const Track = ({ id, name, trackType, width }: Props) => {
+const Track = ({ track, width }: Props) => {
+  const selectedTrackId = useAtomValue(selectedTrackAtom);
+  const currentMidiTrack = useAtomValue(playMidiTrackAtom);
   const setSelectedTrackClip = useSetAtom(selectedTrackClipAtom);
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
-  const localClips = trackClips.filter((trackClip) => trackClip.track_id == id);
+  const localClips = trackClips.filter(
+    (trackClip) => trackClip.track_id == track.id,
+  );
 
   const { isOver, setNodeRef } = useDroppable({
-    id: `TRACK_${id}`,
+    id: `TRACK_${track.id}`,
     data: {
-      id,
-      trackType,
+      id: track.id,
+      trackType: track.trackType,
     },
   });
 
@@ -49,6 +57,12 @@ const Track = ({ id, name, trackType, width }: Props) => {
       className={containerStyle}
       onClick={handleClick}
     >
+      <TrackControl
+        key={track.id}
+        selected={selectedTrackId == track.id}
+        playMidi={currentMidiTrack == track.id}
+        {...track}
+      />
       <Stack
         ref={setNodeRef}
         flex={1}

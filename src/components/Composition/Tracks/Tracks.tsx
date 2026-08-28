@@ -14,7 +14,7 @@ const Tracks = ({ containerWidth }: Props) => {
   return (
     <Stack width="100%" gap={0}>
       {tracks.map((track) => (
-        <TrackComponent key={track.id} {...track} width={containerWidth} />
+        <TrackComponent key={track.id} track={track} width={containerWidth} />
       ))}
     </Stack>
   );

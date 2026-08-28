@@ -37,7 +37,10 @@ const TimeMarkers = ({ containerWidth, precision = 100 }: Props) => {
       </TimeMarker>
     ));
   return (
-    <div className={containerStyle} style={{ width: containerWidth }}>
+    <div
+      className={containerStyle}
+      style={{ width: containerWidth, paddingLeft: 150 }}
+    >
       {/* We create an empty div to represent 0 since we don't render the number */}
       <div />
       {markers}

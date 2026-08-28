@@ -11,6 +11,7 @@ import { setSelectedTrack } from "../../../services/composition";
 
 const trackControlContainer = cva({
   base: {
+    minWidth: "150px",
     backgroundColor: "gray.3",
     minHeight: 125 + 4,
     display: "flex",
@@ -20,6 +21,9 @@ const trackControlContainer = cva({
     borderColor: "gray.5",
     color: "gray.9",
     borderStyle: "solid",
+    position: "sticky",
+    top: 0,
+    left: 0,
 
     _motionSafe: {
       transitionProperty: "background-color, color, border-color",
