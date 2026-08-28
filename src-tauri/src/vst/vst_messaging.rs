@@ -1,6 +1,7 @@
 use crossbeam::channel::{Receiver, Sender};
 use std::{
     collections::HashMap,
+    eprintln, println,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -46,14 +47,30 @@ impl VstMessaging {
                 while let Ok(message) = consumer.try_recv() {
                     match message {
                         VstCommand::CreateWindow(id, plugin) => {
+                            println!("creating window for plugin");
                             let mut window = vst3_host::PluginWindow::new(plugin.clone());
-                            let _ = window.open();
+                            println!("opening window for plugin");
+                            let result = window.open();
+
+                            match result {
+                                Ok(()) => continue,
+                                Err(err) => {
+                                    eprintln!("Couldn't open window: {}", err);
+                                }
+                            }
+
                             window_map.insert(id, window);
                         }
                         VstCommand::OpenWindow(id) => {
                             if let Some(window) = window_map.get_mut(&id) {
                                 if !window.is_open() {
-                                    window.open();
+                                    let result = window.open();
+                                    match result {
+                                        Ok(()) => continue,
+                                        Err(err) => {
+                                            eprintln!("Couldn't open window: {}", err);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -64,6 +81,12 @@ impl VstMessaging {
                                 }
                             }
                         }
+                    }
+                }
+
+                for (key, window) in &window_map {
+                    if window.is_open() {
+                        window.service_platform_events();
                     }
                 }
 

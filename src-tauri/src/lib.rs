@@ -18,7 +18,7 @@ use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::{FormatOptions, Track};
 use symphonia::core::meta::MetadataOptions;
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
+use tauri::{AppHandle, Builder, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 use std::collections::{HashMap, VecDeque};
 use std::fs::{self, File};
@@ -42,6 +42,8 @@ use crate::midi::{
 
 use crate::vst::vst_cache::VstCache;
 use crate::vst::vst_messaging::{VstCommand, VstMessaging};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use vst3_host::{EditorRect, EmbeddedEditor};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -324,16 +326,79 @@ fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
 }
 #[tauri::command]
 fn open_vst_window(
+    app: AppHandle,
     vst_cache: State<'_, Mutex<VstCache>>,
     vst_messaging: State<'_, VstMessaging>,
 ) -> Result<(), String> {
     // Create plugin and store in cache
     let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
     let id = "test".to_string();
+    let app_clone = app.clone();
 
     match vst_cache.plugins.get_mut(&id) {
         Some(plugin_data) => {
-            vst_messaging.send_message(VstCommand::CreateWindow(id, plugin_data.plugin.clone()));
+            let plugin = plugin_data.plugin.clone();
+
+            println!("Creating main thread function...");
+
+            let thread_result = app.run_on_main_thread(move || {
+                let window_result = WebviewWindowBuilder::new(
+                    &app_clone,
+                    "my-extra-window",
+                    WebviewUrl::App("index.html".into()),
+                )
+                .title("Extra Window")
+                .inner_size(800.0, 600.0)
+                .build();
+                println!("Created window");
+
+                match window_result {
+                    Ok(window) => {
+                        match window.window_handle() {
+                            Ok(handle) => {
+                                // Process platform-specific handle via handle.as_raw()
+                                println!("Got window handle successfully");
+                                let (w, h) = plugin
+                                    .lock()
+                                    .unwrap()
+                                    .get_editor_size()
+                                    .unwrap_or((400, 300));
+                                let rect = EditorRect {
+                                    x: 0.0,
+                                    y: 0.0,
+                                    width: w as f32,
+                                    height: h as f32,
+                                };
+
+                                let editor_result =
+                                    EmbeddedEditor::embed(plugin.clone(), handle.as_raw(), rect);
+
+                                match editor_result {
+                                    Ok(_) => {}
+                                    Err(err) => {
+                                        eprintln!(
+                                            "Couldn't embed editor in new window handle: {}",
+                                            err
+                                        );
+                                    }
+                                }
+                            }
+                            Err(e) => eprintln!("Failed to get window handle: {e}"),
+                        }
+                    }
+                    Err(err) => {
+                        println!("window failed to create: {}", err);
+                    }
+                }
+            });
+
+            match thread_result {
+                Ok(_) => {}
+                Err(err) => {
+                    println!("thread failed: {}", err);
+                }
+            };
+            // vst_messaging.send_message(VstCommand::CreateWindow(id, plugin_data.plugin.clone()));
 
             Ok(())
         }
