@@ -8,7 +8,7 @@ import { VscTriangleDown } from "react-icons/vsc";
 import { ColorToken } from "../../../../styled-system/tokens";
 import { motion, useMotionValue, useTransform } from "motion/react";
 
-const lineColor: ColorToken = "gray.6";
+const lineColor: ColorToken = "gray.8";
 
 const styles = sva({
   slots: ["container", "line", "marker"],
@@ -18,6 +18,7 @@ const styles = sva({
       top: "-10px",
       left: 0,
       height: "calc(100% + 10px)",
+      zIndex: 420,
     },
     line: {
       position: "absolute",
