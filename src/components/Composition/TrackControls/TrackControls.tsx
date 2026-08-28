@@ -56,7 +56,7 @@ const TrackControls = (props: Props) => {
       {renderItems}
       <ContextMenu
         items={contextMenuItems}
-        triggerClass={css({ bg: "gray.2" })}
+        triggerClass={css({ bg: "gray.alpha-2" })}
       />
     </Stack>
   );

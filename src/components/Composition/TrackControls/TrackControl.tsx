@@ -11,11 +11,20 @@ import { setSelectedTrack } from "../../../services/composition";
 
 const trackControlContainer = cva({
   base: {
-    backgroundColor: "gray.3",
     minHeight: 125 + 4,
     display: "flex",
     justifyContent: "end",
     p: 2,
+
+    bgLinear: "to-b",
+    gradientFrom: {
+      base: "gray.6",
+      _hover: "gray.7",
+    },
+    gradientTo: {
+      base: "gray.5",
+      _hover: "gray.5",
+    },
     borderBottomWidth: "1px",
     borderColor: "gray.5",
     color: "gray.9",
@@ -30,9 +39,16 @@ const trackControlContainer = cva({
   variants: {
     selected: {
       true: {
-        backgroundColor: "blue.3",
+        gradientFrom: {
+          base: "blue.6",
+          _hover: "blue.7",
+        },
+        gradientTo: {
+          base: "blue.4",
+          _hover: "blue.4",
+        },
         borderColor: "blue.5",
-        color: "blue.9",
+        color: "blue.12",
       },
     },
   },
@@ -86,6 +102,8 @@ const TrackControl = ({ id, name, selected, trackType, playMidi }: Props) => {
           min={0}
           max={1}
           onValueChange={handleVolumeChange}
+          alpha
+          color={selected ? "blue" : "gray"}
         />
       </Box>
       {trackType == "Midi" && (

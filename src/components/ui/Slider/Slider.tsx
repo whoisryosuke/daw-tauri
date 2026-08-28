@@ -1,5 +1,10 @@
 import { Slider as BaseSlider, SliderRootProps } from "@base-ui/react/slider";
-import { css, cx, sva } from "../../../../styled-system/css";
+import {
+  css,
+  cx,
+  RecipeVariantProps,
+  sva,
+} from "../../../../styled-system/css";
 import { ColorPalette } from "../../../../styled-system/tokens";
 
 // Define the slider recipe using sva for slots
@@ -13,6 +18,7 @@ const slider = sva({
       alignItems: "center",
       py: "3",
       userSelect: "none",
+      colorPalette: "gray",
     },
     control: { display: "flex", width: "full", alignItems: "center", gap: "2" },
     track: {
@@ -20,11 +26,12 @@ const slider = sva({
       w: "full",
       bg: "gray.6",
       userSelect: "none",
+      borderRadius: 1,
     },
     indicator: {
-      colorPalette: "gray",
       bg: "colorPalette.11",
       userSelect: "none",
+      borderRadius: 1,
     },
     thumb: {
       width: "3",
@@ -44,26 +51,55 @@ const slider = sva({
     },
   },
   variants: {
-    // Add any variants here if needed
+    alpha: {
+      true: {
+        track: {
+          bg: "colorPalette.alpha-9",
+        },
+        indicator: {
+          colorPalette: "gray",
+          bg: "colorPalette.alpha-9",
+          userSelect: "none",
+        },
+        thumb: {
+          bg: {
+            base: "colorPalette.7",
+            _hover: "colorPalette.8",
+            _active: "colorPalette.6",
+          },
+        },
+      },
+    },
   },
 });
 
-type Props = SliderRootProps & {
-  className?: string;
-  color?: ColorPalette;
-};
+type SliderVariants = RecipeVariantProps<typeof slider>;
 
-export default function Slider({ className, color = "gray", ...props }: Props) {
-  const classes = slider();
+type Props = SliderRootProps &
+  SliderVariants & {
+    className?: string;
+    color?: ColorPalette;
+  };
+
+export default function Slider({
+  className,
+  color = "gray",
+  alpha,
+  ...props
+}: Props) {
+  const classes = slider({ alpha });
   const colorStyle = css({
     colorPalette: color,
   });
 
   return (
-    <BaseSlider.Root className={cx(classes.root, className)} {...props}>
+    <BaseSlider.Root
+      className={cx(classes.root, className, colorStyle)}
+      {...props}
+    >
       <BaseSlider.Control className={classes.control}>
         <BaseSlider.Track className={classes.track}>
-          <BaseSlider.Indicator className={cx(classes.indicator, colorStyle)} />
+          <BaseSlider.Indicator className={cx(classes.indicator)} />
           <BaseSlider.Thumb className={classes.thumb} aria-label="Volume" />
         </BaseSlider.Track>
       </BaseSlider.Control>

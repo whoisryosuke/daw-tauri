@@ -60,15 +60,10 @@ const Composition = (props: Props) => {
         gap={0}
       >
         {/* Left Side */}
-        {/* <Box width="150px" gap={0} position="sticky" left="0" zIndex={999}>
-          <Box
-            width="100%"
-            height="50px"
-            bg="gray.2"
-            className={cornerBoxStyle}
-          />
+        <Box width="150px" gap={0} position="sticky" left="0" zIndex={999}>
+          <Box width="100%" height="50px" className={cornerBoxStyle} />
           <TrackControls />
-        </Box> */}
+        </Box>
 
         {/* Timeline */}
         <Box flex={1} position="relative" minWidth={0}>
