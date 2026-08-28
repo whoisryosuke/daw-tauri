@@ -13,7 +13,7 @@ const button = defineSlotRecipe({
       color: {
         base: "colorPalette.11",
         _hover: "colorPalette.12",
-        _active: "colorPalette.9",
+        _active: "colorPalette.12",
       },
     },
     icon: {},
@@ -22,11 +22,31 @@ const button = defineSlotRecipe({
     variant: {
       default: {
         container: {
-          bg: {
+          bgLinear: "to-b",
+          gradientFrom: {
             base: "colorPalette.5",
-            _hover: "colorPalette.6",
-            _active: "colorPalette.4",
+            _hover: "colorPalette.7",
+            _active: "colorPalette.3",
           },
+          gradientTo: {
+            base: "colorPalette.4",
+            _hover: "colorPalette.5",
+            _active: "colorPalette.5",
+          },
+
+          borderWidth: "1.5px",
+          borderStyle: "solid",
+          borderColor: {
+            base: "colorPalette.6",
+            _hover: "colorPalette.8",
+            _active: "colorPalette.8",
+          },
+
+          // bg: {
+          //   base: "colorPalette.5",
+          //   _hover: "colorPalette.6",
+          //   _active: "colorPalette.4",
+          // },
         },
       },
       outline: {

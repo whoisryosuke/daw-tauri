@@ -14,6 +14,7 @@ import { css } from "../../../../../../../styled-system/css";
 
 const middleButtonStyle = css({
   borderRadius: 0,
+  borderRight: 0,
 });
 
 type Props = {};
@@ -22,7 +23,11 @@ const CaptureButtons = (props: Props) => {
   return (
     <Stack flexDir="row" gap="0">
       <ControlIconButton
-        style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+        style={{
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+          borderRight: 0,
+        }}
       >
         <BsPlus />
       </ControlIconButton>

@@ -27,7 +27,11 @@ const MusicControls = (props: Props) => {
 
       <Stack flexDir="row" gap="0">
         <ControlButton
-          style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+          style={{
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+            borderRight: 0,
+          }}
         >
           <PiMetronome />
         </ControlButton>
