@@ -9,6 +9,7 @@ import { css } from "../../../styled-system/css";
 import { useAtomValue } from "jotai/react";
 import { compositionAtom } from "../../store/composition";
 import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
+import Panel from "../ui/Panel/Panel";
 
 const timelineWindowStyle = css({
   "&::-webkit-scrollbar": {
@@ -46,7 +47,7 @@ const Composition = (props: Props) => {
   const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
 
   return (
-    <Box flex={1} gap={0} minWidth={0} style={{ width }}>
+    <Panel flex={1} gap={0} minWidth={0} style={{ width }}>
       <Stack
         flexDirection="row"
         minWidth="100%"
@@ -59,7 +60,7 @@ const Composition = (props: Props) => {
         gap={0}
       >
         {/* Left Side */}
-        <Box width="150px" gap={0} position="sticky" left="0" zIndex={999}>
+        {/* <Box width="150px" gap={0} position="sticky" left="0" zIndex={999}>
           <Box
             width="100%"
             height="50px"
@@ -67,7 +68,7 @@ const Composition = (props: Props) => {
             className={cornerBoxStyle}
           />
           <TrackControls />
-        </Box>
+        </Box> */}
 
         {/* Timeline */}
         <Box flex={1} position="relative" minWidth={0}>
@@ -78,7 +79,7 @@ const Composition = (props: Props) => {
           </Stack>
         </Box>
       </Stack>
-    </Box>
+    </Panel>
   );
 };
 

@@ -8,14 +8,13 @@ import { css } from "../../../../styled-system/css";
 const containerStyle = css({
   width: "100%",
   height: "50px",
-  backgroundColor: "gray.2",
+  // backgroundColor: "gray.2",
   position: "absolute",
   top: 0,
   left: 0,
   display: "flex",
   justifyContent: "space-between",
   alignItems: "end",
-  py: 1,
 
   borderBottomWidth: "1px",
   borderColor: "gray.5",
@@ -39,7 +38,8 @@ const TimeMarkers = ({ containerWidth, precision = 100 }: Props) => {
     ));
   return (
     <div className={containerStyle} style={{ width: containerWidth }}>
-      <TimeMarker>{range[0]}</TimeMarker>
+      {/* We create an empty div to represent 0 since we don't render the number */}
+      <div />
       {markers}
       <TimeMarker>{range[1]}</TimeMarker>
     </div>

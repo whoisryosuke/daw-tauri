@@ -7,15 +7,16 @@ const containerStyle = css({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  transform: "translateX(-50%)",
-  color: "gray.9",
-  gap: 0,
+  transform: "translateX(-50%) translateY(-2px)",
+  color: "gray.10",
+  gap: 1,
 });
 const textStyle = css({
   fontSize: 1,
-  fontFamily: "mono",
+  // fontFamily: "mono",
   pointerEvents: "none",
   userSelect: "none",
+  lineHeight: 1,
 });
 
 type Props = {};
@@ -24,7 +25,7 @@ const TimeMarker = ({ children }: PropsWithChildren<Props>) => {
   return (
     <div className={containerStyle}>
       <Text className={textStyle}>{children}</Text>
-      <VscTriangleDown size={8} />
+      <Text className={textStyle}>|</Text>
     </div>
   );
 };
