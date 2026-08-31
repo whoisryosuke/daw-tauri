@@ -6,6 +6,7 @@ import SelectBarControl from "./SelectBarControl";
 import ControlButton from "../../shared/ControlButton/ControlButton";
 import { Stack } from "../../../../../styled-system/jsx";
 import Button from "../../../ui/Button";
+import TapButton from "./controls/TapButton";
 
 type Props = {};
 
@@ -15,8 +16,7 @@ const MusicControls = (props: Props) => {
       <Button variant="ghost">
         <BiSidebar />
       </Button>
-      <ControlButton>Tap</ControlButton>
-      <ControlButton>128.00</ControlButton>
+      <TapButton />
       <ControlButton>
         <BiLeftIndent />
       </ControlButton>
