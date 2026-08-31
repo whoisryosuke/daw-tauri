@@ -1,6 +1,18 @@
-import { type ComponentProps, useCallback, useEffect, useRef } from "react";
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import mapRange from "../../utils/map";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { css } from "../../../styled-system/css";
+import Panel from "../ui/Panel/Panel";
+
+const canvasWrapper = css({
+  minWidth: 300,
+});
 
 type Props = {
   // waveform: number[];
@@ -16,8 +28,9 @@ type Props = {
  */
 const PlaybackWaveform = ({ animated = true, fps, ...props }: Props) => {
   const colorMode = "dark";
-  const bgColor = colorMode === "dark" ? "#111" : "#EEE";
-  const lineColor = colorMode === "dark" ? "blue" : "blue";
+  const bgColor = colorMode === "dark" ? "transparent" : "#EEE";
+  const lineColor = colorMode === "dark" ? "#0090ff" : "#0090ff";
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const data = useRef<number[]>(new Array(128).fill(0));
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
@@ -25,7 +38,29 @@ const PlaybackWaveform = ({ animated = true, fps, ...props }: Props) => {
   );
   const prevTime = useRef(0);
   const listenerRef = useRef<UnlistenFn>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
+  // Handle resizing of container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+
+        setDimensions({ width, height });
+      }
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Get waveform data from Rust backend
   useEffect(() => {
     const attachEvents = async () => {
       listenerRef.current = await listen("waveform", (event) => {
@@ -54,7 +89,7 @@ const PlaybackWaveform = ({ animated = true, fps, ...props }: Props) => {
         }
       }
 
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || !containerRef.current) return;
       const canvas = canvasRef.current;
 
       const ctx = canvas.getContext("2d");
@@ -104,7 +139,16 @@ const PlaybackWaveform = ({ animated = true, fps, ...props }: Props) => {
     };
   }, [draw, lineColor, bgColor, fps]);
 
-  return <canvas ref={canvasRef} {...props} />;
+  return (
+    <Panel ref={containerRef} className={canvasWrapper}>
+      <canvas
+        ref={canvasRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        {...props}
+      />
+    </Panel>
+  );
 };
 
 export default PlaybackWaveform;
