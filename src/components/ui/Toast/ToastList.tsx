@@ -2,6 +2,14 @@ import * as React from "react";
 import { Toast } from "@base-ui/react/toast";
 import { sva } from "../../../../styled-system/css";
 import { BiX } from "react-icons/bi";
+import { useEffect, useRef } from "react";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
+
+type NotificationData = {
+  title: string;
+  description: string;
+  variant: "Default" | "Error";
+};
 
 const toastRecipe = sva({
   slots: ["root", "content", "title", "description", "close"],
@@ -123,7 +131,31 @@ const toastRecipe = sva({
 });
 
 function ToastList() {
-  const { toasts } = Toast.useToastManager();
+  const { toasts, add } = Toast.useToastManager();
+  const listenerRef = useRef<UnlistenFn>(null);
+
+  // Get waveform data from Rust backend
+  useEffect(() => {
+    const attachEvents = async () => {
+      listenerRef.current = await listen("notification", (event) => {
+        const notificationData = event.payload as NotificationData;
+        add({
+          title: notificationData.title,
+          description: notificationData.description,
+          data: {
+            type: notificationData.description.toLocaleLowerCase(),
+          },
+        });
+      });
+    };
+
+    attachEvents();
+
+    return () => {
+      if (listenerRef.current) listenerRef.current();
+    };
+  });
+
   return toasts.map((toast) => {
     const isError = toast.data.type == "error";
     const classes = toastRecipe({ color: isError ? "error" : undefined });

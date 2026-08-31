@@ -28,6 +28,7 @@ use crate::{
     composition::{CompositionStore, Track, TrackClip, TrackClipRange, TrackClipType, TrackType},
     math::seconds_to_frames,
     music::sampler::Sampler,
+    utils::notification_system::{send_notification, NotificationType},
     vst::vst_cache::VstPluginInstance,
 };
 
@@ -620,6 +621,7 @@ impl AudioEngineMessaging {
 }
 
 pub struct AudioEngine {
+    app: AppHandle,
     /**
      * The audio stream. This has to stay alive to ensure sound continues playing.
      */
@@ -670,6 +672,7 @@ impl AudioEngine {
         app.manage(messaging);
 
         let mut engine = Self {
+            app: app.app_handle().clone(),
             config,
             stream: None,
             selected_device,
@@ -707,6 +710,8 @@ impl AudioEngine {
         let playback_time_clone = self.playback_time.clone();
         let local_config = &self.config.clone();
 
+        let app_handle = self.app.clone();
+
         let stream = match self.config.sample_format() {
             cpal::SampleFormat::F32 => device
                 .build_output_stream(
@@ -725,7 +730,15 @@ impl AudioEngine {
                             playback_time_local_clone,
                         );
                     },
-                    |err| eprintln!("couldn't build audio stream: {err}"),
+                    move |err| {
+                        eprintln!("couldn't build audio stream: {err}");
+                        send_notification(
+                            app_handle.clone(),
+                            "Couldn't build audio stream".to_string(),
+                            err.to_string(),
+                            NotificationType::Error,
+                        );
+                    },
                     None,
                 )
                 .expect("couldn't build audio stream"),
