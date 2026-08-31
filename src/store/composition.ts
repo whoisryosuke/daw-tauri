@@ -82,6 +82,8 @@ export const compositionAtom = atom<CompositionData>(
   generateCompositionDefaultData(),
 );
 
+export const bpmAtom = atom(120);
+
 /**
  * TRACKS
  */

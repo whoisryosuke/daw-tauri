@@ -6,7 +6,7 @@ import SelectBarControl from "./SelectBarControl";
 import ControlButton from "../../shared/ControlButton/ControlButton";
 import { Stack } from "../../../../../styled-system/jsx";
 import Button from "../../../ui/Button";
-import TapButton from "./controls/TapButton";
+import TapButton from "./controls/TapButton/TapButton";
 
 type Props = {};
 

@@ -1,12 +1,12 @@
-import Heading from "@/components/primitives/Heading";
-import Stack from "@/components/primitives/Stack";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ControlButton from "../../../shared/ControlButton/ControlButton";
+import ControlButton from "../../../../shared/ControlButton/ControlButton";
+import { useAtom } from "jotai/react";
+import { bpmAtom } from "../../../../../../store/composition";
 
 type Props = {};
 
 const TapButton = (props: Props) => {
-  const [BPM, setBPM] = useState(0);
+  const [BPM, setBPM] = useAtom(bpmAtom);
   const lastTapTime = useRef(0);
   const THRESHOLD_MS = 16; // one frame
 
