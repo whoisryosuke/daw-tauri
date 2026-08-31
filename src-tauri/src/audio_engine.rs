@@ -218,6 +218,19 @@ impl Mixer {
                         }
                     }
                 }
+
+                AudioCommand::Seek(new_time) => {
+                    for track in self.tracks.each_mut() {
+                        for (_, node) in track.nodes.iter_mut() {
+                            match node {
+                                AudioNodeTypes::StaticBuffer(sample_node) => {
+                                    sample_node.seek(new_time);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -323,6 +336,7 @@ pub enum AudioCommand {
     RemoveSynth(usize, usize),
     Pause,
     ClearNodes,
+    Seek(u64),
     SetMixerGain(usize, f32),
     /// Queue an audio node for immediate playback. Requires an index
     AddPlaybackSample(u8, AudioNodeTypes),
@@ -403,6 +417,10 @@ impl AudioEngineMessaging {
                 ));
             });
         }
+
+        // Handle seeking
+        let new_time = self.playback_time.load(Ordering::SeqCst);
+        self.send_command(AudioCommand::Seek(new_time));
 
         // Tell audio thread to start playing now that it has audio nodes
         self.send_command(AudioCommand::Play);

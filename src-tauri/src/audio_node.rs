@@ -40,6 +40,31 @@ impl SampleNode {
             range,
         }
     }
+
+    pub fn seek(&mut self, current_frame: u64) {
+        // Where are we on timeline? If we started at a later time, update internal position.
+        // This ensures if user skips forward or backwards, audio node plays from current time (not node start).
+        let start_frame_index = self.start_frame as usize;
+        let current_position_frame = start_frame_index + self.position;
+        if current_position_frame < (current_frame as usize) {
+            self.position = (current_frame - self.start_frame) as usize;
+        }
+
+        // Is current time after the internal sample index? (aka `self.position`)
+        let current_frame = current_frame as usize;
+        let start_frame_index = self.start_frame as usize;
+        if current_position_frame < current_frame {
+            self.position = (current_frame - start_frame_index).min(self.range.1);
+            return;
+        }
+
+        // Before current position - but after clip start?
+        // This moves internal position index backwards as needed
+        if current_position_frame > current_frame && current_frame > start_frame_index {
+            let offset = current_position_frame - current_frame;
+            self.position = (self.position - offset).max(self.range.0);
+        }
+    }
 }
 
 impl AudioNode for SampleNode {
@@ -47,16 +72,6 @@ impl AudioNode for SampleNode {
         // Check if node is scheduled to start, if not, do nothing
         if self.start_frame > current_frame {
             return;
-        }
-
-        // Where are we on timeline? If we started at a later time, update internal position.
-        // This ensures if user skips forward or pauses, audio node plays from current time (not node start).
-        // @TODO: Maybe replace with a separate `seek()` when user moves playback head - since it only happens then.
-        // This also doesn't handle if user seeks backwards - since `self.position` would need to change.
-        let start_frame_index = self.start_frame as usize;
-        let current_position_frame = start_frame_index + self.position;
-        if current_position_frame < (current_frame as usize) {
-            self.position = (current_frame - self.start_frame) as usize;
         }
 
         for sample in output.iter_mut() {
