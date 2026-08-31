@@ -44,11 +44,13 @@ const buttonStyle = cva({
     px: 2,
     py: 1,
     gap: 1,
-    zIndex: 420,
+    zIndex: "drag",
     borderRadius: 3,
 
     fontSize: 2,
     color: "gray.11",
+
+    userSelect: "none",
 
     "& svg": {
       flexShrink: 0,

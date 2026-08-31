@@ -34,6 +34,7 @@ export const dialogRecipe = sva({
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
+      zIndex: "popup",
       marginTop: "-2rem",
       display: "flex",
       flexDirection: "column",

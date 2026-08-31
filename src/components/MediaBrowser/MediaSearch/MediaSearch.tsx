@@ -26,6 +26,8 @@ const styles = sva({
 
       color: "gray.12",
 
+      userSelect: "none",
+
       "&:focus-within": {
         outlineWidth: "1.5px",
         outlineStyle: "solid",

@@ -14,7 +14,7 @@ const blackKeyStyle = css({
   width: "75%",
   height: "60%",
   py: 2,
-  zIndex: 420,
+  zIndex: "uiLow",
   fontSize: 1,
   bg: { base: "gray.2", _hover: "blue.3" },
   borderColor: { base: "gray.3", _hover: "blue.7" },

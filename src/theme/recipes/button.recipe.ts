@@ -10,6 +10,8 @@ const button = defineSlotRecipe({
       whiteSpace: "nowrap",
       alignItems: "center",
 
+      userSelect: "none",
+
       color: {
         base: "colorPalette.11",
         _hover: "colorPalette.12",

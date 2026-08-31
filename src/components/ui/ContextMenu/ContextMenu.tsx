@@ -13,7 +13,7 @@ export const contextMenuRecipe = sva({
     },
     positioner: {
       outline: "none",
-      zIndex: 9999, // @TODO: Need to dark a "top" z-level for popups
+      zIndex: "popup", // @TODO: Need to dark a "top" z-level for popups
     },
     popup: {
       transformOrigin: "var(--transform-origin)",

@@ -55,6 +55,8 @@ const styles = sva({
         _active: "blue.4",
       },
 
+      userSelect: "none",
+
       _motionSafe: {
         transitionProperty: "background-color, color, border-color",
         transitionTimingFunction: "ease-in-out",

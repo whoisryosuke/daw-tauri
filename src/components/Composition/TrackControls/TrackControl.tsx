@@ -55,6 +55,8 @@ const trackControlContainer = cva({
 });
 const headingStyle = css({
   fontSize: 1,
+
+  userSelect: "none",
 });
 
 type Props = TrackData & {

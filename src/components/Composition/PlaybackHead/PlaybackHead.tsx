@@ -18,7 +18,7 @@ const styles = sva({
       top: "-10px",
       left: 0,
       height: "calc(100% + 10px)",
-      zIndex: 420,
+      zIndex: "interactive",
     },
     line: {
       position: "absolute",

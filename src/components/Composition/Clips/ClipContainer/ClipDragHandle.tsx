@@ -27,7 +27,7 @@ const clipDragHandleStyle = css({
     _hover: "gray.alpha-4",
     _active: "blue.alpha-6",
   },
-  zIndex: 999,
+  zIndex: "interactive",
 
   "&[data-left='true']": {
     right: "auto",

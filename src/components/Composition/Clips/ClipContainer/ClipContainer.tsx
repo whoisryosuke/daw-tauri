@@ -112,7 +112,7 @@ const ClipContainer = ({
           base: "transparent",
           _hover: "gray.2",
         }}
-        zIndex={420}
+        zIndex="uiMid"
       />
       <ClipDragHandle
         trackId={trackId}

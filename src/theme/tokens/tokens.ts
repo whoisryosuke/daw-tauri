@@ -13,6 +13,7 @@ import {
   letterSpacings,
   lineHeights,
 } from "./typography";
+import depth from "./depth";
 
 const defineTokens = <T extends Tokens>(v: T) => v;
 
@@ -66,4 +67,5 @@ export const tokens = defineTokens({
   spacing,
   sizes,
   animations,
+  zIndex: depth,
 });

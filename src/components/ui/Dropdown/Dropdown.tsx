@@ -94,7 +94,7 @@ const dropdownPattern = sva({
     },
     positioner: {
       outline: "none",
-      zIndex: 999,
+      zIndex: "popup",
       userSelect: "none",
     },
     popup: {
