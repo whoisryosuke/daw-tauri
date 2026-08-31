@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import ControlButton from "../../../../shared/ControlButton/ControlButton";
 import { useAtom } from "jotai/react";
 import { bpmAtom } from "../../../../../../store/composition";
+import TapButtonInput from "./TapButtonInput";
 
 type Props = {};
 
@@ -60,18 +61,7 @@ const TapButton = (props: Props) => {
       >
         Tap
       </ControlButton>
-      <ControlButton>
-        {BPM.toFixed(2)}
-        {/* <span
-          style={{
-            fontVariantNumeric: "tabular-nums",
-            opacity: 0,
-            pointerEvents: "none",
-          }}
-        >
-          000.00
-        </span> */}
-      </ControlButton>
+      <TapButtonInput />
     </>
   );
 };
