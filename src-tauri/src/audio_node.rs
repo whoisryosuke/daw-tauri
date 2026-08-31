@@ -49,6 +49,16 @@ impl AudioNode for SampleNode {
             return;
         }
 
+        // Where are we on timeline? If we started at a later time, update internal position.
+        // This ensures if user skips forward or pauses, audio node plays from current time (not node start).
+        // @TODO: Maybe replace with a separate `seek()` when user moves playback head - since it only happens then.
+        // This also doesn't handle if user seeks backwards - since `self.position` would need to change.
+        let start_frame_index = self.start_frame as usize;
+        let current_position_frame = start_frame_index + self.position;
+        if current_position_frame < (current_frame as usize) {
+            self.position = (current_frame - self.start_frame) as usize;
+        }
+
         for sample in output.iter_mut() {
             // Make a copy in case it changes somehow - might be unnecessary
             let index = self.position;
