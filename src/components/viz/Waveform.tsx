@@ -82,6 +82,9 @@ const Waveform = ({
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = lineColor;
 
+        const height = canvasHeight / channelCount;
+        const offset = height * channelIndex;
+
         for (let i = 0; i < canvasWidth; i++) {
           const index = Math.floor(
             mapRange(i, 0, canvasWidth, startIndex, endIndex),
@@ -90,9 +93,6 @@ const Waveform = ({
           const x = i;
           // We scale the audio values to 0-1 to make it easier
           const amplitude = mapRange(channelData[index], -1, 1, 0, 1);
-
-          const height = canvasHeight / channelCount;
-          const offset = height * channelIndex;
 
           const y = amplitude * height + offset;
           if (i === 0) {
@@ -103,6 +103,10 @@ const Waveform = ({
         }
 
         ctx.stroke();
+        const centerY = height + offset;
+        ctx.lineTo(canvasWidth, centerY);
+        ctx.lineTo(0, centerY);
+
         ctx.closePath();
         ctx.fill();
       });
