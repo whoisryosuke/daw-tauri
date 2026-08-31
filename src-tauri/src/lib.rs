@@ -35,6 +35,7 @@ use crate::composition::{
     set_midi_track_as_playable, update_midi_track_clip, update_track_clip_range,
     update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
+use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
     MIDIStore,
@@ -217,6 +218,27 @@ async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, S
     let sample_rate = engine.config.sample_rate();
 
     Ok(sample_rate)
+}
+
+#[tauri::command(async)]
+async fn set_playback_time(
+    engine: State<'_, Mutex<AudioEngine>>,
+    messaging: State<'_, AudioEngineMessaging>,
+    time: f64,
+) -> Result<bool, String> {
+    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+
+    // Get samples from cache
+    let sample_rate = engine.config.sample_rate();
+    println!("setting playback time from Rust");
+
+    // Convert seconds to frames
+    let frame_count = seconds_to_frames(time, sample_rate)?;
+
+    // Get samples from cache
+    messaging.set_playback_time(frame_count);
+
+    Ok(true)
 }
 
 #[derive(Serialize)]
@@ -433,6 +455,7 @@ pub fn run() {
             update_track_clip_range,
             update_midi_track_clip,
             add_clip,
+            set_playback_time,
             // MIDI
             get_midi_input_devices,
             start_midi_connection,

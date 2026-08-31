@@ -10,6 +10,9 @@ import { useDroppable } from "@dnd-kit/core";
 import { Box, Stack } from "../../../../styled-system/jsx";
 import Heading from "../../ui/Typography/Heading";
 import { css, cx } from "../../../../styled-system/css";
+import { MouseEventHandler } from "react";
+import { getTimeBasedOnTimelinePosition } from "../../../services/composition";
+import { invoke } from "@tauri-apps/api/core";
 
 const MIN_HEIGHT = 129; // 125 + 4 = gap for border clip
 
@@ -62,9 +65,21 @@ const Track = ({ id, name, trackType, width }: Props) => {
     },
   });
 
-  const handleClick = () => {
+  const handleClick: MouseEventHandler<HTMLDivElement> = (e) => {
     console.log("track clicked");
     setSelectedTrackClip("");
+
+    // Get the bounding rectangle of the target element
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    // Calculate the click position relative to the element
+    const x = e.clientX - rect.left;
+
+    console.log("clicked here", x);
+    const time = getTimeBasedOnTimelinePosition(x);
+    console.log("new time", time);
+
+    invoke("set_playback_time", { time });
   };
 
   return (

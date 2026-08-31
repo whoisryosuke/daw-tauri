@@ -566,6 +566,11 @@ impl AudioEngineMessaging {
         self.playback_time.store(0, Ordering::SeqCst);
     }
 
+    /// Set playback time (in frames)
+    pub fn set_playback_time(&self, new_time: u64) {
+        self.playback_time.store(new_time, Ordering::Relaxed);
+    }
+
     pub fn spawn_waveform_thread(
         app: AppHandle,
         waveform: Receiver<f32>,
