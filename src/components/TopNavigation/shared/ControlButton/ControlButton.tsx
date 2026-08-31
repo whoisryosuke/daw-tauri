@@ -1,10 +1,10 @@
 import React from "react";
 import Button, { ButtonProps } from "../../../ui/Button";
 
-type Props = ButtonProps & {};
+type Props = Omit<ButtonProps, "size" | "variant"> & {};
 
 const ControlButton = (props: Props) => {
-  return <Button size="small" {...props} />;
+  return <Button {...props} size="small" variant="default" />;
 };
 
 export default ControlButton;
