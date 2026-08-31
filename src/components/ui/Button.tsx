@@ -1,13 +1,21 @@
-import React, { HTMLProps, PropsWithChildren, ReactElement } from "react";
+import React, {
+  CSSProperties,
+  HTMLProps,
+  PropsWithChildren,
+  ReactElement,
+} from "react";
 import { css, cx, RecipeVariantProps, sva } from "../../../styled-system/css";
 import { ColorPalette } from "../../../styled-system/tokens";
 import { button, ButtonVariant } from "../../../styled-system/recipes";
 
-export type ButtonProps = ButtonVariant &
-  React.ComponentPropsWithoutRef<"button"> & {
-    icon?: ReactElement;
-    colorPalette?: ColorPalette;
-  };
+export type ButtonProps = PropsWithChildren<
+  ButtonVariant &
+    React.ComponentPropsWithoutRef<"button"> & {
+      icon?: ReactElement;
+      colorPalette?: ColorPalette;
+      style?: CSSProperties;
+    }
+>;
 
 const Button = ({
   icon,
@@ -17,7 +25,7 @@ const Button = ({
   className,
   colorPalette,
   ...props
-}: PropsWithChildren<ButtonProps>) => {
+}: ButtonProps) => {
   const classes = button({ variant, size });
   const colorStyle = colorPalette && css({ colorPalette });
   return (
