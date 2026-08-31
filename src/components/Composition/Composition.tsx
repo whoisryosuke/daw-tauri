@@ -47,7 +47,7 @@ const Composition = (props: Props) => {
   const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
 
   return (
-    <Panel flex={1} gap={0} minWidth={0} style={{ width }}>
+    <Panel flex={1} gap={0} minWidth={0} mr={1} style={{ width }}>
       <Stack
         flexDirection="row"
         minWidth="100%"

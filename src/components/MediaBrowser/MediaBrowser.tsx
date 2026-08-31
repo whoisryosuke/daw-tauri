@@ -28,7 +28,7 @@ const MediaBrowser = (props: Props) => {
   };
 
   return (
-    <Stack p={1}>
+    <Stack pl={1}>
       <MediaSearch search={search} setSearchTerm={setSearchTerm} />
       <Panel flex={1} gap={0}>
         <Box

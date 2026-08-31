@@ -11,7 +11,7 @@ type Props = {};
 
 const MusicControls = (props: Props) => {
   return (
-    <Stack flexDir="row" alignItems="stretch" gap="1" p="2">
+    <Stack flexDir="row" alignItems="stretch" gap="1">
       <Button variant="ghost">
         <BiSidebar />
       </Button>

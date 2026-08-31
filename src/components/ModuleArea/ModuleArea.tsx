@@ -78,7 +78,14 @@ const ModuleArea = (props: Props) => {
   const classes = styles();
 
   return (
-    <Stack flexDir="row" gap={2} height="100%" p={2}>
+    <Stack
+      flexDir="row"
+      gap={2}
+      height="100%"
+      px={1}
+      pb={1}
+      alignItems="stretch"
+    >
       <Waveform />
       <DebugVST />
       <Tabs.Root className={classes.tabRoot}>

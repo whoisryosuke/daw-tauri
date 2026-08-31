@@ -8,7 +8,7 @@ type Props = {};
 
 const TopNavigation = (props: Props) => {
   return (
-    <Stack flexDir="row" justify="between">
+    <Stack flexDir="row" justify="between" pt={1}>
       <MusicControls />
       <PlayerControls />
       <ViewControls />
