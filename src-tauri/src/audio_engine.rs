@@ -564,11 +564,14 @@ impl AudioEngineMessaging {
     pub fn stop(&self) {
         self.send_command(AudioCommand::Pause);
         self.playback_time.store(0, Ordering::SeqCst);
+        self.send_command(AudioCommand::ClearNodes);
     }
 
     /// Set playback time (in frames)
     pub fn set_playback_time(&self, new_time: u64) {
         self.playback_time.store(new_time, Ordering::Relaxed);
+
+        // @TODO: Reschedule audio nodes based on new time
     }
 
     pub fn spawn_waveform_thread(
