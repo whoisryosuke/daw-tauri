@@ -1,4 +1,4 @@
-import React, { CSSProperties, PropsWithChildren } from "react";
+import React, { CSSProperties, HTMLProps, PropsWithChildren } from "react";
 import { css } from "../../../../styled-system/css";
 import Text from "../../ui/Typography/Text";
 import { VscTriangleDown } from "react-icons/vsc";
@@ -10,6 +10,7 @@ const containerStyle = css({
   transform: "translateX(-50%) translateY(-2px)",
   color: "gray.10",
   gap: 1,
+  flexShrink: 0,
 });
 const textStyle = css({
   fontSize: 1,
@@ -19,11 +20,11 @@ const textStyle = css({
   lineHeight: 1,
 });
 
-type Props = {};
+type Props = HTMLProps<HTMLDivElement> & {};
 
-const TimeMarker = ({ children }: PropsWithChildren<Props>) => {
+const TimeMarker = ({ children, ...props }: PropsWithChildren<Props>) => {
   return (
-    <div className={containerStyle}>
+    <div className={containerStyle} {...props}>
       <Text className={textStyle}>{children}</Text>
       <Text className={textStyle}>|</Text>
     </div>

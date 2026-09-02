@@ -10,6 +10,7 @@ import { useAtomValue } from "jotai/react";
 import { compositionAtom } from "../../store/composition";
 import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
 import Panel from "../ui/Panel/Panel";
+import MusicalGrid from "./MusicalGrid/MusicalGrid";
 
 const timelineWindowStyle = css({
   "&::-webkit-scrollbar": {
@@ -67,7 +68,12 @@ const Composition = (props: Props) => {
 
         {/* Timeline */}
         <Box flex={1} position="relative" minWidth={0}>
-          <TimeMarkers containerWidth={width} />
+          <MusicalGrid width={width} duration={timelineDistance} />
+          <TimeMarkers
+            containerWidth={width}
+            range={range}
+            duration={timelineDistance}
+          />
           <Stack position="relative" style={{ width }} mt={"50px"} gap={0}>
             <PlaybackHead containerWidth={width} />
             <Tracks containerWidth={width} />
