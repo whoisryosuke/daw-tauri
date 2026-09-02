@@ -10,6 +10,17 @@ import { useAtomValue } from "jotai";
 import { colorModeStore } from "../../store/theme";
 import { Clip } from "../../store/composition";
 
+type DrawSideProps = {
+  ctx: CanvasRenderingContext2D;
+  canvasHeight: number;
+  channelCount: number;
+  channelIndex: number;
+  canvasWidth: number;
+  startIndex: number;
+  endIndex: number;
+  channelData: number[];
+};
+
 type Props = ComponentPropsWithoutRef<"canvas"> & {
   data: number[][];
   animated?: boolean;
@@ -31,15 +42,77 @@ const Waveform = ({
   ...props
 }: Props) => {
   const colorMode = useAtomValue(colorModeStore);
-
   const bgColor = colorMode === "dark" ? "rgba(17, 17, 17, 0.0)" : "#fcfcfcff";
   const lineColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
-  const fillColor = colorMode === "dark" ? "#0090ff88" : "#0090ff66";
+  const fillColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
     null,
   );
   const prevTime = useRef(0);
+
+  /**
+   * Draw a single channel's waveform data as a mirrored shape (similar to Ableton).
+   * Also calculates max peaks for amplitude - better for timeline zooming.
+   */
+  const drawChannel = ({
+    ctx,
+    canvasHeight,
+    channelCount,
+    channelIndex,
+    canvasWidth,
+    startIndex,
+    endIndex,
+    channelData,
+  }: DrawSideProps) => {
+    const height = canvasHeight / channelCount;
+    const offset = height * channelIndex;
+    const centerY = offset + height / 2;
+    const ampScale = height / 2; // max deviation from center in px
+
+    const samplesPerPixel = Math.max(1, (endIndex - startIndex) / canvasWidth);
+
+    // Since we need to loop over the same data twice,
+    // precompute the peak magnitude for each pixel column once.
+    // Also calculates the amplitude as a "peak" using samples across a small range
+    // to check for the "max" value across them all.
+    // This ensures if we zoom out, we won't miss important peaks.
+    const peaks: number[] = new Array(canvasWidth);
+    for (let x = 0; x < canvasWidth; x++) {
+      // The "range" - we get all samples between current canvas X pixel and next pixel
+      const from = Math.floor(startIndex + x * samplesPerPixel);
+      const to = Math.floor(startIndex + (x + 1) * samplesPerPixel);
+
+      // Go through the range and find the peak
+      let peak = 0;
+      for (let i = from; i < to && i < channelData.length; i++) {
+        const v = Math.abs(channelData[i] ?? 0);
+        if (v > peak) peak = v;
+      }
+
+      // Fall back to a single sample if the range was empty
+      if (to <= from) {
+        peak = Math.abs(
+          channelData[Math.min(from, channelData.length - 1)] ?? 0,
+        );
+      }
+      peaks[x] = peak;
+    }
+
+    // Top side (left -> right)
+    for (let x = 0; x < canvasWidth; x++) {
+      const y = centerY - peaks[x] * ampScale;
+      console.log("y", y);
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    // Bottom side (right -> left) mirrors the top, closes the shape
+    for (let x = canvasWidth - 1; x >= 0; x--) {
+      const y = centerY + peaks[x] * ampScale;
+      ctx.lineTo(x, y);
+    }
+  };
 
   const draw = useCallback(
     (now: number) => {
@@ -76,36 +149,22 @@ const Waveform = ({
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
       const channelCount = data.length;
+      // Draw each channel
       data.forEach((channelData, channelIndex) => {
         ctx.beginPath();
         ctx.fillStyle = fillColor;
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = lineColor;
-
-        const height = canvasHeight / channelCount;
-        const offset = height * channelIndex;
-
-        for (let i = 0; i < canvasWidth; i++) {
-          const index = Math.floor(
-            mapRange(i, 0, canvasWidth, startIndex, endIndex),
-          );
-
-          const x = i;
-          // We scale the audio values to 0-1 to make it easier
-          const amplitude = mapRange(channelData[index], -1, 1, 0, 1);
-
-          const y = amplitude * height + offset;
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-
-        ctx.stroke();
-        const centerY = height + offset;
-        ctx.lineTo(canvasWidth, centerY);
-        ctx.lineTo(0, centerY);
+        // ctx.lineWidth = 1.5;
+        // ctx.strokeStyle = lineColor;
+        drawChannel({
+          ctx,
+          canvasHeight,
+          channelCount,
+          channelIndex,
+          canvasWidth,
+          startIndex,
+          endIndex,
+          channelData,
+        });
 
         ctx.closePath();
         ctx.fill();
