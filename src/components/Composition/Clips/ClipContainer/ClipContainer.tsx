@@ -12,7 +12,6 @@ import ClipDragHandle from "./ClipDragHandle";
 const textStyle = css({
   fontSize: 1,
   width: "100%",
-  height: "25px",
 
   whiteSpace: "nowrap",
   overflow: "hidden",
@@ -20,9 +19,19 @@ const textStyle = css({
   px: 2,
   py: 1,
 
-  color: "colorPalette.8",
+  color: {
+    base: "colorPalette.8",
+    _groupHover: "colorPalette.10",
+  },
   backgroundColor: "colorPalette.2",
   userSelect: "none",
+  cursor: "grab",
+
+  _motionSafe: {
+    transitionProperty: "color",
+    transitionTimingFunction: "ease-in-out",
+    transitionDuration: "slow",
+  },
 });
 
 const containerStyle = css({
@@ -32,7 +41,10 @@ const containerStyle = css({
   display: "flex",
   flexDirection: "column",
 
-  backgroundColor: "colorPalette.alpha-1",
+  backgroundColor: {
+    base: "colorPalette.alpha-1",
+    _hover: "colorPalette.alpha-2",
+  },
   borderColor: "colorPalette.alpha-4",
   borderWidth: "1px",
   borderStyle: "solid",
@@ -44,6 +56,12 @@ const containerStyle = css({
     outlineColor: "colorPalette.alpha-4",
     outlineStyle: "solid",
     // outlineOffset: "-3px",
+  },
+
+  _motionSafe: {
+    transitionProperty: "background-color",
+    transitionTimingFunction: "ease-in-out",
+    transitionDuration: "slow",
   },
 });
 
@@ -85,7 +103,7 @@ const ClipContainer = ({
 
   return (
     <motion.div
-      className={cx(containerStyle, colorStyle)}
+      className={cx(containerStyle, colorStyle, "group")}
       animate={{
         x: x + (transform ? transform.x : 0),
         y: transform ? 1 + transform.y : 1,
@@ -97,23 +115,13 @@ const ClipContainer = ({
         duration: 0,
       }}
       data-selected={selected}
-      {...listeners}
       {...attributes}
       {...props}
     >
-      <Text className={textStyle}>{name}</Text>
+      <Text ref={setNodeRef} className={textStyle} {...listeners}>
+        {name}
+      </Text>
       {children}
-      <Box
-        ref={setNodeRef}
-        position="absolute"
-        inset="0"
-        pointerEvents="none"
-        backgroundColor={{
-          base: "transparent",
-          _hover: "gray.2",
-        }}
-        zIndex="uiMid"
-      />
       <ClipDragHandle
         trackId={trackId}
         trackClipId={trackClipId}

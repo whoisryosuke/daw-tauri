@@ -18,9 +18,12 @@ import { invoke } from "@tauri-apps/api/core";
 const clipDragHandleStyle = css({
   position: "absolute",
   top: 0,
-  right: 0,
-  width: "4",
+  right: "0",
+  width: "1",
   height: "100%",
+
+  cursor: "ew-resize",
+  // cursor: "col-resize",
 
   bg: {
     base: "transparent",
@@ -31,7 +34,7 @@ const clipDragHandleStyle = css({
 
   "&[data-left='true']": {
     right: "auto",
-    left: 0,
+    left: "0",
   },
 });
 
