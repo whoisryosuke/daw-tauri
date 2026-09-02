@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai";
 import { css } from "../../../../../../../styled-system/css";
 import { Stack } from "../../../../../../../styled-system/jsx";
 import {
+  bpmAtom,
   playbackTimeAtom,
   sampleRateAtom,
 } from "../../../../../../store/composition";
@@ -28,6 +29,7 @@ const inputStyle = css({
 type Props = {};
 
 const ArrangementPosition = (props: Props) => {
+  const bpm = useAtomValue(bpmAtom);
   const sampleRate = useAtomValue(sampleRateAtom);
   const playbackTime = useAtomValue(playbackTimeAtom);
 
@@ -35,7 +37,7 @@ const ArrangementPosition = (props: Props) => {
   const [bars, beats, ticks] = getMusicalTime(
     playbackTime,
     sampleRate,
-    120,
+    bpm,
     DEFAULT_PPQ,
     4,
   );
