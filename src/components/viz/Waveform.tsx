@@ -102,7 +102,6 @@ const Waveform = ({
     // Top side (left -> right)
     for (let x = 0; x < canvasWidth; x++) {
       const y = centerY - peaks[x] * ampScale;
-      console.log("y", y);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
