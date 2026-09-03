@@ -201,11 +201,18 @@ async fn stop_audio(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, 
 }
 
 #[tauri::command(async)]
-async fn add_synth(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, bool> {
+async fn add_synth(
+    engine: State<'_, Mutex<AudioEngine>>,
+    messaging: State<'_, AudioEngineMessaging>,
+) -> Result<bool, String> {
+    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+
+    // Get samples from cache
+    let sample_rate = engine.config.sample_rate();
     println!("adding synth in Rust");
 
     // Get samples from cache
-    messaging.add_synth(0);
+    messaging.add_synth(0, sample_rate);
 
     Ok(true)
 }

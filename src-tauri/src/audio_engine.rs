@@ -162,15 +162,7 @@ impl Mixer {
         }
     }
 
-    pub fn process(
-        &mut self,
-        output: &mut [f32],
-        channels: usize,
-        sample_rate: u32,
-        consumer: &mut Receiver<AudioCommand>,
-        waveform_producer: &mut Sender<f32>,
-        playback_time: Arc<AtomicU64>,
-    ) {
+    pub fn run_commands(&mut self, consumer: &mut Receiver<AudioCommand>) {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
             match command {
@@ -183,7 +175,7 @@ impl Mixer {
                 AudioCommand::AddEffect(track_index, node) => {
                     self.tracks[track_index].fx.insert(node);
                 }
-                AudioCommand::AddSynth(track_index) => {
+                AudioCommand::AddSynth(track_index, sample_rate) => {
                     self.tracks[track_index]
                         .nodes
                         .insert(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
@@ -194,8 +186,6 @@ impl Mixer {
                 }
                 AudioCommand::Pause => {
                     self.playing = false;
-                    // Clear output buffer to prevent screeching from leftover signals
-                    output.fill(0.0);
                 }
                 AudioCommand::ClearNodes => {
                     for track in self.tracks.each_mut() {
@@ -234,7 +224,16 @@ impl Mixer {
                 }
             }
         }
+    }
 
+    pub fn process(
+        &mut self,
+        output: &mut [f32],
+        channels: usize,
+        sample_rate: u32,
+        waveform_producer: &mut Sender<f32>,
+        playback_time: Arc<AtomicU64>,
+    ) {
         // Zero out output
         // TODO: I'm skeptical of this, here for testing to avoid accumulation
         output.fill(0.0);
@@ -332,7 +331,7 @@ impl Mixer {
 pub enum AudioCommand {
     Play,
     AddAudioNode(usize, AudioNodeTypes),
-    AddSynth(usize),
+    AddSynth(usize, u32),
     AddEffect(usize, EffectNodeTypes),
     RemoveSynth(usize, usize),
     Pause,
@@ -396,7 +395,7 @@ impl AudioEngineMessaging {
             println!("Got track clips {}", track.name);
             // Loop over each "track clip" then find actual audio clip
             for track_clip in track_clips {
-                match track_clip.track_clip_type {
+            match track_clip.track_clip_type {
                     TrackClipType::Sample => {
                         self.queue_sample(track, track_clip, composition, asset_store, sample_rate)
                     }
@@ -522,18 +521,18 @@ impl AudioEngineMessaging {
     /// then add node to appropriate mixer track via audio command.
     fn queue_sample(
         &self,
-        track: &Track,
+        pool_index: usize,
         track_clip: &TrackClip,
         composition: &CompositionStore,
         asset_store: &AudioCache,
         sample_rate: u32,
     ) {
         let Some(clip) = composition.clips.get(&track_clip.clip_id) else {
-            println!("Couldn't get the clip {}", track.name);
+            println!("Couldn't get the clip {}", track_clip.clip_id);
             return;
         };
         let Some(clip_data) = asset_store.get_buffer_by_id(&clip.clip_id) else {
-            println!("Couldn't get clip's asset from cache {}", track.name);
+            println!("Couldn't get clip's asset from cache {}", clip.clip_id);
             return;
         };
 
@@ -554,7 +553,7 @@ impl AudioEngineMessaging {
         self.create_sample_node(
             clip_data.samples.clone(),
             start_time,
-            track.pool_index,
+            pool_index,
             frame_range,
         );
     }
@@ -576,8 +575,8 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::AddAudioNode(track_index, node));
     }
 
-    pub fn add_synth(&self, track_index: usize) {
-        self.send_command(AudioCommand::AddSynth(track_index));
+    pub fn add_synth(&self, track_index: usize, sample_rate: u32) {
+        self.send_command(AudioCommand::AddSynth(track_index, sample_rate));
     }
 
     pub fn stop(&self) {
@@ -721,11 +720,11 @@ impl AudioEngine {
                         // Run the mixer which runs any commands and
                         // combines samples into one signal,
                         // then overrides the output signal with it
+                        mixer.run_commands(&mut cloned_consumer);
                         mixer.process(
                             output,
                             channels,
                             sample_rate,
-                            &mut cloned_consumer,
                             &mut waveform_producer,
                             playback_time_local_clone,
                         );
