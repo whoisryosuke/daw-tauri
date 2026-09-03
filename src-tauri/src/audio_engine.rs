@@ -162,30 +162,50 @@ impl Mixer {
         }
     }
 
+    pub fn add_audio_node(&mut self, track_index: usize, node: AudioNodeTypes) {
+        self.tracks[track_index].nodes.insert(node);
+    }
+
+    pub fn add_fx_node(&mut self, track_index: usize, node: EffectNodeTypes) {
+        self.tracks[track_index].fx.insert(node);
+    }
+
+    pub fn add_synth_node(&mut self, track_index: usize, sample_rate: u32) {
+        self.tracks[track_index]
+            .nodes
+            .insert(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
+    }
+
+    pub fn play(&mut self) {
+        self.playing = true;
+    }
+
+    pub fn pause(&mut self) {
+        self.playing = false;
+    }
+
     pub fn run_commands(&mut self, consumer: &mut Receiver<AudioCommand>) {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
             match command {
                 AudioCommand::Play => {
-                    self.playing = true;
+                    self.play();
                 }
                 AudioCommand::AddAudioNode(track_index, node) => {
-                    self.tracks[track_index].nodes.insert(node);
+                    self.add_audio_node(track_index, node);
                 }
                 AudioCommand::AddEffect(track_index, node) => {
-                    self.tracks[track_index].fx.insert(node);
+                    self.add_fx_node(track_index, node);
                 }
                 AudioCommand::AddSynth(track_index, sample_rate) => {
-                    self.tracks[track_index]
-                        .nodes
-                        .insert(AudioNodeTypes::Synthesizer(SynthNode::new(sample_rate)));
+                    self.add_synth_node(track_index, sample_rate);
                     // @TODO: Need to keep track of synth somehow to allow for removing
                 }
                 AudioCommand::RemoveSynth(track_index, id) => {
                     self.tracks[track_index].nodes[id] = AudioNodeTypes::Silence;
                 }
                 AudioCommand::Pause => {
-                    self.playing = false;
+                    self.pause();
                 }
                 AudioCommand::ClearNodes => {
                     for track in self.tracks.each_mut() {
