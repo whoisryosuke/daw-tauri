@@ -7,6 +7,7 @@ mod composition;
 mod effects;
 mod engine;
 mod math;
+mod media;
 mod midi;
 mod music;
 mod utils;
@@ -36,6 +37,7 @@ use crate::composition::{
     set_midi_track_as_playable, update_midi_track_clip, update_track_clip_range,
     update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
+use crate::engine::exporter::export_file;
 use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
@@ -412,6 +414,7 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_prevent_default::init())
         .setup(|app| {
             // Set up audio backend (aka CPAL)
@@ -472,7 +475,9 @@ pub fn run() {
             // VST
             create_vst,
             test_vst,
-            open_vst_window
+            open_vst_window,
+            //Exporter
+            export_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

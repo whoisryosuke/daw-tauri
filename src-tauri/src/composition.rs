@@ -204,6 +204,39 @@ impl CompositionStore {
 
         (track_clips_result, effects_result)
     }
+
+    pub fn get_composition_duration(&self) -> Result<f64, String> {
+        let mut duration: f64 = 0.0;
+
+        // Queue up clips to play
+        // Loop through each track in the composition
+        for (track_id, track) in self.tracks.iter() {
+            // Grab track clips inside that track
+            let Some(track_clips) = self.track_clips.get(track_id) else {
+                println!("Couldn't load the track clips {}", track.name);
+                continue;
+            };
+
+            // Grab the clips associated with track clip
+            for track_clip in track_clips {
+                // Get clip by ID
+                let Some(clip) = self.clips.get(&track_clip.clip_id) else {
+                    println!("Couldn't load the track clips {}", track.name);
+                    continue;
+                };
+
+                // Calculate the end of the clip
+                let total_time = track_clip.start_time + clip.duration;
+
+                // Check if this clip end is biggest (meaning last clip)
+                if total_time > duration {
+                    duration = total_time;
+                }
+            }
+        }
+
+        Ok(duration)
+    }
 }
 
 #[tauri::command()]

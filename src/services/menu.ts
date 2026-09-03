@@ -4,6 +4,7 @@ import { settingsModalVisibleStore } from "../store/app";
 import { deleteSelectedTrackClip, newFile } from "./composition";
 import { startMIDIConnection } from "./midi";
 import { selectedTrackClipAtom } from "../store/composition";
+import { exportCompositionToAudioFile } from "./export";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -30,6 +31,11 @@ const fileSubmenu = await Submenu.new({
       action: () => {
         console.log("Save As clicked");
       },
+    }),
+    await MenuItem.new({
+      id: "export_wav",
+      text: "Export Composition as WAV",
+      action: exportCompositionToAudioFile,
     }),
   ],
 });
