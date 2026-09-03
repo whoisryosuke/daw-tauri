@@ -380,42 +380,23 @@ impl AudioEngineMessaging {
     ) {
         println!("Playing timeline audio");
 
-        // Queue up clips to play
-        // Loop through each track in the composition
-        for (track_id, track) in composition.tracks.iter() {
-            // TODO: Check if track is muted - don't add if so
-            println!("Playing timeline track {}", track.name);
+        let (track_clips, effects) = composition.play();
 
-            // Grab clips inside that track (tecnically clip "references" by ID)
-            let Some(track_clips) = composition.track_clips.get(track_id) else {
-                println!("Couldn't load the track clips {}", track.name);
-                continue;
-            };
-
-            println!("Got track clips {}", track.name);
-            // Loop over each "track clip" then find actual audio clip
-            for track_clip in track_clips {
+        for (pool_index, track_clip) in track_clips {
             match track_clip.track_clip_type {
-                    TrackClipType::Sample => {
-                        self.queue_sample(track, track_clip, composition, asset_store, sample_rate)
-                    }
-                    TrackClipType::Synthesizer => self.add_synth(track.pool_index),
-                }
+                TrackClipType::Sample => self.queue_sample(
+                    pool_index,
+                    track_clip,
+                    composition,
+                    asset_store,
+                    sample_rate,
+                ),
+                TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
             }
+        }
 
-            // Handle any effects
-            let effects = composition
-                .track_effects
-                .iter()
-                .filter(|(_, item)| &item.track_id == track_id);
-            effects.for_each(|(_, item)| {
-                println!("Creating effect node");
-
-                self.send_command(AudioCommand::AddEffect(
-                    track.pool_index,
-                    item.effect.clone(),
-                ));
-            });
+        for (pool_index, item) in effects {
+            self.send_command(AudioCommand::AddEffect(pool_index, item.effect.clone()));
         }
 
         // Handle seeking

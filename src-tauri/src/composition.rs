@@ -168,6 +168,42 @@ impl CompositionStore {
     pub fn reset(&mut self) {
         *self = Self::new();
     }
+
+    pub fn play(&self) -> (Vec<(usize, &TrackClip)>, Vec<(usize, &TrackEffect)>) {
+        let mut track_clips_result: Vec<(usize, &TrackClip)> = Vec::new();
+        let mut effects_result: Vec<(usize, &TrackEffect)> = Vec::new();
+
+        // Queue up clips to play
+        // Loop through each track in the composition
+        for (track_id, track) in self.tracks.iter() {
+            // TODO: Check if track is muted - don't add if so
+            println!("Playing timeline track {}", track.name);
+
+            // Grab clips inside that track (tecnically clip "references" by ID)
+            let Some(track_clips) = self.track_clips.get(track_id) else {
+                println!("Couldn't load the track clips {}", track.name);
+                continue;
+            };
+
+            println!("Got track clips {}", track.name);
+            // Loop over each "track clip" then find actual audio clip
+            for track_clip in track_clips {
+                track_clips_result.push((track.pool_index, track_clip));
+            }
+
+            // Handle any effects
+            let effects = self
+                .track_effects
+                .iter()
+                .filter(|(_, item)| &item.track_id == track_id);
+            effects.for_each(|(_, item)| {
+                println!("Creating effect node");
+                effects_result.push((track.pool_index, item));
+            });
+        }
+
+        (track_clips_result, effects_result)
+    }
 }
 
 #[tauri::command()]
