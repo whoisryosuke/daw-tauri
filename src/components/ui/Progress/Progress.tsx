@@ -30,6 +30,7 @@ export const progressStyles = sva({
       height: "1",
       overflow: "hidden",
       backgroundColor: "gray.2",
+      borderRadius: 2,
     },
     indicator: {
       backgroundColor: "blue.6",
