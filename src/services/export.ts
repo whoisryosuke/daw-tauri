@@ -12,5 +12,7 @@ export async function exportCompositionToAudioFile() {
   });
   console.log(path);
 
-  await invoke("export_file", { savePath: path });
+  let result = await invoke("export_file", { savePath: path });
+
+  console.log("export result", result);
 }

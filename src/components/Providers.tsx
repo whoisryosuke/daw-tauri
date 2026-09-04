@@ -30,6 +30,7 @@ import { newFile } from "../services/composition";
 import { Toast } from "@base-ui/react";
 import ToastList from "./ui/Toast/ToastList";
 import Hotkeys from "./features/Hotkeys/Hotkeys";
+import Modals from "./modals/Modals";
 
 type Props = {};
 
@@ -151,7 +152,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <StoreProvider store={store}>
           {children}
-          <SettingsModal />
+          <Modals />
           <PlaybackTimeSync />
           <MIDISync />
           <ToastList />

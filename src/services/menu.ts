@@ -7,6 +7,7 @@ import { selectedTrackClipAtom } from "../store/composition";
 import { exportCompositionToAudioFile } from "./export";
 import { openModal } from "./app";
 import { SETTINGS_MODAL_ID } from "../components/features/SettingsModal/SettingsModal";
+import { EXPORT_MODAL_ID } from "../components/features/ExportModal/ExportModal";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -37,7 +38,9 @@ const fileSubmenu = await Submenu.new({
     await MenuItem.new({
       id: "export_wav",
       text: "Export Composition as WAV",
-      action: exportCompositionToAudioFile,
+      action: () => {
+        openModal(EXPORT_MODAL_ID);
+      },
     }),
   ],
 });

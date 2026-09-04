@@ -22,6 +22,7 @@ pub struct Exporter {
     buffer_size: usize,
     mixer: Mixer,
     playback_time: Arc<AtomicU64>,
+    total_frames: Arc<AtomicU64>,
     exporting: Arc<AtomicBool>,
 }
 
@@ -31,12 +32,14 @@ impl Exporter {
         let buffer_size = 512;
         let mixer = Mixer::new(buffer_size);
         let playback_time = Arc::new(AtomicU64::new(0));
+        let total_frames = Arc::new(AtomicU64::new(0));
         let exporting = Arc::new(AtomicBool::new(false));
 
         Self {
             mixer,
             buffer_size,
             playback_time,
+            total_frames,
             exporting,
         }
     }
@@ -78,11 +81,19 @@ impl Exporter {
         let total_frames = (frames_per_channel as usize) * channels;
         let segments = total_frames / self.buffer_size;
 
+        self.total_frames
+            .store(frames_per_channel as u64, Ordering::SeqCst);
+
         // Enable exporting flag
         self.exporting.store(true, Ordering::SeqCst);
 
         // Spawn thread to sync export time with frontend
-        Self::spawn_sync_thread(app, self.playback_time.clone(), self.exporting.clone());
+        Self::spawn_sync_thread(
+            app,
+            self.playback_time.clone(),
+            self.total_frames.clone(),
+            self.exporting.clone(),
+        );
 
         // Set Mixer to play
         self.mixer.play();
@@ -191,12 +202,16 @@ impl Exporter {
     fn spawn_sync_thread(
         app: AppHandle,
         playback_time: Arc<AtomicU64>,
+        total_frames: Arc<AtomicU64>,
         exporting: Arc<AtomicBool>,
     ) {
         thread::spawn(move || {
             // Keep thread alive as long as exporting flag is active
             while exporting.load(Ordering::SeqCst) {
-                let _ = app.emit("export_time", playback_time.load(Ordering::SeqCst));
+                let total_frames = total_frames.load(Ordering::SeqCst) as f32;
+                let playback_time = playback_time.load(Ordering::SeqCst) as f32;
+
+                let _ = app.emit("export_time", playback_time / total_frames);
 
                 thread::sleep(Duration::from_millis(16)); // ~60 FPS
             }
