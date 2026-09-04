@@ -9,7 +9,7 @@ import { ColorPalette } from "../../../styled-system/tokens";
 import { button, ButtonVariant } from "../../../styled-system/recipes";
 
 export type ButtonProps = PropsWithChildren<
-  ButtonVariant &
+  Partial<ButtonVariant> &
     React.ComponentPropsWithoutRef<"button"> & {
       icon?: ReactElement;
       colorPalette?: ColorPalette;
