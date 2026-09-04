@@ -17,6 +17,10 @@ const button = defineSlotRecipe({
         _hover: "colorPalette.12",
         _active: "colorPalette.12",
       },
+
+      "&[disabled]": {
+        color: "colorPalette.8 !important",
+      },
     },
     icon: {},
   },
@@ -42,6 +46,12 @@ const button = defineSlotRecipe({
             base: "colorPalette.6",
             _hover: "colorPalette.8",
             _active: "colorPalette.8",
+          },
+
+          "&[disabled]": {
+            gradientFrom: "colorPalette.4 !important",
+            gradientTo: "colorPalette.3 !important",
+            borderColor: "colorPalette.6 !important",
           },
 
           // bg: {
