@@ -1,10 +1,12 @@
 import { Menu, MenuItem, Submenu } from "@tauri-apps/api/menu";
 import { store } from "../store/store";
-import { settingsModalVisibleStore } from "../store/app";
+import { modalVisibleStore } from "../store/app";
 import { deleteSelectedTrackClip, newFile } from "./composition";
 import { startMIDIConnection } from "./midi";
 import { selectedTrackClipAtom } from "../store/composition";
 import { exportCompositionToAudioFile } from "./export";
+import { openModal } from "./app";
+import { SETTINGS_MODAL_ID } from "../components/features/SettingsModal/SettingsModal";
 
 // Optional: This is how you load an icon
 // const menuIcon = await Image.fromPath('../src/assets/icon.png');
@@ -47,8 +49,7 @@ const editSubmenu = await Submenu.new({
       id: "settings",
       text: "Settings",
       action: () => {
-        const prevValue = store.get(settingsModalVisibleStore);
-        store.set(settingsModalVisibleStore, !prevValue);
+        openModal(SETTINGS_MODAL_ID);
       },
     }),
   ],

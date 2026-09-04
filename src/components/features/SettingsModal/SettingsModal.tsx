@@ -4,7 +4,7 @@ import { cx, sva } from "../../../../styled-system/css";
 import { colorModeStore } from "../../../store/theme";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { BiX } from "react-icons/bi";
-import { settingsModalVisibleStore } from "../../../store/app";
+import { modalVisibleStore } from "../../../store/app";
 import SettingsModalContent from "./SettingsModalContent";
 
 export const dialogRecipe = sva({
@@ -95,14 +95,17 @@ export const dialogRecipe = sva({
   },
 });
 
+export const SETTINGS_MODAL_ID = "SETTINGS";
+
 type Props = {};
 
 const SettingsModal = (props: Props) => {
-  const [open, setModalVisible] = useAtom(settingsModalVisibleStore);
+  const [currentModalId, setModalVisible] = useAtom(modalVisibleStore);
   const styles = dialogRecipe();
+  const open = currentModalId == SETTINGS_MODAL_ID;
 
   const handleClose = () => {
-    setModalVisible(false);
+    setModalVisible("");
   };
 
   return (
