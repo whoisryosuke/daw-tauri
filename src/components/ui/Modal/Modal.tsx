@@ -41,7 +41,6 @@ export const dialogRecipe = sva({
       overflow: "hidden",
       width: "600px",
       maxWidth: "calc(100vw - 3rem)",
-      minHeight: "400px",
       maxHeight: "calc(100vh - 10rem)",
       bg: "gray.1",
       color: "gray.11",
