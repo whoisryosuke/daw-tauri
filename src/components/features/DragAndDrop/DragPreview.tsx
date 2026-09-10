@@ -10,8 +10,9 @@ const DragPreview = (props: Props) => {
   const dragType = useAtomValue(draggingStore);
   return (
     <DragOverlay>
-      {dragType == "CLIP" ||
-        (dragType == "EFFECT" && <ClipPreview dragType={dragType} />)}
+      {(dragType == "CLIP" || dragType == "EFFECT") && (
+        <ClipPreview dragType={dragType} />
+      )}
     </DragOverlay>
   );
 };
