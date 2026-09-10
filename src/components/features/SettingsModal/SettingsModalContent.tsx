@@ -15,17 +15,19 @@ const SettingsModalContent = (props: Props) => {
     setSelectedTab(newTab);
   };
   return (
-    <Stack flexDirection="row">
-      <Stack gap={0}>
-        {tabList.map((tabKey) => (
-          <TabListItem
-            key={tabKey}
-            tabKey={tabKey}
-            handleTabChange={handleTabChange}
-            selected={tabKey == selectedTab}
-          />
-        ))}
-      </Stack>
+    <Stack flexDirection="row" minHeight={200}>
+      <div>
+        <Stack gap={0} borderRadius={4} overflow="hidden">
+          {tabList.map((tabKey) => (
+            <TabListItem
+              key={tabKey}
+              tabKey={tabKey}
+              handleTabChange={handleTabChange}
+              selected={tabKey == selectedTab}
+            />
+          ))}
+        </Stack>
+      </div>
       <CurrentTabContent />
     </Stack>
   );

@@ -56,7 +56,7 @@ const SettingsInput = (props: Props) => {
   }, []);
 
   return (
-    <Stack p={2}>
+    <Stack p={2} flex={1}>
       <Text>MIDI Input Device</Text>
       <Dropdown
         name="c"

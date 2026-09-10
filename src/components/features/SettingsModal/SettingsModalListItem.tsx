@@ -10,7 +10,6 @@ const tabStyle = cva({
     pr: "16",
     bg: {
       base: "gray.2",
-      _hover: "gray.3",
     },
 
     fontSize: 2,
@@ -18,7 +17,18 @@ const tabStyle = cva({
   variants: {
     selected: {
       true: {
-        bg: "blue.3",
+        bgLinear: "to-b",
+        gradientFrom: {
+          base: "blue.3",
+          _hover: "blue.3",
+        },
+        gradientTo: {
+          base: "blue.4",
+          _hover: "blue.5",
+        },
+        color: "blue.12",
+
+        borderColor: "blue.4",
       },
     },
   },
