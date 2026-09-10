@@ -11,7 +11,7 @@ const PianoKeys = ({}: Props) => {
   };
 
   return (
-    <Stack flexDir="row" gap="1">
+    <Stack flexDir="row" gap="2px">
       {NOTES_WHITE.map((note) => (
         <PianoKeyWhite note={note} play={playSample} />
       ))}

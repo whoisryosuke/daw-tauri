@@ -16,7 +16,15 @@ const blackKeyStyle = css({
   py: 2,
   zIndex: "uiLow",
   fontSize: 1,
-  bg: { base: "gray.2", _hover: "blue.3" },
+  bgLinear: "to-b",
+  gradientFrom: {
+    base: "gray.2",
+    _hover: "blue.3",
+  },
+  gradientTo: {
+    base: "gray.3",
+    _hover: "blue.5",
+  },
   borderColor: { base: "gray.3", _hover: "blue.7" },
   color: { base: "gray.10", _hover: "blue.10" },
   borderWidth: 1,

@@ -21,7 +21,15 @@ const pianoWhiteKeyRecipe = sva({
       flexDirection: "column",
       justifyContent: "flex-end",
       fontSize: 1,
-      bg: { base: "gray.9", _hover: "blue.6" },
+      bgLinear: "to-b",
+      gradientFrom: {
+        base: "gray.7",
+        _hover: "blue.3",
+      },
+      gradientTo: {
+        base: "gray.10",
+        _hover: "blue.5",
+      },
       borderColor: { base: "gray.10", _hover: "blue.8" },
       color: { base: "gray.2", _hover: "blue.11" },
       borderWidth: 1,

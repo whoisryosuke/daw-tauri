@@ -5,7 +5,11 @@ import { Box, Stack } from "../../../styled-system/jsx";
 import EffectModules from "./EffectModules/EffectModules";
 import MidiModule from "./TrackModules/MidiModule";
 import { Tabs } from "@base-ui/react";
-import { selectedTrackAtom, tracksAtom } from "../../store/composition";
+import {
+  selectedTrackAtom,
+  tracksAtom,
+  TrackType,
+} from "../../store/composition";
 import { useAtomValue } from "jotai";
 import { sva } from "../../../styled-system/css";
 import DebugVST from "../debug/DebugVST";
@@ -66,6 +70,15 @@ const styles = sva({
   },
 });
 
+const getTrackTypeName = (trackType: TrackType) => {
+  switch (trackType) {
+    case "Midi":
+      return "MIDI";
+    default:
+      return trackType;
+  }
+};
+
 type Props = {};
 
 const ModuleArea = (props: Props) => {
@@ -87,10 +100,10 @@ const ModuleArea = (props: Props) => {
       alignItems="stretch"
     >
       <Waveform />
-      <DebugVST />
+      {/* <DebugVST /> */}
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>
-          {trackType && (
+          {trackType && trackType == "Midi" && (
             <Tabs.Panel value="type" className={classes.tabPanel}>
               <MidiModule currentTrack={currentTrack} />
             </Tabs.Panel>
@@ -102,7 +115,7 @@ const ModuleArea = (props: Props) => {
         <Tabs.List className={classes.tabList}>
           {trackType && (
             <Tabs.Tab value="type" className={classes.tabButton}>
-              {trackType}
+              {getTrackTypeName(trackType)}
             </Tabs.Tab>
           )}
           <Tabs.Tab value="effects" className={classes.tabButton}>

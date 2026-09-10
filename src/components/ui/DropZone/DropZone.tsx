@@ -18,6 +18,7 @@ const styles = cva({
 
     color: "gray.8",
     fontFamily: "mono",
+    fontSize: 1,
 
     _motionSafe: {
       transitionProperty: "background-color, color, border-color",
