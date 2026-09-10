@@ -49,7 +49,10 @@ const TapButtonInput = (props: Props) => {
 
   useEffect(() => {
     if (editing) {
-      if (inputRef.current) inputRef.current.focus();
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
     }
   }, [editing]);
 
