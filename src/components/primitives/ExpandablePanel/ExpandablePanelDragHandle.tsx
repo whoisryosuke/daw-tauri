@@ -20,10 +20,11 @@ const handleStyle = css({
 
   width: "10px",
   height: "100%",
+  borderRadius: 2,
   bg: {
     base: "transparent",
     _hover: "gray.4",
-    _active: "blue.6",
+    _active: "blue.alpha-4",
   },
 });
 
@@ -38,12 +39,12 @@ const ExpandablePanelDragHandle = ({ setSize }: Props) => {
       height: prev.height,
       //   height: prev.height + height,
     }));
-  const { dragging, handleMouseDown } = useDragHandle(callback);
+  const { dragging, handlePointerDown } = useDragHandle(callback);
 
   return (
     <div
       className={handleStyle}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
       data-dragging={dragging}
     />
   );

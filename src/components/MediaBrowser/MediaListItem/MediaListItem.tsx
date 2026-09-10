@@ -13,7 +13,7 @@ import Icon from "../../primitives/Icon/Icon";
 import { css, cva, cx } from "../../../../styled-system/css";
 
 const textStyle = css({
-  maxWidth: "20ch",
+  maxWidth: "100%",
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis",
