@@ -4,6 +4,7 @@ import {
   saveAudioDialog,
 } from "../../../services/export";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { homeDir, join } from "@tauri-apps/api/path";
 import Text from "../../ui/Typography/Text";
 import { Stack } from "../../../../styled-system/jsx";
 import Progress from "../../ui/Progress/Progress";
@@ -19,6 +20,7 @@ const fileInputStyle = css({
   flex: 1,
   border: 0,
   bg: "transparent",
+  outline: "none",
 
   color: "blue.10",
   textDecoration: "underline",
@@ -34,6 +36,16 @@ const ExportModalContent = ({ close, ...props }: Props) => {
   const [progress, setProgress] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const listenerRef = useRef<UnlistenFn>(null);
+
+  useEffect(() => {
+    const setDefaultPath = async () => {
+      const defaultPath = await homeDir();
+      const defaultFileName = "My Song.wav";
+      const newPath = await join(defaultPath, defaultFileName);
+      setPath(newPath);
+    };
+    if (path == "") setDefaultPath();
+  }, []);
 
   // Get export progress from Rust backend
   useEffect(() => {
@@ -75,10 +87,11 @@ const ExportModalContent = ({ close, ...props }: Props) => {
   const isExportDisabled = isExporting || isPathEmpty;
 
   return (
-    <Stack p={3}>
+    <Stack>
       <Stack flexDir="row">
-        <Text className={subtitleStyle}>Path</Text>
+        <Text className={subtitleStyle}>Location</Text>
         <input
+          placeholder="Select a filename and folder"
           className={fileInputStyle}
           readOnly
           value={path}

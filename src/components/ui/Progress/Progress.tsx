@@ -29,7 +29,7 @@ export const progressStyles = sva({
       gridColumn: "span 2 / span 2",
       height: "1",
       overflow: "hidden",
-      backgroundColor: "gray.2",
+      backgroundColor: "gray.7",
       borderRadius: 2,
     },
     indicator: {

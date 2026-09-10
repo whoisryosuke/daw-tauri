@@ -1,21 +1,7 @@
 import React from "react";
 import { Stack, StackProps } from "../../../../styled-system/jsx";
 import { css, cx } from "../../../../styled-system/css";
-
-const panelStyle = css({
-  bgLinear: "to-b",
-  gradientFrom: "gray.4",
-  gradientTo: "gray.3",
-
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "gray.6",
-
-  borderRadius: 4,
-
-  color: "gray.12",
-  overflow: "hidden",
-});
+import panelStyle from "../../../theme/styles/panel.style";
 
 type Props = StackProps & {};
 

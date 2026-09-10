@@ -5,6 +5,7 @@ import { colorModeStore } from "../../../store/theme";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { BiX } from "react-icons/bi";
 import { modalVisibleStore } from "../../../store/app";
+import panelStyle from "../../../theme/styles/panel.style";
 
 export const dialogRecipe = sva({
   slots: [
@@ -42,11 +43,7 @@ export const dialogRecipe = sva({
       width: "600px",
       maxWidth: "calc(100vw - 3rem)",
       maxHeight: "calc(100vh - 10rem)",
-      bg: "gray.1",
-      color: "gray.11",
-      borderWidth: "1px",
-      borderColor: "gray.4",
-      borderRadius: "4",
+
       boxShadow: "0.25rem 0.25rem 0 rgba(0,0,0,0.12)",
       _motionSafe: {
         transition: "transform 100ms ease-out, opacity 100ms ease-out",
@@ -57,9 +54,8 @@ export const dialogRecipe = sva({
       },
     },
     title: {
-      fontSize: "4",
-      p: 2,
-      fontWeight: "bold",
+      fontSize: "6",
+      fontWeight: "normal",
     },
     description: {
       fontSize: "sm",
@@ -88,7 +84,12 @@ export const dialogRecipe = sva({
         bg: "gray.3",
       },
     },
-    contentWrapper: { display: "flex", flexDirection: "column", gap: "1" },
+    contentWrapper: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 4,
+      p: 4,
+    },
     footerWrapper: { display: "flex", justifyContent: "flex-end", gap: "3" },
   },
 });
@@ -119,7 +120,7 @@ const Modal = ({
       <Dialog.Portal>
         <Dialog.Backdrop className={styles.backdrop} onClick={handleClose} />
 
-        <Dialog.Popup className={styles.popup}>
+        <Dialog.Popup className={cx(styles.popup, panelStyle)}>
           {/* Content Wrapper */}
           <div className={styles.contentWrapper}>
             <Dialog.Title className={styles.title}>{title}</Dialog.Title>
