@@ -240,7 +240,6 @@ async fn set_playback_time(
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
-    println!("setting playback time from Rust");
 
     // Convert seconds to frames
     let frame_count = seconds_to_frames(time, sample_rate)?;
@@ -266,7 +265,6 @@ pub struct OutputDeviceResponse {
 async fn get_output_devices(
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<OutputDeviceResponse, String> {
-    println!("getting output devices from cpal");
     let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
 
     let selected_device = &engine.selected_device;
