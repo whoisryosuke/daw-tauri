@@ -12,6 +12,7 @@ import { Box, Stack } from "../../../../styled-system/jsx";
 import PianoKeys from "../../features/Input/PianoKeys/PianoKeys";
 import DropZone from "../../ui/DropZone/DropZone";
 import { FaFileAudio } from "react-icons/fa6";
+import ClipMiniPreview from "../../Composition/Clips/ClipMiniPreview/ClipMiniPreview";
 
 type DropZoneProps = {
   track: TrackData;
@@ -25,6 +26,7 @@ const MIDIDropZone = ({ track }: DropZoneProps) => {
       }}
       text="Drop a sample here"
       icon={<FaFileAudio size={24} />}
+      style={{ flex: 1 }}
     />
   );
 };
@@ -41,21 +43,16 @@ const MidiModule = ({ currentTrack }: Props) => {
 
   if (!currentTrack || currentTrack.trackType != "Midi") return <div></div>;
 
-  const showDrop = !clipId || clipId == "";
-
   return (
     <Stack flexDir="row">
-      {showDrop ? (
+      <Stack>
         <MIDIDropZone track={currentTrack} />
-      ) : (
-        <Box>
-          <Text>Current clip</Text>
-          <Text>{currentClip?.name}</Text>
-        </Box>
-      )}
-      <Box display="flex">
-        <PianoKeys />
-      </Box>
+        <ClipMiniPreview
+          name={currentClip ? currentClip.name : "Select a sample..."}
+          duration={currentClip ? currentClip.duration : 0}
+        />
+      </Stack>
+      <PianoKeys />
     </Stack>
   );
 };

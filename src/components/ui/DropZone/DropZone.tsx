@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { cva } from "../../../../styled-system/css";
 import { Stack } from "../../../../styled-system/jsx";
+import { HTMLProps } from "react";
 
 const styles = cva({
   base: {
@@ -10,7 +11,7 @@ const styles = cva({
     px: 10,
     py: 6,
 
-    borderRadius: 6,
+    borderRadius: 4,
     bg: "gray.2",
     borderColor: "gray.3",
     borderWidth: "1.5px",
@@ -52,19 +53,19 @@ const styles = cva({
   },
 });
 
-type DropZoneProps = {
+type DropZoneProps = Omit<HTMLProps<HTMLDivElement>, "data"> & {
   id: string;
   data: any;
   text?: string;
   icon?: React.ReactElement;
 };
-const DropZone = ({ id, data, text, icon }: DropZoneProps) => {
+const DropZone = ({ id, data, text, icon, ...props }: DropZoneProps) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
     data,
   });
   return (
-    <div ref={setNodeRef} className={styles({ over: isOver })}>
+    <div ref={setNodeRef} className={styles({ over: isOver })} {...props}>
       <Stack align="center">
         {icon}
         <span>{text ?? "Drop zone"}</span>
