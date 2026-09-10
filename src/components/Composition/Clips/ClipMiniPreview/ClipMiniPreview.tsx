@@ -25,6 +25,7 @@ const labelStyle = css({
   fontFamily: "mono",
 });
 const titleStyle = css({
+  minWidth: "200px",
   maxWidth: "200px",
   whiteSpace: "nowrap",
   overflow: "hidden",
