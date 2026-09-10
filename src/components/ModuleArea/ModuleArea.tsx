@@ -21,6 +21,7 @@ const styles = sva({
       display: "flex",
       flexDirection: "column",
       gap: 1,
+      flex: 1,
     },
     tabPanelContainer: {
       display: "flex",
@@ -93,6 +94,7 @@ const ModuleArea = (props: Props) => {
   return (
     <Stack
       flexDir="row"
+      flex={1}
       gap={2}
       height="100%"
       px={1}

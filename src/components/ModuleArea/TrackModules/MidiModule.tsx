@@ -44,7 +44,7 @@ const MidiModule = ({ currentTrack }: Props) => {
   if (!currentTrack || currentTrack.trackType != "Midi") return <div></div>;
 
   return (
-    <Stack flexDir="row">
+    <Stack flexDir="row" flex={1}>
       <Stack>
         <MIDIDropZone track={currentTrack} />
         <ClipMiniPreview
