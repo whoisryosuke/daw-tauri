@@ -29,20 +29,24 @@ const MediaListItemDraggable = ({
   style,
   ...props
 }: MediaListItemDraggableProps) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: `${dragType}_${props.id}`,
-    data: {
-      data,
-      id: props.id,
-      name: props.title,
-      action: dragType,
-    } as MediaBrowserDragData,
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: `${dragType}_${props.id}`,
+      data: {
+        data,
+        id: props.id,
+        name: props.title,
+        action: dragType,
+      } as MediaBrowserDragData,
+    });
   const transformStyle = {
     transform: CSS.Translate.toString(transform),
   };
   const combinedStyled = {
-    ...transformStyle,
+    // ...transformStyle,
+    ...{
+      opacity: isDragging ? 0 : 1,
+    },
     ...style,
   };
 

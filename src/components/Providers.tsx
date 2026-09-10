@@ -4,6 +4,7 @@ import { store } from "../store/store";
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -31,6 +32,8 @@ import { Toast } from "@base-ui/react";
 import ToastList from "./ui/Toast/ToastList";
 import Hotkeys from "./features/Hotkeys/Hotkeys";
 import Modals from "./modals/Modals";
+import DragPreview from "./features/DragAndDrop/DragPreview";
+import { draggingStore } from "../store/drag";
 
 type Props = {};
 
@@ -51,8 +54,16 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
     }),
   );
 
+  const handleDragStart = (event: DragStartEvent) => {
+    let overId = event.active.id.toString();
+    let item = event.active.data.current as BaseDragData;
+
+    store.set(draggingStore, item.action);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("item dragged!!", event);
+    store.set(draggingStore, null);
 
     if (!event.over) {
       console.log("Error dragging, no target specified");
@@ -149,9 +160,14 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
   };
   return (
     <Toast.Provider>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <StoreProvider store={store}>
           {children}
+          <DragPreview />
           <Modals />
           <PlaybackTimeSync />
           <MIDISync />

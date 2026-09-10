@@ -1,8 +1,8 @@
-import React from "react";
+import React, { HTMLProps } from "react";
 import type { AppIcons } from "./icons";
 import ICONS from "./icons";
 
-type Props = {
+type Props = HTMLProps<SVGElement> & {
   icon: AppIcons;
 };
 

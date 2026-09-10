@@ -51,6 +51,10 @@ const buttonStyle = cva({
     color: "gray.11",
 
     userSelect: "none",
+    cursor: {
+      base: "grab",
+      _active: "grabbing",
+    },
 
     "& svg": {
       flexShrink: 0,
