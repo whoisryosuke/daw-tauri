@@ -43,6 +43,7 @@ const TapButton = (props: Props) => {
   }, [taps]);
 
   useEffect(() => {
+    if (taps.length == 0) return;
     const newBPM = calculateBPM();
     setBPM(newBPM);
   }, [taps, calculateBPM]);
