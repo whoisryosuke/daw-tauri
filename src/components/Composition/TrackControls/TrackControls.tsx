@@ -19,7 +19,6 @@ const TrackControls = (props: Props) => {
   const [tracks, setTracks] = useAtom(tracksAtom);
   const selectedTrackId = useAtomValue(selectedTrackAtom);
   const currentMidiTrack = useAtomValue(playMidiTrackAtom);
-  console.log("tracks", tracks);
 
   const handleAddAudioTrack = () => {
     addTrack("Audio", "Sample");

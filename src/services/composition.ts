@@ -248,8 +248,6 @@ export const moveTrackClip = async (
   const allTrackClips = store.get(trackClipsAtom);
   const trackClip = allTrackClips.find((trackClip) => trackClip.id == item.id);
 
-  console.log("track clips", allTrackClips, item.id);
-
   if (!trackClip) {
     console.error("Couldn't find that track clip", item.id);
     return;

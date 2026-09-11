@@ -68,7 +68,6 @@ const Track = ({ id, name, trackType, width, color }: Props) => {
   const colorStyle = color && css({ colorPalette: color });
 
   const handleClick: MouseEventHandler<HTMLDivElement> = (e) => {
-    console.log("track clicked");
     setSelectedTrackClip("");
 
     // Get the bounding rectangle of the target element

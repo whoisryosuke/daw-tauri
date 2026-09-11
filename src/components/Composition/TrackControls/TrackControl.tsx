@@ -16,6 +16,7 @@ const trackControlContainer = cva({
     display: "flex",
     justifyContent: "end",
     p: 2,
+    borderRadius: 2,
 
     bgLinear: "to-b",
     gradientFrom: {
