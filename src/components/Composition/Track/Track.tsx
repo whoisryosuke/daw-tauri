@@ -21,12 +21,12 @@ const highlightStyle = css({
   inset: 0,
   bgLinear: "to-b",
   gradientFrom: {
-    base: "gray.alpha-1",
-    _hover: "gray.alpha-1",
+    base: "colorPalette.alpha-1",
+    _hover: "colorPalette.alpha-1",
   },
   gradientTo: {
-    base: "gray.alpha-2",
-    _hover: "gray.alpha-5",
+    base: "colorPalette.alpha-2",
+    _hover: "colorPalette.alpha-5",
   },
 
   userSelect: "none",
@@ -49,7 +49,7 @@ type Props = TrackData & {
   width: number;
 };
 
-const Track = ({ id, name, trackType, width }: Props) => {
+const Track = ({ id, name, trackType, width, color }: Props) => {
   const selectedTrackId = useAtomValue(selectedTrackAtom);
   const setSelectedTrackClip = useSetAtom(selectedTrackClipAtom);
   const [trackClips, setTrackClips] = useAtom(trackClipsAtom);
@@ -64,6 +64,8 @@ const Track = ({ id, name, trackType, width }: Props) => {
       trackType,
     },
   });
+
+  const colorStyle = color && css({ colorPalette: color });
 
   const handleClick: MouseEventHandler<HTMLDivElement> = (e) => {
     console.log("track clicked");
@@ -90,7 +92,10 @@ const Track = ({ id, name, trackType, width }: Props) => {
       className={containerStyle}
       onClick={handleClick}
     >
-      <div className={highlightStyle} style={{ opacity: isSelected ? 1 : 0 }} />
+      <div
+        className={cx(colorStyle, highlightStyle)}
+        style={{ opacity: isSelected ? 1 : 0 }}
+      />
       <Stack
         ref={setNodeRef}
         flex={1}
