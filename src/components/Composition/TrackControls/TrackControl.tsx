@@ -8,6 +8,7 @@ import { SliderRootProps } from "@base-ui/react/slider";
 import { invoke } from "@tauri-apps/api/core";
 import { useSetAtom } from "jotai";
 import { setSelectedTrack } from "../../../services/composition";
+import TrackColor from "./TrackColor";
 
 const trackControlContainer = cva({
   base: {
@@ -64,7 +65,14 @@ type Props = TrackData & {
   playMidi: boolean;
 };
 
-const TrackControl = ({ id, name, selected, trackType, playMidi }: Props) => {
+const TrackControl = ({
+  id,
+  name,
+  selected,
+  trackType,
+  playMidi,
+  color,
+}: Props) => {
   const [volume, setVolume] = useState(1.0);
   const setPlayMidiTrack = useSetAtom(playMidiTrackAtom);
 
@@ -97,6 +105,7 @@ const TrackControl = ({ id, name, selected, trackType, playMidi }: Props) => {
       onClick={handleSelectTrack}
     >
       <Text className={headingStyle}>{name}</Text>
+      <TrackColor color={color} />
       <Box px={1} width="100%">
         <Slider
           value={volume}

@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { generateSimpleHash } from "../utils/hash";
 import { invoke } from "@tauri-apps/api/core";
+import { ColorPalette } from "../../styled-system/tokens";
 
 export type CompositionData = {
   // Start and end range for the composition area (and all tracks inside)
@@ -19,6 +20,9 @@ export type TrackData = {
    * For MIDI tracks only, the selected clip for playback.
    */
   clip?: string;
+
+  // Frontend only
+  color: ColorPalette;
 };
 
 // Effects for tracks
@@ -108,6 +112,7 @@ export const generateTrackData = (name = "Track 1"): TrackData => ({
   name,
   muted: false,
   trackType: "Sample",
+  color: "gray",
 });
 
 export function generateTracksDefaultData() {

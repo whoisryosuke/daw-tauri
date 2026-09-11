@@ -1,5 +1,6 @@
 import { defineConfig } from "@pandacss/dev";
 import preset from "./src/theme/preset";
+import COLOR_PALETTE_OPTIONS from "./src/theme/tokens/colorPalette";
 
 export default defineConfig({
   presets: [preset],
@@ -29,39 +30,7 @@ export default defineConfig({
     css: [
       {
         properties: {
-          colorPalette: [
-            "tomato",
-            "red",
-            "crimson",
-            "pink",
-            "plum",
-            "purple",
-            "violet",
-            "indigo",
-            "blue",
-            "cyan",
-            "teal",
-            "green",
-            "grass",
-            "orange",
-            "brown",
-            "sky",
-            "mint",
-            "lime",
-            "yellow",
-            "amber",
-            "gray",
-            "mauve",
-            "slate",
-            "sage",
-            "olive",
-            "sand",
-            "bronze",
-            "gold",
-            "ruby",
-            "iris",
-            "jade",
-          ],
+          colorPalette: [...COLOR_PALETTE_OPTIONS],
         },
       },
     ],

@@ -1,0 +1,37 @@
+import { ColorPalette } from "../../../styled-system/tokens";
+
+const COLOR_PALETTE_OPTIONS: ColorPalette[] = [
+  "tomato",
+  "red",
+  "crimson",
+  "pink",
+  "plum",
+  "purple",
+  "violet",
+  "indigo",
+  "blue",
+  "cyan",
+  "teal",
+  "green",
+  "grass",
+  "orange",
+  "brown",
+  "sky",
+  "mint",
+  "lime",
+  "yellow",
+  "amber",
+  "gray",
+  "mauve",
+  "slate",
+  "sage",
+  "olive",
+  "sand",
+  "bronze",
+  "gold",
+  "ruby",
+  "iris",
+  "jade",
+];
+
+export default COLOR_PALETTE_OPTIONS;
