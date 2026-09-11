@@ -85,15 +85,17 @@ export const popoverStyles = sva({
 
 type Props = {
   color: TrackData["color"];
+  handleChangeColor: (newColor: TrackData["color"]) => void;
 };
 
-const TrackColorPopover = ({ color }: Props) => {
+const TrackColorPopover = ({ color, handleChangeColor }: Props) => {
   const classes = popoverStyles();
 
   const colorButtons = COLOR_PALETTE_OPTIONS.map((colorPalette) => (
     <TrackColorPopoverButton
       colorPalette={colorPalette}
       selected={color == colorPalette}
+      handleChangeColor={handleChangeColor}
     />
   ));
 

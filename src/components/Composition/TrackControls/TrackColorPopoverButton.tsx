@@ -1,6 +1,7 @@
 import React from "react";
 import { css, cx } from "../../../../styled-system/css";
 import { ColorPalette } from "../../../../styled-system/tokens";
+import { TrackData } from "../../../store/composition";
 
 const colorButtonStyle = css({
   borderRadius: 1,
@@ -35,14 +36,25 @@ const colorButtonStyle = css({
 type Props = {
   colorPalette: ColorPalette;
   selected: boolean;
+  handleChangeColor: (newColor: TrackData["color"]) => void;
 };
 
-const TrackColorPopoverButton = ({ colorPalette, selected }: Props) => {
+const TrackColorPopoverButton = ({
+  colorPalette,
+  selected,
+  handleChangeColor,
+}: Props) => {
   const colorStyle = colorPalette && css({ colorPalette });
+
+  const handleClick = () => {
+    handleChangeColor(colorPalette);
+  };
+
   return (
     <button
       className={cx(colorStyle, colorButtonStyle)}
       data-selected={selected}
+      onClick={handleClick}
     />
   );
 };

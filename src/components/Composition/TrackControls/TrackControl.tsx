@@ -19,16 +19,16 @@ const trackControlContainer = cva({
 
     bgLinear: "to-b",
     gradientFrom: {
-      base: "gray.6",
-      _hover: "gray.7",
+      base: "colorPalette.alpha-1",
+      _hover: "colorPalette.alpha-2",
     },
     gradientTo: {
-      base: "gray.5",
-      _hover: "gray.5",
+      base: "colorPalette.alpha-3",
+      _hover: "colorPalette.alpha-4",
     },
-    borderBottomWidth: "1px",
-    borderColor: "gray.5",
-    color: "gray.9",
+    borderWidth: "1px",
+    borderColor: "rgba(0,0,0,0)",
+    color: "colorPalette.11",
     borderStyle: "solid",
 
     _motionSafe: {
@@ -41,15 +41,15 @@ const trackControlContainer = cva({
     selected: {
       true: {
         gradientFrom: {
-          base: "blue.6",
-          _hover: "blue.7",
+          base: "colorPalette.alpha-1",
+          _hover: "colorPalette.alpha-2",
         },
         gradientTo: {
-          base: "blue.4",
-          _hover: "blue.4",
+          base: "colorPalette.alpha-4",
+          _hover: "colorPalette.alpha-5",
         },
-        borderColor: "blue.5",
-        color: "blue.12",
+        borderColor: "colorPalette.7",
+        color: "colorPalette.12",
       },
     },
   },
@@ -76,6 +76,8 @@ const TrackControl = ({
   const [volume, setVolume] = useState(1.0);
   const setPlayMidiTrack = useSetAtom(playMidiTrackAtom);
 
+  const colorStyle = color && css({ colorPalette: color });
+
   const handleVolumeChange: SliderRootProps["onValueChange"] = (newVal) => {
     if (!Array.isArray(newVal)) {
       // @ts-ignore - We check dawg
@@ -101,11 +103,11 @@ const TrackControl = ({
 
   return (
     <Stack
-      className={trackControlContainer({ selected })}
+      className={cx(colorStyle, trackControlContainer({ selected }))}
       onClick={handleSelectTrack}
     >
       <Text className={headingStyle}>{name}</Text>
-      <TrackColor color={color} />
+      <TrackColor id={id} color={color} />
       <Box px={1} width="100%">
         <Slider
           value={volume}
