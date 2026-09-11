@@ -116,7 +116,7 @@ const TrackControl = ({
           max={1}
           onValueChange={handleVolumeChange}
           alpha
-          color={selected ? "blue" : "gray"}
+          color={color}
         />
       </Box>
       {trackType == "Midi" && (
