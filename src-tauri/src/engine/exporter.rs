@@ -11,10 +11,16 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::{
     asset_store::AssetStore,
-    audio_cache::AudioCache,
-    audio_engine::{AudioEngine, Mixer},
-    audio_node::{AudioNodeTypes, SampleNode},
-    composition::{CompositionStore, TrackClip, TrackClipType},
+    composition::{
+        composition::CompositionStore,
+        track_clips::{TrackClip, TrackClipType},
+    },
+    engine::{
+        audio_cache::AudioCache,
+        audio_engine::AudioEngine,
+        mixer::Mixer,
+        nodes::audio_node::{AudioNodeTypes, SampleNode},
+    },
     math::seconds_to_frames,
 };
 

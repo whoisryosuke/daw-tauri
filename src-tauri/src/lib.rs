@@ -1,8 +1,4 @@
 mod asset_store;
-mod audio_buffer;
-mod audio_cache;
-mod audio_engine;
-mod audio_node;
 mod composition;
 mod effects;
 mod engine;
@@ -28,16 +24,16 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::asset_store::{get_assets, AssetStore, MediaAsset};
-use crate::audio_buffer::AudioBuffer;
-use crate::audio_cache::{get_sample_waveform, AudioCache};
-use crate::audio_engine::{AudioCommand, AudioEngine, AudioEngineMessaging};
-use crate::audio_node::AudioNode;
-use crate::composition::{
+use crate::composition::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
     set_midi_track_as_playable, update_midi_track_clip, update_track_clip_range,
     update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
+use crate::engine::audio_cache::{get_sample_waveform, AudioCache};
+use crate::engine::audio_engine::AudioEngine;
+use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::engine::exporter::export_file;
+use crate::engine::shared::audio_buffer::AudioBuffer;
 use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,

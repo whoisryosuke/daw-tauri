@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{sync::Mutex, thread, time::Duration};
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::audio_engine::AudioEngineMessaging;
+use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MidiCommand {

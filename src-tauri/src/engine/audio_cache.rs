@@ -6,7 +6,7 @@ use std::{
 use serde::Serialize;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
-use crate::{audio_buffer::AudioBuffer, math::map_range};
+use crate::{engine::shared::audio_buffer::AudioBuffer, math::map_range};
 
 /// Gets multi-channel waveform data from a specific sample in `AudioCache`
 #[tauri::command(async)]
