@@ -1,13 +1,13 @@
-mod asset_store;
-mod composition;
-mod effects;
-mod engine;
-mod math;
-mod media;
-mod midi;
-mod music;
-mod utils;
-mod vst;
+pub mod asset_store;
+pub mod composition;
+pub mod effects;
+pub mod engine;
+pub mod math;
+pub mod media;
+pub mod midi;
+pub mod music;
+pub mod utils;
+pub mod vst;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
