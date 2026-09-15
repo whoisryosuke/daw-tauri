@@ -33,7 +33,7 @@ import ToastList from "./ui/Toast/ToastList";
 import Hotkeys from "./features/Hotkeys/Hotkeys";
 import Modals from "./modals/Modals";
 import DragPreview from "./features/DragAndDrop/DragPreview";
-import { draggingStore } from "../store/drag";
+import { draggingStore, DraggingStoreData } from "../store/drag";
 
 type Props = {};
 
@@ -56,9 +56,15 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
 
   const handleDragStart = (event: DragStartEvent) => {
     let overId = event.active.id.toString();
-    let item = event.active.data.current as BaseDragData;
+    let item = event.active.data.current as DraggingStoreData;
 
-    store.set(draggingStore, item.action);
+    // The mouse click position
+    const pointerEvent = event.activatorEvent as PointerEvent | MouseEvent;
+    const grabOffsetX = pointerEvent.offsetX;
+
+    console.log("mouse offset", grabOffsetX);
+
+    store.set(draggingStore, { ...item, offsetX: grabOffsetX });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

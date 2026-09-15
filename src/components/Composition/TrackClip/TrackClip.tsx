@@ -44,8 +44,6 @@ const TrackClip = ({
     setSelectedTrackClip(id);
   };
 
-  console.log("is track clip selected?", selectedTrackClip);
-
   if (currentClip) {
     let ClipComponent: TrackClipComponent = DefaultClip;
     switch (currentClip?.type) {

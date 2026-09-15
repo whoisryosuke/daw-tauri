@@ -3,16 +3,24 @@ import { useAtomValue } from "jotai";
 import React from "react";
 import { draggingStore } from "../../../store/drag";
 import ClipPreview from "./previews/ClipPreview";
+import { MediaBrowserDragData } from "../../../constants/drag";
 
 type Props = {};
 
 const DragPreview = (props: Props) => {
-  const dragType = useAtomValue(draggingStore);
+  const dragItem = useAtomValue(draggingStore);
+
+  console.log("dragItem", dragItem);
+
   return (
     <DragOverlay>
-      {(dragType == "CLIP" || dragType == "EFFECT") && (
-        <ClipPreview dragType={dragType} />
-      )}
+      {dragItem &&
+        (dragItem.action == "CLIP" || dragItem.action == "EFFECT") && (
+          <ClipPreview
+            item={dragItem as unknown as MediaBrowserDragData}
+            offsetX={dragItem.offsetX}
+          />
+        )}
     </DragOverlay>
   );
 };

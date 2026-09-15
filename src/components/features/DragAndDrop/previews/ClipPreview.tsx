@@ -1,7 +1,9 @@
 import React from "react";
 import { css } from "../../../../../styled-system/css";
 import Icon from "../../../primitives/Icon/Icon";
-import { DragTypes } from "../../../../constants/drag";
+import { DragTypes, MediaBrowserDragData } from "../../../../constants/drag";
+import MediaListItem from "../../../MediaBrowser/MediaListItem/MediaListItem";
+import { DraggingStoreData } from "../../../../store/drag";
 
 const iconContainerStyle = css({
   padding: 2,
@@ -50,15 +52,27 @@ const iconStyle = css({
 });
 
 type Props = {
-  dragType: DragTypes;
+  item: MediaBrowserDragData;
+  offsetX: number;
 };
 
-const ClipPreview = ({ dragType }: Props) => {
-  const iconName = dragType == "CLIP" ? "samples" : "effects";
+const ClipPreview = ({ item, offsetX }: Props) => {
+  const iconName = item.action == "CLIP" ? "samples" : "effects";
+  // return (
+  //   <div className={containerStyle}>
+  //     <Icon icon={iconName} className={iconStyle} />
+  //   </div>
+  // );
+
   return (
-    <div className={containerStyle}>
-      <Icon icon={iconName} className={iconStyle} />
-    </div>
+    <MediaListItem
+      title={item.name}
+      selected
+      icon={"samples"}
+      id={item.id}
+      // style={{ transform: `translateX(${offsetX}px)` }} // adds lag?
+      style={{ position: "relative", left: `${offsetX}px` }}
+    />
   );
 };
 

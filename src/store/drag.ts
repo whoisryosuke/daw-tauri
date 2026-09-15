@@ -1,4 +1,9 @@
 import { atom } from "jotai";
-import { DragTypes } from "../constants/drag";
+import { BaseDragData, DragTypes } from "../constants/drag";
 
-export const draggingStore = atom<DragTypes | null>(null);
+export type DraggingStoreData = BaseDragData & {
+  data: any;
+  offsetX: number;
+};
+
+export const draggingStore = atom<DraggingStoreData | null>(null);

@@ -53,7 +53,6 @@ const Waveform = ({
     colorMode === "dark"
       ? semanticColors[colorPalette]["10"].value._dark
       : semanticColors[colorPalette]["10"].value.base;
-  console.log("color for waveform", colorPalette, fillColor);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
     null,
