@@ -9,6 +9,9 @@ import mapRange from "../../utils/map";
 import { useAtomValue } from "jotai";
 import { colorModeStore } from "../../store/theme";
 import { Clip } from "../../store/composition";
+import { ColorPalette, token } from "../../../styled-system/tokens";
+import { tokens } from "../../theme/tokens/tokens";
+import { semanticColors } from "../../theme/tokens/colors";
 
 type DrawSideProps = {
   ctx: CanvasRenderingContext2D;
@@ -27,6 +30,7 @@ type Props = ComponentPropsWithoutRef<"canvas"> & {
   fps?: number;
   duration: Clip["duration"];
   range: number[];
+  colorPalette: ColorPalette;
 };
 
 /**
@@ -39,12 +43,17 @@ const Waveform = ({
   fps,
   duration,
   range,
+  colorPalette,
   ...props
 }: Props) => {
   const colorMode = useAtomValue(colorModeStore);
   const bgColor = colorMode === "dark" ? "rgba(17, 17, 17, 0.0)" : "#fcfcfcff";
   const lineColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
-  const fillColor = colorMode === "dark" ? "#0090ffff" : "#0090ffff";
+  const fillColor =
+    colorMode === "dark"
+      ? semanticColors[colorPalette]["10"].value._dark
+      : semanticColors[colorPalette]["10"].value.base;
+  console.log("color for waveform", colorPalette, fillColor);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
     null,
@@ -171,7 +180,7 @@ const Waveform = ({
 
       if (animated) animationRef.current = requestAnimationFrame(draw);
     },
-    [data, lineColor, bgColor, animated, fps, colorMode],
+    [data, lineColor, bgColor, animated, fps, colorMode, colorPalette],
   );
 
   useEffect(() => {

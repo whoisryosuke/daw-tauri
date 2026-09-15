@@ -7,12 +7,14 @@ import {
   TrackClipData,
 } from "../../../../store/composition";
 import Waveform from "../../../viz/Waveform";
+import { ColorPalette } from "../../../../../styled-system/tokens";
 
 type Props = {
   path: string;
   width: number;
   duration: Clip["duration"];
   range: TrackClipData["range"];
+  colorPalette?: ColorPalette;
 };
 
 const SampleClipWaveform = ({
@@ -20,6 +22,7 @@ const SampleClipWaveform = ({
   width,
   duration,
   range: clipRange,
+  colorPalette = "blue",
 }: Props) => {
   const { range } = useAtomValue(compositionAtom);
   const [buffer, setBuffer] = useState<number[][]>([]);
@@ -47,6 +50,7 @@ const SampleClipWaveform = ({
       height={100}
       duration={duration}
       range={bufferRange}
+      colorPalette={colorPalette}
     />
   );
 };

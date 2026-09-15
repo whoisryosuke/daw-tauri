@@ -102,7 +102,12 @@ const Track = ({ id, name, trackType, width, color }: Props) => {
         bg={isOver ? "gray.alpha-2" : "transparent"}
       >
         {localClips.map((trackClip) => (
-          <TrackClip key={trackClip.id} {...trackClip} width={width} />
+          <TrackClip
+            key={trackClip.id}
+            {...trackClip}
+            width={width}
+            color={color}
+          />
         ))}
       </Stack>
     </Stack>

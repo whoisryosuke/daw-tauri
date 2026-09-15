@@ -3,8 +3,11 @@ import { useAtomValue } from "jotai";
 import type { TrackClipComponentProps } from "../../TrackClip/types";
 import { samplesAtom } from "../../../../store/media";
 import SampleClipWaveform from "./SampleClipWaveform";
+import { ColorPalette } from "../../../../../styled-system/tokens";
 
-type Props = TrackClipComponentProps & {};
+type Props = TrackClipComponentProps & {
+  colorPalette: ColorPalette;
+};
 
 const SampleClip = ({
   id,
@@ -13,6 +16,7 @@ const SampleClip = ({
   width,
   range,
   duration,
+  colorPalette,
 }: Props) => {
   const samples = useAtomValue(samplesAtom);
   const sample = samples.find((sampleItem) => sampleItem.path == data);
@@ -25,6 +29,7 @@ const SampleClip = ({
           width={width}
           range={range}
           duration={duration}
+          colorPalette={colorPalette}
         />
       </div>
     );

@@ -3,6 +3,7 @@ import {
   clipsAtom,
   compositionAtom,
   selectedTrackClipAtom,
+  TrackData,
   type TrackClipData,
 } from "../../../store/composition";
 import { useAtom, useAtomValue } from "jotai";
@@ -16,6 +17,7 @@ const DefaultClip = () => <div>Error</div>;
 
 type Props = TrackClipData & {
   width: number;
+  color: TrackData["color"];
 };
 
 const TrackClip = ({
@@ -26,6 +28,7 @@ const TrackClip = ({
   enabled,
   range: trackClipRange,
   width,
+  color,
 }: Props) => {
   const [selectedTrackClip, setSelectedTrackClip] = useAtom(
     selectedTrackClipAtom,
@@ -69,6 +72,7 @@ const TrackClip = ({
         trackId={trackId}
         trackClipId={id}
         {...currentClip}
+        color={color}
         x={x}
         width={clipWidth}
         range={trackClipRange}
@@ -79,6 +83,7 @@ const TrackClip = ({
           {...currentClip}
           width={clipWidth}
           range={trackClipRange}
+          colorPalette={color}
         />
       </ClipContainer>
     );
