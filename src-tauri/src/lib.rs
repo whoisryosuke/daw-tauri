@@ -358,15 +358,16 @@ fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_vst_window(
+async fn open_vst_window(
     app: tauri::AppHandle,
     vst_cache: State<'_, Mutex<VstCache>>,
     vst_messaging: State<'_, VstMessaging>,
 ) -> Result<(), String> {
-    // Create plugin and store in cache
+    // Grab plugin cache and lock it
     let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
     let id = "test".to_string();
 
+    // Get plugin by ID
     let plugin = vst_cache
         .plugins
         .get_mut(&id)
@@ -436,7 +437,7 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_prevent_default::init())
         .setup(|app| {
@@ -502,6 +503,16 @@ pub fn run() {
             //Exporter
             export_file
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    app.run(|_app_handle, event| {
+        if let tauri::RunEvent::MainEventsCleared = event {
+            PLUGIN_WINDOW_MAP.with(|map| {
+                for window in map.borrow().values() {
+                    let _ = window.service_platform_events();
+                }
+            });
+        }
+    })
 }
