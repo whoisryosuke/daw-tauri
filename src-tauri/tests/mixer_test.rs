@@ -7,7 +7,9 @@ use daw_tauri_lib::engine::{
     nodes::audio_node::{AudioNodeTypes, SampleNode},
 };
 
-use crate::common::{create_sample_node_from_samples, generate_sine_samples};
+use crate::common::{
+    create_sample_node_from_samples, generate_maxed_samples, generate_sine_samples,
+};
 
 #[test]
 fn mixer_plays_audio() {
@@ -17,9 +19,10 @@ fn mixer_plays_audio() {
     let sample_rate = 44100; // Standard sample rate (this many samples = 1 second)
 
     // Calculate time to frames
-    // We do 1 second of playback, which is equal to sample rate (times 2 for each channel)
+    // We do 0.5 seconds of playback
     let total_frames = ((sample_rate / 2) as usize) * channels;
-    let segments = total_frames / buffer_size;
+    // Make sure to `ceil` while rounding to do more frames than needed (vs less)
+    let segments = total_frames.div_ceil(buffer_size);
 
     // Initialize mixer and necessary dependencies
     let mut mixer = Mixer::new(buffer_size);
@@ -29,7 +32,7 @@ fn mixer_plays_audio() {
 
     // Add audio nodes to play
     // We generate the samples here so we can compare them to result
-    let samples = generate_sine_samples(total_frames);
+    let samples = generate_maxed_samples(total_frames);
     let samples_ref = samples.clone();
 
     // Create node
@@ -64,9 +67,9 @@ fn mixer_plays_audio() {
 
     // Compare original samples to final signal
     // They should be equal - if not super close - since no calculations happen (besides merging signals)
-    let length = 64;
+    let length = samples_ref.len();
     assert_relative_eq!(
-        final_signal.as_slice(),
+        final_signal.as_slice()[..length],
         samples_ref.as_slice(),
         epsilon = 1e-3
     );
