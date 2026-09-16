@@ -42,6 +42,7 @@ impl MixerTestContext {
         let playback_time = Arc::new(AtomicU64::new(0));
 
         // Create node
+        let total_samples = samples.len();
         let node_samples = Arc::new(samples);
         let node = create_sample_node_from_samples(node_samples);
         self.mixer.add_audio_node(0, node);
@@ -70,6 +71,9 @@ impl MixerTestContext {
                 final_signal.push(clamped);
             }
         }
+        // Limit signal to original sample size.
+        // Removes any extra 0.0 from block processing overflow.
+        final_signal.truncate(total_samples);
         final_signal
     }
 }
@@ -100,6 +104,7 @@ fn mixer_changes_track_gain() {
     let total_frames = (DEFAULT_SAMPLE_RATE as usize) * 2;
     // Create Mixer
     let mut mixer_context = MixerTestContext::new(2, 512, DEFAULT_SAMPLE_RATE, total_frames);
+    // Set the first MixerTrack to `0.5` gain (half volume)
     mixer_context.mixer.set_mixer_track_gain(0, 0.5);
 
     // We generate the samples here so we can compare them to result
