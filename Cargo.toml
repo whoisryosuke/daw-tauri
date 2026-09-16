@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri",
+    "crates/testing_common",
+]
+
+[workspace.dependencies]
+testing_common = { path = "crates/testing_common" }

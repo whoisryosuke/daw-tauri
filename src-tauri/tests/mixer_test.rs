@@ -3,11 +3,9 @@ use std::sync::{atomic::AtomicU64, Arc};
 
 use approx::assert_relative_eq;
 use daw_tauri_lib::engine::{mixer::Mixer, nodes::audio_node::AudioNodeTypes};
+use testing_common::{generate_maxed_samples, DEFAULT_SAMPLE_RATE};
 
-use crate::common::{
-    create_sample_node_from_samples, generate_maxed_samples, generate_sine_samples,
-    DEFAULT_SAMPLE_RATE,
-};
+use crate::common::create_sample_node_from_samples;
 
 struct MixerTestContext {
     pub mixer: Mixer,

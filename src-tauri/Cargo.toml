@@ -37,4 +37,5 @@ tauri-plugin-dialog = "2"
 
 [dev-dependencies]
 approx = "0.5.1"
+testing_common = { workspace = true }
 

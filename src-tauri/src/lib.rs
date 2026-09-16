@@ -9,6 +9,9 @@ pub mod music;
 pub mod utils;
 pub mod vst;
 
+#[cfg(test)]
+pub mod testing;
+
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
 use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};

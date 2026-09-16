@@ -77,3 +77,11 @@ impl AudioNode for SampleNode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sample_plays() {}
+}
