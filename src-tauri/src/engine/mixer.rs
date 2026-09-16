@@ -160,6 +160,10 @@ impl Mixer {
         self.playing = false;
     }
 
+    pub fn set_mixer_track_gain(&mut self, track_index: usize, gain: f32) {
+        self.tracks[track_index].gain = gain;
+    }
+
     pub fn run_commands(&mut self, consumer: &mut Receiver<AudioCommand>) {
         // Handle commands
         while let Ok(command) = consumer.try_recv() {
@@ -190,7 +194,7 @@ impl Mixer {
                     }
                 }
                 AudioCommand::SetMixerGain(track_index, gain) => {
-                    self.tracks[track_index].gain = gain;
+                    self.set_mixer_track_gain(track_index, gain);
                 }
 
                 AudioCommand::AddPlaybackSample(id, node) => {
