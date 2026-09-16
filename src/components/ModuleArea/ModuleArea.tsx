@@ -102,7 +102,7 @@ const ModuleArea = (props: Props) => {
       alignItems="stretch"
     >
       <Waveform />
-      {/* <DebugVST /> */}
+      <DebugVST />
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>
           {trackType && trackType == "Midi" && (

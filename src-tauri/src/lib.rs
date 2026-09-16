@@ -21,6 +21,7 @@ use symphonia::core::meta::MetadataOptions;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::fs::{self, File};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -45,6 +46,10 @@ use crate::midi::{
 
 use crate::vst::vst_cache::VstCache;
 use crate::vst::vst_messaging::{VstCommand, VstMessaging};
+
+thread_local! {
+    static PLUGIN_WINDOW_MAP: RefCell<HashMap<String, vst3_host::PluginWindow>> = RefCell::new(HashMap::new());
+}
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -351,8 +356,10 @@ fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
         None => Err("Couldn't find that plugin".into()),
     }
 }
+
 #[tauri::command]
 fn open_vst_window(
+    app: tauri::AppHandle,
     vst_cache: State<'_, Mutex<VstCache>>,
     vst_messaging: State<'_, VstMessaging>,
 ) -> Result<(), String> {
@@ -360,14 +367,33 @@ fn open_vst_window(
     let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
     let id = "test".to_string();
 
-    match vst_cache.plugins.get_mut(&id) {
-        Some(plugin_data) => {
-            vst_messaging.send_message(VstCommand::CreateWindow(id, plugin_data.plugin.clone()));
+    let plugin = vst_cache
+        .plugins
+        .get_mut(&id)
+        .ok_or("Couldn't find that plugin".to_string())?;
 
-            Ok(())
-        }
-        None => Err("Couldn't find that plugin".into()),
-    }
+    let plugin = plugin.plugin.clone();
+
+    // Create a cross-thread communication to send the result when window is done (or error)
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    // We need to open the plugin window on the main thread.
+    // The underlying window open function for Windows and Mac check for main thread
+    // and will crash app if requirement isn't met.
+    app.run_on_main_thread(move || {
+        // Lock the plugin window "cache", create the window, open it, and store it
+        let result = PLUGIN_WINDOW_MAP.with(|plugin_windows| {
+            let mut window = vst3_host::PluginWindow::new(plugin.clone());
+            let r = window.open().map_err(|e| e.to_string());
+            plugin_windows.borrow_mut().insert(id, window);
+            r
+        });
+    })
+    .map_err(|_| "Couldn't create window on main thread")?;
+
+    // Wait for the result and return it to user
+    rx.recv()
+        .map_err(|_| "Main thread task dropped".to_string())?
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
