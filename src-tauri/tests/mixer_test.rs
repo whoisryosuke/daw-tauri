@@ -2,10 +2,7 @@ mod common;
 use std::sync::{atomic::AtomicU64, Arc};
 
 use approx::assert_relative_eq;
-use daw_tauri_lib::engine::{
-    mixer::Mixer,
-    nodes::audio_node::{AudioNodeTypes, SampleNode},
-};
+use daw_tauri_lib::engine::{mixer::Mixer, nodes::audio_node::AudioNodeTypes};
 
 use crate::common::{
     create_sample_node_from_samples, generate_maxed_samples, generate_sine_samples,

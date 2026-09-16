@@ -19,7 +19,7 @@ use crate::{
         audio_cache::AudioCache,
         audio_engine::AudioEngine,
         mixer::Mixer,
-        nodes::audio_node::{AudioNodeTypes, SampleNode},
+        nodes::{audio::sample_node::SampleNode, audio_node::AudioNodeTypes},
     },
     math::seconds_to_frames,
 };

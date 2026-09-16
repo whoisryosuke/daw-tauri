@@ -11,7 +11,9 @@ use slab::Slab;
 
 use crate::engine::{
     audio_engine_messaging::AudioCommand,
-    nodes::audio_node::{AudioNodeTypes, EffectNodeTypes, SynthNode},
+    nodes::{
+        audio::synth_node::SynthNode, audio_node::AudioNodeTypes, effect_node::EffectNodeTypes,
+    },
 };
 
 const MAX_NODES: usize = 24;

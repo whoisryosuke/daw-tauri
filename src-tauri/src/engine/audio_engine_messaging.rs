@@ -18,7 +18,11 @@ use crate::{
     },
     engine::{
         audio_cache::AudioCache,
-        nodes::audio_node::{AudioNodeTypes, EffectNodeTypes, SampleNode, VstNode},
+        nodes::{
+            audio::{sample_node::SampleNode, vst_node::VstNode},
+            audio_node::AudioNodeTypes,
+            effect_node::EffectNodeTypes,
+        },
     },
     math::seconds_to_frames,
     music::sampler::Sampler,

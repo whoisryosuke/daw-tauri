@@ -1,6 +1,6 @@
 use std::{f32::consts::PI, sync::Arc};
 
-use daw_tauri_lib::engine::nodes::audio_node::{AudioNodeTypes, SampleNode};
+use daw_tauri_lib::engine::nodes::{audio::sample_node::SampleNode, audio_node::AudioNodeTypes};
 
 pub const DEFAULT_SAMPLE_RATE: u32 = 44100;
 

@@ -10,7 +10,10 @@ use crate::{
     },
     engine::{
         audio_engine_messaging::AudioEngineMessaging,
-        nodes::audio_node::{EffectNodePayload, EffectNodeTypes, GainNode},
+        nodes::{
+            effect_node::{EffectNodePayload, EffectNodeTypes},
+            effects::gain_node::GainNode,
+        },
     },
 };
 
