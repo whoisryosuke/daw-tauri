@@ -81,7 +81,43 @@ impl AudioNode for SampleNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
+    use testing_common::{generate_maxed_samples, DEFAULT_SAMPLE_RATE};
 
     #[test]
-    fn sample_plays() {}
+    fn sample_plays() {
+        let total_frames = (DEFAULT_SAMPLE_RATE as usize) * 2;
+        let buffer_size = 512;
+        let samples = generate_maxed_samples(total_frames);
+
+        let mut node = SampleNode::new(Arc::new(samples.clone()), 0, None);
+
+        // Make sure to `ceil` while rounding to do more frames than needed (vs less)
+        let segments = total_frames.div_ceil(buffer_size);
+
+        // Process audio in blocks based on buffer size
+        let mut output: Vec<f32> = vec![0.0; buffer_size];
+        let mut current_time: u64 = 0;
+
+        let mut final_output: Vec<f32> = Vec::new();
+        for _ in 0..segments {
+            output.fill(0.0);
+            node.process(&mut output, current_time);
+
+            // Write this block to disk
+            for &sample in &output {
+                let clamped = sample.clamp(-1.0, 1.0);
+                final_output.push(clamped);
+            }
+
+            // Increment time
+            current_time += buffer_size as u64;
+        }
+
+        // Make signal length = to sample length
+        final_output.truncate(total_frames);
+
+        // Compare original samples to final signal
+        assert_relative_eq!(final_output.as_slice(), samples.as_slice(), epsilon = 1e-3);
+    }
 }
