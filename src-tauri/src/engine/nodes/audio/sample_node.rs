@@ -94,12 +94,9 @@ mod tests {
         let mut node = SampleNode::new(Arc::new(samples.clone()), 0, None);
 
         // Run block processing on node
-        let mut final_output = run_block_processing(total_frames, 512, |output, current_frame| {
+        let final_output = run_block_processing(total_frames, 512, |output, current_frame| {
             node.process(output, current_frame);
         });
-
-        // Make signal length = to sample length
-        final_output.truncate(total_frames);
 
         // Compare original samples to final signal
         assert_relative_eq!(final_output.as_slice(), samples.as_slice(), epsilon = 1e-3);

@@ -47,5 +47,8 @@ where
         current_time += buffer_size as u64;
     }
 
+    // Make signal length = to sample length
+    final_output.truncate(total_frames);
+
     final_output
 }
