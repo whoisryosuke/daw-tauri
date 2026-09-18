@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Mutex};
+use std::collections::HashMap;
+use tauri::async_runtime::Mutex;
 use tauri::State;
 
 use crate::{
@@ -129,7 +130,7 @@ pub async fn reset_composition(
     composition_store: State<'_, Mutex<CompositionStore>>,
 ) -> Result<(), String> {
     let mut store = composition_store
-        .lock()
+        .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
 
     store.reset();
@@ -144,7 +145,7 @@ pub async fn add_track(
     name: String,
     track_type: TrackType,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     println!("Adding track...");
 
@@ -173,7 +174,7 @@ pub async fn update_track_gain(
     track_id: String,
     gain: f32,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         if let Some(track) = store.tracks.get_mut(&track_id) {
@@ -197,7 +198,7 @@ pub async fn add_track_effect(
     effect_id: String,
     effect_data: EffectNodePayload,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         let node;
@@ -221,7 +222,7 @@ pub async fn update_track_effect(
     effect_id: String,
     effect_data: EffectNodePayload,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         // Find the track effect in store
@@ -253,7 +254,7 @@ pub async fn add_track_clip(
     track_id: String,
     track_data: TrackClip,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         store
@@ -276,7 +277,7 @@ pub async fn update_track_clip_time(
     id: String,
     time: f64,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
@@ -301,7 +302,7 @@ pub async fn update_track_clip_range(
     id: String,
     range: TrackClipRange,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
@@ -325,7 +326,7 @@ pub async fn add_clip(
     clip_id: String,
     clip_data: Clip,
 ) -> Result<bool, String> {
-    let store_result = composition_store.lock();
+    let store_result = composition_store.try_lock();
 
     if let Ok(mut store) = store_result {
         store.clips.insert(clip_id, clip_data);
@@ -342,7 +343,7 @@ pub async fn update_midi_track_clip(
     clip_id: String,
 ) -> Result<bool, String> {
     let mut store = composition_store
-        .lock()
+        .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
 
     if let Some(track) = store.tracks.get_mut(&track_id) {
@@ -363,7 +364,7 @@ pub async fn set_midi_track_as_playable(
     track_id: Option<String>,
 ) -> Result<(), String> {
     let mut store = composition_store
-        .lock()
+        .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
 
     store.play_midi_track = track_id;

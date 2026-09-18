@@ -1,7 +1,5 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
+use tauri::async_runtime::Mutex;
 
 use serde::Serialize;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
@@ -63,7 +61,7 @@ impl AudioCache {
         Self { buffers }
     }
     pub fn insert(&mut self, id: AssetId, buffer: AudioBuffer) {
-        let buffer_lock = self.buffers.lock();
+        let buffer_lock = self.buffers.try_lock();
         match buffer_lock {
             Ok(mut buffers) => {
                 buffers.insert(id, Arc::new(buffer));
@@ -77,7 +75,7 @@ impl AudioCache {
         let buffer = {
             let asset_store = self
                 .buffers
-                .lock()
+                .try_lock()
                 .expect("Couldn't lock asset store buffer");
             asset_store.get(id).cloned()
         };

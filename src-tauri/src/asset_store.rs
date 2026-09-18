@@ -1,7 +1,5 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
+use tauri::async_runtime::Mutex;
 
 use serde::Serialize;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
@@ -49,7 +47,7 @@ impl AssetStore {
         Self { assets }
     }
     pub fn insert(&mut self, id: String, asset: MediaAsset) {
-        let buffer_lock = self.assets.lock();
+        let buffer_lock = self.assets.try_lock();
         match buffer_lock {
             Ok(mut assets) => {
                 assets.insert(id, Arc::new(asset));
@@ -63,7 +61,7 @@ impl AssetStore {
         let buffer = {
             let asset_store = self
                 .assets
-                .lock()
+                .try_lock()
                 .expect("Couldn't lock asset store buffer");
             asset_store.get(&id).cloned()
         };
@@ -72,7 +70,7 @@ impl AssetStore {
     pub fn get_assets(&self) -> Vec<Arc<MediaAsset>> {
         let asset_store = self
             .assets
-            .lock()
+            .try_lock()
             .expect("Couldn't lock asset store buffer");
         asset_store.values().cloned().collect()
     }

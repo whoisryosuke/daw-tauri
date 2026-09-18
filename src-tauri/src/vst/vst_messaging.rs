@@ -1,10 +1,5 @@
 use crossbeam::channel::{Receiver, Sender};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{collections::HashMap, thread, time::Duration};
 
 use crate::vst::vst_cache::VstPluginInstance;
 

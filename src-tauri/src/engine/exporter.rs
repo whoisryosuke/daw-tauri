@@ -1,11 +1,12 @@
 use std::{
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc, Mutex,
+        Arc,
     },
     thread,
     time::Duration,
 };
+use tauri::async_runtime::Mutex;
 
 use tauri::{AppHandle, Emitter, State};
 
@@ -237,12 +238,12 @@ pub async fn export_file(
     println!("Exporting file: {}", save_path.display());
 
     // Get sample rate
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
     let sample_rate = engine.config.sample_rate();
 
     // Grab composition
     let mut store = composition_store
-        .lock()
+        .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
     let duration = store.get_composition_duration()?;
 

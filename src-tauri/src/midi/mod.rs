@@ -1,7 +1,8 @@
 use crossbeam::channel::{Receiver, Sender};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use serde::{Deserialize, Serialize};
-use std::{sync::Mutex, thread, time::Duration};
+use std::thread;
+use tauri::async_runtime::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
@@ -229,7 +230,9 @@ pub struct GetInputDevicesPayload {
 pub async fn get_midi_input_devices(
     midi_store: State<'_, Mutex<MIDIStore>>,
 ) -> Result<GetInputDevicesPayload, String> {
-    let mut store = midi_store.lock().map_err(|_| "Couldn't lock MIDI store")?;
+    let mut store = midi_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI store")?;
 
     let devices = store.get_input_devices()?;
 
@@ -242,7 +245,9 @@ pub async fn get_midi_input_devices(
 /// Starts the MIDI connection using the default device
 #[tauri::command()]
 pub async fn start_midi_connection(midi_store: State<'_, Mutex<MIDIStore>>) -> Result<(), String> {
-    let mut store = midi_store.lock().map_err(|_| "Couldn't lock MIDI store")?;
+    let mut store = midi_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI store")?;
 
     store.create_input_connection(None)?;
 
@@ -255,7 +260,9 @@ pub async fn connect_to_midi_input_device(
     midi_store: State<'_, Mutex<MIDIStore>>,
     device: String,
 ) -> Result<(), String> {
-    let mut store = midi_store.lock().map_err(|_| "Couldn't lock MIDI store")?;
+    let mut store = midi_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI store")?;
 
     let device_port = store.get_input_device_port(device)?;
     store.create_input_connection(Some(device_port))?;

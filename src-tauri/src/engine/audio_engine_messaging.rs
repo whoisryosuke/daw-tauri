@@ -1,11 +1,12 @@
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc, Mutex,
+        Arc,
     },
     thread,
     time::Duration,
 };
+use tauri::async_runtime::Mutex;
 
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter, Manager};
@@ -112,7 +113,7 @@ impl AudioEngineMessaging {
         // Get composition state and selected MIDI track
         let composition_handle = self.app.state::<Mutex<CompositionStore>>();
 
-        let Ok(composition) = composition_handle.lock() else {
+        let Ok(composition) = composition_handle.try_lock() else {
             println!("Couldn't lock composition");
             return;
         };

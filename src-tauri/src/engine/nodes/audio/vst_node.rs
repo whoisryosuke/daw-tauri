@@ -1,9 +1,9 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::engine::nodes::audio_node::AudioNode;
 
 pub struct VstNode {
-    plugin: Arc<std::sync::Mutex<vst3_host::Plugin>>,
+    plugin: Arc<Mutex<vst3_host::Plugin>>,
 
     buffers: vst3_host::AudioBuffers,
 
@@ -16,7 +16,7 @@ pub struct VstNode {
 }
 
 impl VstNode {
-    pub fn new(plugin: Arc<std::sync::Mutex<vst3_host::Plugin>>, sample_rate: f64) -> Self {
+    pub fn new(plugin: Arc<Mutex<vst3_host::Plugin>>, sample_rate: f64) -> Self {
         let channel_count = 2;
         let max_buffer_size = 512;
         let buffers = vst3_host::AudioBuffers::new(0, channel_count, max_buffer_size, sample_rate);

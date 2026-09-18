@@ -25,7 +25,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::fs::{self, File};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tauri::async_runtime::Mutex;
 
 use crate::asset_store::{get_assets, AssetStore, MediaAsset};
 use crate::composition::composition::{
@@ -45,11 +46,9 @@ use crate::midi::{
 };
 
 use crate::vst::vst_cache::VstCache;
-use crate::vst::vst_messaging::{VstCommand, VstMessaging};
-
-thread_local! {
-    static PLUGIN_WINDOW_MAP: RefCell<HashMap<String, vst3_host::PluginWindow>> = RefCell::new(HashMap::new());
-}
+use crate::vst::vst_commands::{
+    create_vst, discover_vst_plugins, open_vst_window, test_vst, PLUGIN_WINDOW_MAP,
+};
 
 const WAVEFORM_SAMPLE_NUM: usize = 2048;
 
@@ -183,13 +182,13 @@ async fn play_audio(
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<bool, String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
     println!("loading audio from Rust");
 
     let sample_rate = engine.config.sample_rate();
     let channel_count = engine.config.channels() as usize;
     let store = &composition
-        .lock()
+        .try_lock()
         .map_err(|_| "Couldn't lock composition")?;
 
     messaging.play(store, &asset_store, sample_rate, channel_count);
@@ -212,7 +211,7 @@ async fn add_synth(
     engine: State<'_, Mutex<AudioEngine>>,
     messaging: State<'_, AudioEngineMessaging>,
 ) -> Result<bool, String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
@@ -226,7 +225,7 @@ async fn add_synth(
 
 #[tauri::command(async)]
 async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
@@ -240,7 +239,7 @@ async fn set_playback_time(
     messaging: State<'_, AudioEngineMessaging>,
     time: f64,
 ) -> Result<bool, String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
 
     // Get samples from cache
     let sample_rate = engine.config.sample_rate();
@@ -269,7 +268,7 @@ pub struct OutputDeviceResponse {
 async fn get_output_devices(
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<OutputDeviceResponse, String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
 
     let selected_device = &engine.selected_device;
 
@@ -302,99 +301,13 @@ fn change_audio_device(
     engine: State<'_, Mutex<AudioEngine>>,
     device_name: String, // The name of the device selected in UI
 ) -> Result<(), String> {
-    let mut engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
+    let mut engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
 
     engine
         .create_stream_for_device_name(device_name)
         .map_err(|e| e.to_string())?;
 
     Ok(())
-}
-
-#[tauri::command]
-fn create_vst(
-    engine: State<'_, Mutex<AudioEngine>>,
-    messaging: State<'_, AudioEngineMessaging>,
-    vst_cache: State<'_, Mutex<VstCache>>,
-) -> Result<(), String> {
-    let engine = engine.lock().map_err(|_| "Couldn't lock engine")?;
-
-    // Get samples from cache
-    let sample_rate = engine.config.sample_rate();
-
-    // Create plugin and store in cache
-    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
-
-    let plugin = vst_cache.load_plugin("test".to_string(), "".to_string())?;
-
-    messaging.create_vst_node(0, sample_rate as f64, plugin);
-
-    Ok(())
-}
-
-#[tauri::command]
-fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
-    // Create plugin and store in cache
-    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
-
-    let id = "test".to_string();
-
-    match vst_cache.plugins.get_mut(&id) {
-        Some(plugin_data) => {
-            let mut plugin = plugin_data
-                .plugin
-                .lock()
-                .map_err(|_| "Couldn't lock VST cache")?;
-            let event = vst3_host::MidiEvent::NoteOn {
-                channel: vst3_host::MidiChannel::Ch1,
-                note: 60,
-                velocity: 100,
-            };
-            plugin.send_midi_event(event);
-            Ok(())
-        }
-        None => Err("Couldn't find that plugin".into()),
-    }
-}
-
-#[tauri::command]
-async fn open_vst_window(
-    app: tauri::AppHandle,
-    vst_cache: State<'_, Mutex<VstCache>>,
-    vst_messaging: State<'_, VstMessaging>,
-) -> Result<(), String> {
-    // Grab plugin cache and lock it
-    let mut vst_cache = vst_cache.lock().map_err(|_| "Couldn't lock VST cache")?;
-    let id = "test".to_string();
-
-    // Get plugin by ID
-    let plugin = vst_cache
-        .plugins
-        .get_mut(&id)
-        .ok_or("Couldn't find that plugin".to_string())?;
-
-    let plugin = plugin.plugin.clone();
-
-    // Create a cross-thread communication to send the result when window is done (or error)
-    let (tx, rx) = std::sync::mpsc::channel();
-
-    // We need to open the plugin window on the main thread.
-    // The underlying window open function for Windows and Mac check for main thread
-    // and will crash app if requirement isn't met.
-    app.run_on_main_thread(move || {
-        // Lock the plugin window "cache", create the window, open it, and store it
-        let result = PLUGIN_WINDOW_MAP.with(|plugin_windows| {
-            let mut window = vst3_host::PluginWindow::new(plugin.clone());
-            let r = window.open().map_err(|e| e.to_string());
-            plugin_windows.borrow_mut().insert(id, window);
-            r
-        });
-    })
-    .map_err(|_| "Couldn't create window on main thread")?;
-
-    // Wait for the result and return it to user
-    rx.recv()
-        .map_err(|_| "Main thread task dropped".to_string())?
 }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
@@ -452,7 +365,6 @@ pub fn run() {
             let composition_store = Mutex::new(CompositionStore::new());
             let midi_store = Mutex::new(MIDIStore::new(app.handle().clone()));
             let vst_store = Mutex::new(VstCache::new());
-            let vst_messaging = VstMessaging::new();
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
@@ -462,7 +374,6 @@ pub fn run() {
             app.manage(composition_store);
             app.manage(midi_store);
             app.manage(vst_store);
-            app.manage(vst_messaging);
 
             println!("app setup success");
 
@@ -500,6 +411,7 @@ pub fn run() {
             create_vst,
             test_vst,
             open_vst_window,
+            discover_vst_plugins,
             //Exporter
             export_file
         ])
