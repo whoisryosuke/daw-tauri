@@ -17,6 +17,10 @@ const DebugVST = (props: Props) => {
     const result = await invoke("open_vst_window");
     console.log("opened VST window", result);
   };
+  const handleDiscover = async () => {
+    const result = await invoke("discover_vst_plugins");
+    console.log("discovered VST plugins", result);
+  };
   return (
     <div>
       <Button variant="default" size="small" onClick={handleCreate}>
@@ -27,6 +31,9 @@ const DebugVST = (props: Props) => {
       </Button>
       <Button variant="default" size="small" onClick={handleWindow}>
         Open Window
+      </Button>
+      <Button variant="default" size="small" onClick={handleDiscover}>
+        Discover Plugins
       </Button>
     </div>
   );
