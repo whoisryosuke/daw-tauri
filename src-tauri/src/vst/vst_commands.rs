@@ -82,6 +82,11 @@ pub async fn open_vst_window(
         .get_mut(&id)
         .ok_or("Couldn't find that plugin".to_string())?;
 
+    // Check if we can even open a window
+    if !plugin.metadata.has_gui {
+        return Err("This plugin has no window / UI".to_string());
+    }
+
     let plugin = plugin.plugin.clone();
     let plugin = plugin.ok_or("Plugin isn't loaded".to_string())?;
 
@@ -111,14 +116,13 @@ pub async fn open_vst_window(
 pub async fn discover_vst_plugins(
     vst_cache: State<'_, Mutex<VstCache>>,
 ) -> Result<Vec<PluginInfo>, String> {
-    // Create plugin and store in cache
     let mut vst_cache = vst_cache
         .try_lock()
         .map_err(|_| "Couldn't lock VST cache")?;
 
+    // Discover plugins and add them to VST cache
     let plugins = vst_cache
         .discover_vst_plugins()
-        .await
         .map_err(|_| "Couldn't discover plugins")?;
 
     Ok(plugins)

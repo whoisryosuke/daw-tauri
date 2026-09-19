@@ -25,7 +25,7 @@ impl VstCache {
         Self { plugins }
     }
 
-    pub async fn discover_vst_plugins(&mut self) -> Result<Vec<PluginInfo>, String> {
+    pub fn discover_vst_plugins(&mut self) -> Result<Vec<PluginInfo>, String> {
         // A host configured for 48 kHz / 512-sample blocks.
         let mut host = Vst3Host::builder()
             .sample_rate(44100.0)

@@ -3,8 +3,10 @@ import type { Clip, TrackType } from "../store/composition";
 export const DRAG_TYPES = {
   // This could be a sample, MIDI notes, etc. Represents something that goes into Track.
   CLIP: "CLIP",
-  // Something applied to a clip in a track
+  // An effect node dropped on a specific track
   EFFECT: "EFFECT",
+  // A VST plugin dropped on a specific track
+  PLUGIN: "PLUGIN",
   // An existing track clip inside a track, likely being moved
   TRACK_CLIP: "TRACK_CLIP",
 } as const;

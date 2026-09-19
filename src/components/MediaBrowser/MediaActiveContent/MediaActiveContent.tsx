@@ -3,6 +3,7 @@ import ExpandablePanel from "../../primitives/ExpandablePanel/ExpandablePanel";
 import type { MediaBrowserCategory } from "../../../constants/media-list";
 import MediaSampleList from "./content/MediaSampleList";
 import MediaEffectList from "./content/MediaEffectList";
+import MediaPluginList from "./content/MediaPluginList";
 
 const CONTENT_COMPONENTS: Record<
   MediaBrowserCategory,
@@ -10,6 +11,7 @@ const CONTENT_COMPONENTS: Record<
 > = {
   samples: MediaSampleList,
   effects: MediaEffectList,
+  plugins: MediaPluginList,
 };
 
 type Props = {

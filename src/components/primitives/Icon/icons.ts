@@ -1,8 +1,9 @@
-import { BsMusicNote, BsWrench } from "react-icons/bs";
+import { BsMusicNote, BsSoundwave, BsWrench } from "react-icons/bs";
 
 const ICONS = {
   samples: BsMusicNote,
-  effects: BsWrench,
+  effects: BsSoundwave,
+  plugins: BsWrench,
 } as const;
 
 export type AppIcons = keyof typeof ICONS;

@@ -18,6 +18,10 @@ export const MEDIA_BROWSER_CATEGORIES_LIST: Record<string, ListItemData> = {
     title: "Effects",
     icon: "effects",
   },
+  plugins: {
+    title: "Plugins",
+    icon: "plugins",
+  },
 };
 
 export type MediaBrowserCategory = keyof typeof MEDIA_BROWSER_CATEGORIES_LIST;
