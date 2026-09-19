@@ -420,8 +420,11 @@ pub fn run() {
 
     app.run(|_app_handle, event| {
         if let tauri::RunEvent::MainEventsCleared = event {
-            PLUGIN_WINDOW_MAP.with(|map| {
-                for window in map.borrow().values() {
+            PLUGIN_WINDOW_MAP.with_borrow_mut(|map| {
+                // Cleanup any closed windows
+                map.retain(|_, value| value.closed_by_user());
+                // Sync any  window events
+                for (_, window) in map {
                     let _ = window.service_platform_events();
                 }
             });
