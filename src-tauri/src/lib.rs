@@ -1,4 +1,5 @@
 pub mod asset_store;
+pub mod cache;
 pub mod composition;
 pub mod effects;
 pub mod engine;
@@ -28,13 +29,18 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use tauri::async_runtime::Mutex;
 
-use crate::asset_store::{get_assets, AssetStore, MediaAsset};
+use crate::asset_store::{get_assets, AssetStore, MediaAsset, MediaAssetType};
+use crate::cache::media_cache::AudioCache;
+use crate::cache::media_cache_commands::get_sample_waveform;
 use crate::composition::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
     set_midi_track_as_playable, update_midi_track_clip, update_track_clip_range,
     update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
 };
-use crate::engine::audio_cache::{get_sample_waveform, AudioCache};
+use crate::engine::audio_commands::{
+    add_synth, change_audio_device, get_output_devices, get_sample_rate, play_audio,
+    set_playback_time, stop_audio,
+};
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::engine::exporter::export_file;
@@ -175,141 +181,6 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
 //     Ok(true)
 // }
 
-#[tauri::command(async)]
-async fn play_audio(
-    messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, AudioCache>,
-    composition: State<'_, Mutex<CompositionStore>>,
-    engine: State<'_, Mutex<AudioEngine>>,
-) -> Result<bool, String> {
-    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-    println!("loading audio from Rust");
-
-    let sample_rate = engine.config.sample_rate();
-    let channel_count = engine.config.channels() as usize;
-    let store = &composition
-        .try_lock()
-        .map_err(|_| "Couldn't lock composition")?;
-
-    messaging.play(store, &asset_store, sample_rate, channel_count);
-
-    Ok(true)
-}
-
-#[tauri::command(async)]
-async fn stop_audio(messaging: State<'_, AudioEngineMessaging>) -> Result<bool, bool> {
-    println!("stopping audio from Rust");
-
-    // Get samples from cache
-    messaging.stop();
-
-    Ok(true)
-}
-
-#[tauri::command(async)]
-async fn add_synth(
-    engine: State<'_, Mutex<AudioEngine>>,
-    messaging: State<'_, AudioEngineMessaging>,
-) -> Result<bool, String> {
-    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-
-    // Get samples from cache
-    let sample_rate = engine.config.sample_rate();
-    println!("adding synth in Rust");
-
-    // Get samples from cache
-    messaging.add_synth(0, sample_rate);
-
-    Ok(true)
-}
-
-#[tauri::command(async)]
-async fn get_sample_rate(engine: State<'_, Mutex<AudioEngine>>) -> Result<u32, String> {
-    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-
-    // Get samples from cache
-    let sample_rate = engine.config.sample_rate();
-
-    Ok(sample_rate)
-}
-
-#[tauri::command(async)]
-async fn set_playback_time(
-    engine: State<'_, Mutex<AudioEngine>>,
-    messaging: State<'_, AudioEngineMessaging>,
-    time: f64,
-) -> Result<bool, String> {
-    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-
-    // Get samples from cache
-    let sample_rate = engine.config.sample_rate();
-
-    // Convert seconds to frames
-    let frame_count = seconds_to_frames(time, sample_rate)?;
-
-    // Get samples from cache
-    messaging.set_playback_time(frame_count);
-
-    Ok(true)
-}
-
-#[derive(Serialize)]
-pub struct DeviceInfo {
-    name: String,
-    selected: bool,
-}
-#[derive(Serialize)]
-pub struct OutputDeviceResponse {
-    devices: Vec<DeviceInfo>,
-    selected: String,
-}
-
-#[tauri::command(async)]
-async fn get_output_devices(
-    engine: State<'_, Mutex<AudioEngine>>,
-) -> Result<OutputDeviceResponse, String> {
-    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-
-    let selected_device = &engine.selected_device;
-
-    // Set up CPAL.
-    let host = cpal::default_host();
-    let devices = host.output_devices().map_err(|e| e.to_string())?;
-
-    let mut device_list = Vec::new();
-
-    for device in devices {
-        let name = device
-            .description()
-            .map_err(|e| e.to_string())?
-            .name()
-            .to_string();
-        let selected = *selected_device == name;
-        device_list.push(DeviceInfo { name, selected });
-    }
-
-    let response = OutputDeviceResponse {
-        devices: device_list,
-        selected: engine.selected_device.clone(),
-    };
-
-    Ok(response)
-}
-
-#[tauri::command]
-fn change_audio_device(
-    engine: State<'_, Mutex<AudioEngine>>,
-    device_name: String, // The name of the device selected in UI
-) -> Result<(), String> {
-    let mut engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-
-    engine
-        .create_stream_for_device_name(device_name)
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
-
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
     let resource_path = handle
         .path()
@@ -331,8 +202,12 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
                 let (sample_data, duration, channel_count, sample_rate) =
                     load_sample_data_from_disk(file_path_str);
 
-                let audio_asset =
-                    MediaAsset::new(file_name.to_string(), file_path_str.to_string(), duration);
+                let audio_asset = MediaAsset::new(
+                    file_name.to_string(),
+                    file_path_str.to_string(),
+                    duration,
+                    MediaAssetType::Audio,
+                );
 
                 // Add to appropriate stores
                 asset_store.insert(file_name.to_string(), audio_asset);
@@ -356,14 +231,17 @@ pub fn run() {
         .setup(|app| {
             // Set up audio backend (aka CPAL)
             let engine = AudioEngine::new(app.handle().clone());
+            let midi_store = Mutex::new(MIDIStore::new(
+                app.handle().clone(),
+                engine.playback_time.clone(),
+            ));
             app.manage(Mutex::new(engine));
 
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
-            let mut audio_cache = AudioCache::new(Mutex::new(HashMap::new()));
+            let mut audio_cache = AudioCache::new();
             let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
             let composition_store = Mutex::new(CompositionStore::new());
-            let midi_store = Mutex::new(MIDIStore::new(app.handle().clone()));
             let vst_store = Mutex::new(VstCache::new());
 
             // DEBUG: Load a test sample
@@ -381,6 +259,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            // Audio Engine
             get_output_devices,
             change_audio_device,
             play_audio,
@@ -389,6 +268,7 @@ pub fn run() {
             get_sample_rate,
             get_assets,
             get_sample_waveform,
+            set_playback_time,
             // Composition
             reset_composition,
             set_midi_track_as_playable,
@@ -401,7 +281,6 @@ pub fn run() {
             update_track_clip_range,
             update_midi_track_clip,
             add_clip,
-            set_playback_time,
             // MIDI
             get_midi_input_devices,
             start_midi_connection,

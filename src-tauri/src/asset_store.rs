@@ -4,6 +4,14 @@ use tauri::async_runtime::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
+use crate::{engine::shared::audio_buffer::AudioBuffer, midi::MIDIInputEvent};
+
+#[derive(Clone, Serialize)]
+pub enum MediaAssetType {
+    Audio,
+    Midi,
+}
+
 #[tauri::command(async)]
 pub async fn get_assets(asset_store: State<'_, AssetStore>) -> Result<Vec<MediaAsset>, String> {
     println!("Getting assets from store");
@@ -22,15 +30,16 @@ pub struct MediaAsset {
     name: String,
     path: String,
     duration: f64,
-    // @TODO: Add an enum for "type"
+    asset_type: MediaAssetType,
 }
 
 impl MediaAsset {
-    pub fn new(name: String, path: String, duration: f64) -> Self {
+    pub fn new(name: String, path: String, duration: f64, asset_type: MediaAssetType) -> Self {
         Self {
             name,
             path,
             duration,
+            asset_type,
         }
     }
 }

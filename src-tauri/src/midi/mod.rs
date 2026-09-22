@@ -1,11 +1,22 @@
 use crossbeam::channel::{Receiver, Sender};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::thread;
 use tauri::async_runtime::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::asset_store::AssetStore;
+use crate::cache::media_cache::AudioCache;
+use crate::composition::composition::CompositionStore;
+use crate::engine::audio_commands::{play_audio, stop_audio};
+use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
+
+pub struct MIDIRecordingState {
+    start_time: u64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MidiCommand {
@@ -20,12 +31,13 @@ pub struct MIDIInputEvent {
     pub channel: u8,
     pub note: u8,
     pub velocity: u8,
+    pub time: u64,
 }
 
 impl MIDIInputEvent {
     /// Parse a raw MIDI byte slice into a MIDIInputEvent
     /// midir returns array of 3 nums: note on/off, MIDI note index, and velocity
-    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+    pub fn from_bytes(bytes: &[u8], time: u64) -> Option<Self> {
         // Note On and Note Off messages are 3 bytes long
         if bytes.len() < 3 {
             return None;
@@ -54,6 +66,7 @@ impl MIDIInputEvent {
             channel,
             note,
             velocity,
+            time,
         })
     }
 }
@@ -65,24 +78,57 @@ pub struct InputDeviceSelection {
 }
 pub type InputDeviceSelectionResult = Vec<InputDeviceSelection>;
 
+/// The primary MIDI input module.
+/// Connects to MIDI devices to get MIDI events. Syncs MIDI to UI. And handles recording MIDI to `Clip`.
 pub struct MIDIStore {
+    /// The actual MIDI connection
+    /// @TODO: Make HashMap to allow multiple connections
     input_connection: Option<MidiInputConnection<()>>,
+
+    /// The currenct MIDI device name (for convenience)
     selected_input_device: String,
+
+    /// MPSC producer used to send MIDI events to consumers
+    /// (like the separate thread we use to `emit()` MIDI events to frontend)
     input_producer: Sender<MIDIInputEvent>,
+
+    /// Tauri AppHandle used for emitting events to UI
     app: AppHandle,
+
+    /// The current playback time shared with AudioEngine.
+    /// Used to get frame-accurate timing for MIDI events.
+    playback_time: Arc<AtomicU64>,
+
+    /// Is MIDI recording enabled?
+    /// Enables/disables saving MIDI events to cache.
+    recording: Arc<AtomicBool>,
+
+    /// Cache for MIDI events used for saving into a timeline `Clip` later.
+    playback_cache: Arc<Mutex<Vec<MIDIInputEvent>>>,
 }
 
 impl MIDIStore {
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new(app: AppHandle, playback_time: Arc<AtomicU64>) -> Self {
         let (input_producer, input_receiver) = crossbeam::channel::bounded::<MIDIInputEvent>(128);
 
-        Self::spawn_sync_thread(app.clone(), input_receiver);
+        let playback_cache: Arc<Mutex<Vec<MIDIInputEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let recording = Arc::new(AtomicBool::new(false));
+
+        Self::spawn_sync_thread(
+            app.clone(),
+            input_receiver,
+            recording.clone(),
+            playback_cache.clone(),
+        );
 
         let store = Self {
             app: app.clone(),
             input_connection: None,
             selected_input_device: "".into(),
             input_producer,
+            playback_time: playback_time.clone(),
+            recording: recording,
+            playback_cache: playback_cache,
         };
 
         store
@@ -174,13 +220,17 @@ impl MIDIStore {
         // This is where input actually comes in and gets stored
         let input_producer = self.input_producer.clone();
         let app = self.app.clone();
+        let playback_time = self.playback_time.clone();
         let _conn_in = midi_in
             .connect(
                 &in_port,
                 "midir-read-input",
                 move |stamp, message, _| {
+                    // Get current time
+                    let current_time = playback_time.load(Ordering::Relaxed);
+
                     println!("{}: {:?} (len = {})", stamp, message, message.len());
-                    if let Some(event) = MIDIInputEvent::from_bytes(message) {
+                    if let Some(event) = MIDIInputEvent::from_bytes(message, current_time) {
                         let command = event.command.clone();
                         let note = event.note.clone();
                         input_producer.send(event);
@@ -207,12 +257,40 @@ impl MIDIStore {
         Ok(())
     }
 
-    fn spawn_sync_thread(app: AppHandle, receiver: Receiver<MIDIInputEvent>) {
+    async fn start_recording(&mut self) {
+        // Empty cache
+        let mut playback_cache = self.playback_cache.lock().await;
+        playback_cache.clear();
+
+        self.recording.store(true, Ordering::SeqCst);
+    }
+
+    async fn stop_recording(&mut self) -> Vec<MIDIInputEvent> {
+        self.recording.store(false, Ordering::SeqCst);
+
+        // Return cache
+        let playback_cache = self.playback_cache.lock().await;
+        playback_cache.clone()
+    }
+
+    fn spawn_sync_thread(
+        app: AppHandle,
+        receiver: Receiver<MIDIInputEvent>,
+        recording: Arc<AtomicBool>,
+        playback_cache: Arc<Mutex<Vec<MIDIInputEvent>>>,
+    ) {
         thread::spawn(move || {
             loop {
                 // Handle commands
                 while let Ok(input_data) = receiver.try_recv() {
                     let _ = app.emit("midi-input", input_data.clone());
+
+                    let is_recording = recording.load(Ordering::Relaxed);
+                    if is_recording {
+                        if let Ok(mut cache) = playback_cache.try_lock() {
+                            cache.push(input_data);
+                        }
+                    }
                 }
             }
         });
@@ -277,6 +355,54 @@ pub async fn play_midi_key(
     midi: u8,
 ) -> Result<(), String> {
     messaging.play_midi_input(midi);
+
+    Ok(())
+}
+
+/// Starts MIDI recording
+#[tauri::command()]
+pub async fn start_midi_recording(
+    midi_store: State<'_, Mutex<MIDIStore>>,
+    messaging: State<'_, AudioEngineMessaging>,
+    asset_store: State<'_, AudioCache>,
+    composition: State<'_, Mutex<CompositionStore>>,
+    engine: State<'_, Mutex<AudioEngine>>,
+) -> Result<(), String> {
+    let mut store = midi_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI store")?;
+
+    store.start_recording().await;
+
+    // Start playback
+    play_audio(messaging, asset_store, composition, engine).await?;
+
+    Ok(())
+}
+
+/// Stop MIDI recording
+#[tauri::command()]
+pub async fn stop_midi_recording(
+    midi_store: State<'_, Mutex<MIDIStore>>,
+    messaging: State<'_, AudioEngineMessaging>,
+    asset_store: State<'_, AssetStore>,
+    composition: State<'_, Mutex<CompositionStore>>,
+    engine: State<'_, Mutex<AudioEngine>>,
+) -> Result<(), String> {
+    let mut store = midi_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI store")?;
+
+    // Stop recording and get MIDI data to store
+    let midi_input_data = store.stop_recording().await;
+
+    // Create asset in AssetStore
+    asset_store.insert(id, asset);
+    // Store actual MIDI data in MidiCache
+    // Create MIDI clip in timeline
+
+    // Stop playback
+    stop_audio(messaging).await;
 
     Ok(())
 }

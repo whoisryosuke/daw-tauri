@@ -11,13 +11,12 @@ use tauri::async_runtime::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::{
-    asset_store::AssetStore,
+    cache::media_cache::AudioCache,
     composition::{
         composition::CompositionStore,
         track_clips::{TrackClip, TrackClipType},
     },
     engine::{
-        audio_cache::AudioCache,
         audio_engine::AudioEngine,
         mixer::Mixer,
         nodes::{audio::sample_node::SampleNode, audio_node::AudioNodeTypes},

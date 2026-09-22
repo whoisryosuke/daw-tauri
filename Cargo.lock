@@ -994,6 +994,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-prevent-default",
  "testing_common",
+ "thiserror 2.0.20",
  "vst3-host",
 ]
 

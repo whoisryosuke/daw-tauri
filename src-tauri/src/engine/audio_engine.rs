@@ -26,7 +26,7 @@ pub struct AudioEngine {
     pub selected_device: String,
 
     consumer: Receiver<AudioCommand>,
-    playback_time: Arc<AtomicU64>,
+    pub playback_time: Arc<AtomicU64>,
     waveform_producer: Sender<f32>,
 }
 

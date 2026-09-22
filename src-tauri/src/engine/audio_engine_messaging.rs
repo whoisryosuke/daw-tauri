@@ -12,18 +12,16 @@ use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
+    cache::media_cache::AudioCache,
     composition::{
         composition::CompositionStore,
         track::TrackType,
         track_clips::{TrackClip, TrackClipType},
     },
-    engine::{
-        audio_cache::AudioCache,
-        nodes::{
-            audio::{sample_node::SampleNode, vst_node::VstNode},
-            audio_node::AudioNodeTypes,
-            effect_node::EffectNodeTypes,
-        },
+    engine::nodes::{
+        audio::{sample_node::SampleNode, vst_node::VstNode},
+        audio_node::AudioNodeTypes,
+        effect_node::EffectNodeTypes,
     },
     math::seconds_to_frames,
     music::sampler::Sampler,
