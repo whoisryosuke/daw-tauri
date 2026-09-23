@@ -5,7 +5,7 @@ use tauri::State;
 use crate::{
     composition::{
         clip::{Clip, ClipType},
-        track::{Track, TrackEffect, TrackEffects, TrackType},
+        track::{Track, TrackEffect, TrackEffects, TrackId, TrackType},
         track_clips::{TrackClip, TrackClipRange, TrackClipType, TrackClips},
     },
     engine::{
@@ -25,7 +25,7 @@ use crate::{
 pub struct CompositionStore {
     // Start / end time of timeline
     pub range: (f64, f64),
-    pub tracks: HashMap<String, Track>,
+    pub tracks: HashMap<TrackId, Track>,
     pub track_clips: TrackClips,
     pub clips: HashMap<String, Clip>,
     pub track_effects: TrackEffects,

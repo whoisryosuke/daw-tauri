@@ -6,6 +6,8 @@ import {
   compositionAtom,
   generateCompositionDefaultData,
   generateTracksDefaultData,
+  playbackTimeAtom,
+  recordingAtom,
   selectedTrackAtom,
   selectedTrackClipAtom,
   TrackClipData,
@@ -22,6 +24,7 @@ import { TIMELINE_DEFAULT_SPACING } from "../constants/composition";
 import { EFFECT_LIST } from "../constants/effects";
 import { MediaBrowserDragData, TrackClipDragData } from "../constants/drag";
 import { getOrCreateClip } from "./media";
+import { sendNotification } from "./notifications";
 
 // --- Shared ---
 export type DragPositionData = {
@@ -281,3 +284,68 @@ export const moveTrackClip = async (
     }),
   );
 };
+
+export async function startRecording() {
+  // Are we recording? Don't do anything
+  const recordingState = store.get(recordingAtom);
+  if (recordingState.recording) return;
+
+  // Get dependencies
+  const selectedTrackId = store.get(selectedTrackAtom);
+  const playbackTime = store.get(playbackTimeAtom);
+
+  const tracks = store.get(tracksAtom);
+  const currentTrack = tracks.find((track) => track.id == selectedTrackId);
+  if (!currentTrack) {
+    sendNotification({
+      title: "No track selected",
+      description: "Select a track before recording",
+      type: "error",
+    });
+    return;
+  }
+
+  // Set frontend state
+  store.set(recordingAtom, {
+    recording: true,
+    startTime: playbackTime,
+    trackId: selectedTrackId,
+    trackType: currentTrack.trackType,
+  });
+
+  // Set backend state + trigger playback
+  // Is this a Audio or MIDI track? Start appropriate recording process for track type.
+  switch (currentTrack.trackType) {
+    case "Sample":
+      // @TODO: Add audio recording flow
+      break;
+    case "Midi":
+      await invoke("start_midi_recording", { trackId: selectedTrackId });
+      break;
+  }
+}
+
+export async function stopRecording() {
+  // Have we stopped recording? Don't do anything
+  const recordingState = store.get(recordingAtom);
+  if (!recordingState.recording) return;
+
+  // Set frontend state
+  store.set(recordingAtom, {
+    recording: false,
+    startTime: 0,
+    trackId: "",
+    trackType: "Sample",
+  });
+
+  // Set backend state + trigger playback
+  // Is this a Audio or MIDI track? Start appropriate recording process for track type.
+  switch (recordingState.trackType) {
+    case "Sample":
+      // @TODO: Add audio recording flow
+      break;
+    case "Midi":
+      await invoke("stop_midi_recording");
+      break;
+  }
+}

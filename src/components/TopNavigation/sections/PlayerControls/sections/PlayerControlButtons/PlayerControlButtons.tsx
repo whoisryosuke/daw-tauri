@@ -2,13 +2,33 @@ import { invoke } from "@tauri-apps/api/core";
 import React from "react";
 import { BsPlay, BsRecord, BsStop } from "react-icons/bs";
 import { Stack } from "../../../../../../../styled-system/jsx";
-import Button from "../../../../../ui/Button";
+import Button, { ButtonProps } from "../../../../../ui/Button";
+import { useAtomValue } from "jotai";
+import { recordingAtom } from "../../../../../../store/composition";
+import {
+  startRecording,
+  stopRecording,
+} from "../../../../../../services/composition";
 
-const PlayerControlButton = (props) => <Button variant="ghost" {...props} />;
+type PlayerControlButtonProps = ButtonProps & {
+  selected?: boolean;
+};
+const PlayerControlButton = ({
+  selected,
+  ...props
+}: PlayerControlButtonProps) => (
+  <Button
+    variant="ghost"
+    colorPalette={selected ? "blue" : "gray"}
+    {...props}
+  />
+);
 
 type Props = {};
 
 const PlayerControlButtons = (props: Props) => {
+  const { recording } = useAtomValue(recordingAtom);
+
   const sharedStyles = { width: "var(--space-6)", height: "var(--space-6)" };
 
   const handlePlay = async () => {
@@ -19,6 +39,7 @@ const PlayerControlButtons = (props: Props) => {
   const handleStop = async () => {
     console.log("stopping audio");
     await invoke("stop_audio");
+    stopRecording();
   };
 
   return (
@@ -29,8 +50,11 @@ const PlayerControlButtons = (props: Props) => {
       <PlayerControlButton onClick={handleStop}>
         <BsStop style={sharedStyles} />
       </PlayerControlButton>
-      <PlayerControlButton>
-        <BsRecord style={sharedStyles} />
+      <PlayerControlButton selected={recording}>
+        <BsRecord
+          style={sharedStyles}
+          onClick={recording ? stopRecording : startRecording}
+        />
       </PlayerControlButton>
     </Stack>
   );

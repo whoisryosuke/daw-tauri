@@ -1,4 +1,4 @@
-import { Provider as StoreProvider } from "jotai";
+import { Provider as StoreProvider, useAtomValue } from "jotai";
 import React, { useEffect, type PropsWithChildren } from "react";
 import { store } from "../store/store";
 import {
@@ -34,10 +34,13 @@ import Hotkeys from "./features/Hotkeys/Hotkeys";
 import Modals from "./modals/Modals";
 import DragPreview from "./features/DragAndDrop/DragPreview";
 import { draggingStore, DraggingStoreData } from "../store/drag";
+import { toastManagerStore } from "../store/app";
 
 type Props = {};
 
 const Providers = ({ children }: PropsWithChildren<Props>) => {
+  const toastManager = useAtomValue(toastManagerStore);
+
   // DEBUG: on refresh, new file
   useEffect(() => {
     newFile();
@@ -165,7 +168,7 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
     }
   };
   return (
-    <Toast.Provider>
+    <Toast.Provider toastManager={toastManager}>
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}

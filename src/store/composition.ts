@@ -157,3 +157,16 @@ export const playbackTimeAtom = atom(0);
  * Used to derive time in seconds and PPQ.
  */
 export const sampleRateAtom = atom(44100);
+
+export type RecordingState = {
+  recording: boolean;
+  startTime: number;
+  trackId: string;
+  trackType: TrackType;
+};
+export const recordingAtom = atom<RecordingState>({
+  recording: false,
+  startTime: 0,
+  trackId: "",
+  trackType: "Sample",
+});

@@ -395,31 +395,14 @@ pub async fn start_midi_recording(
     asset_store: State<'_, Mutex<AudioCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
+    track_id: String,
 ) -> Result<(), String> {
     // Start MIDI recording in the MIDI store
     let mut store = midi_store
         .try_lock()
         .map_err(|_| "Couldn't lock MIDI store")?;
 
-    // We do this in a block because we require composition again later
-    {
-        let composition_store = composition
-            .try_lock()
-            .map_err(|_| "Couldn't lock MIDI store")?;
-
-        // Clone the track ID to appease our Mutex overlords
-        let play_midi_track = composition_store.play_midi_track.clone();
-        match play_midi_track {
-            Some(track_id) => {
-                // Finally start recording on selected track
-                store.start_recording(track_id).await;
-            }
-            None => {
-                // Ideally UI won't allow user to record without a selected track
-                return Err("Select a MIDI track first".to_string());
-            }
-        }
-    }
+    store.start_recording(track_id).await;
 
     // Start playback (to progress `playback_time` and let user preview audio while recording)
     play_audio(messaging, asset_store, composition, engine).await?;
@@ -499,7 +482,7 @@ pub async fn stop_midi_recording(
     );
 
     // Stop playback
-    stop_audio(messaging).await;
+    let _ = stop_audio(messaging).await;
 
     Ok(midi_input_data)
 }

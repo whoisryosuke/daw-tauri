@@ -22,7 +22,7 @@ pub enum TrackType {
 /// A track that can be associated with `TrackClip` and `TrackEffect`
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Track {
-    pub name: TrackId,
+    pub name: String,
     /// Index for corrresponding MixerTrack on RT thread
     pub pool_index: usize,
     pub muted: bool,

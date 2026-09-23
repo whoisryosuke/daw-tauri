@@ -134,7 +134,7 @@ function ToastList() {
   const { toasts, add } = Toast.useToastManager();
   const listenerRef = useRef<UnlistenFn>(null);
 
-  // Get waveform data from Rust backend
+  // Sync any notifications from Rust backend
   useEffect(() => {
     const attachEvents = async () => {
       listenerRef.current = await listen("notification", (event) => {
@@ -143,7 +143,7 @@ function ToastList() {
           title: notificationData.title,
           description: notificationData.description,
           data: {
-            type: notificationData.description.toLocaleLowerCase(),
+            type: notificationData.variant.toLocaleLowerCase(),
           },
         });
       });
