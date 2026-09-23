@@ -56,15 +56,6 @@ use crate::vst::vst_commands::{
     create_vst, discover_vst_plugins, open_vst_window, test_vst, PLUGIN_WINDOW_MAP,
 };
 
-const WAVEFORM_SAMPLE_NUM: usize = 2048;
-
-type AudioSamples = HashMap<String, Vec<f32>>;
-
-struct AudioState {
-    messaging: AudioEngineMessaging,
-    asset_store: Arc<AudioCache>,
-}
-
 // @TODO: Return a Result instead of blank array for better error handling
 fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
     let audio_path = std::path::Path::new(file_path);
@@ -167,19 +158,6 @@ fn load_sample_data_from_disk(file_path: &str) -> (Vec<f32>, f64, usize, u32) {
 
     (samples, track_duration, channel_count, sample_rate)
 }
-
-// #[tauri::command]
-// async fn load_sample_file(app: AppHandle, state: State<'_, Mutex<AudioState>>) -> Result<bool, bool> {
-//    println!("loading audio from Rust");
-//     let mut state = state.lock().unwrap();
-
-//     let file_name = "ff8-magic.mp3";
-//     let samples = load_sample_data_from_disk(&app, file_name);
-
-//     state.samples.insert(file_name.to_string(), samples);
-
-//     Ok(true)
-// }
 
 fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &mut AudioCache) {
     let resource_path = handle

@@ -393,7 +393,7 @@ pub async fn play_midi_key(
 pub async fn start_midi_recording(
     midi_store: State<'_, Mutex<MIDIStore>>,
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, AudioCache>,
+    asset_store: State<'_, Mutex<AudioCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<(), String> {

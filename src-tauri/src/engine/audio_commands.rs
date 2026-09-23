@@ -12,11 +12,14 @@ use crate::{
 #[tauri::command(async)]
 pub async fn play_audio(
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, AudioCache>,
+    asset_store: State<'_, Mutex<AudioCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<bool, String> {
     let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
+    let asset_store = asset_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock asset store")?;
     println!("loading audio from Rust");
 
     let sample_rate = engine.config.sample_rate();
