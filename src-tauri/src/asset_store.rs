@@ -13,7 +13,12 @@ pub enum MediaAssetType {
 }
 
 #[tauri::command(async)]
-pub async fn get_assets(asset_store: State<'_, AssetStore>) -> Result<Vec<MediaAsset>, String> {
+pub async fn get_assets(
+    asset_store: State<'_, Mutex<AssetStore>>,
+) -> Result<Vec<MediaAsset>, String> {
+    let asset_store = asset_store
+        .try_lock()
+        .map_err(|_| "Can't lock asset store".to_string())?;
     println!("Getting assets from store");
     Ok(asset_store
         .get_assets()

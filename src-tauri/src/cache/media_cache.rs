@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use thiserror::Error;
 
@@ -8,10 +9,12 @@ use crate::{
     midi::{MIDIInputEvent, MIDIInputEventCache},
 };
 
-#[derive(Error, Debug)]
+#[derive(Serialize, Error, Debug)]
 pub enum MediaCacheError {
     #[error("Couldn't lock asset store buffer")]
     LockError,
+    #[error("Couldn't find that media in the cache")]
+    MediaNotFound,
 }
 
 /// The filename of the media

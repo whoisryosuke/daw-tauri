@@ -92,6 +92,8 @@ impl AudioEngineMessaging {
                     sample_rate,
                 ),
                 TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
+                // @TODO: Handle adding MIDI nodes
+                TrackClipType::Midi => {}
             }
         }
 

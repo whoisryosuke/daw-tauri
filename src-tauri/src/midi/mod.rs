@@ -326,10 +326,6 @@ impl MIDIStore {
     }
 }
 
-pub fn create_midi_file() {
-    let base_path = PathResolver::app_local_data_dir(&self)
-}
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct GetInputDevicesPayload {
     devices: InputDeviceSelectionResult,
@@ -432,7 +428,7 @@ pub async fn start_midi_recording(
     Ok(())
 }
 
-/// Stop MIDI recording
+/// Stop MIDI recording and save MIDI data to Composition as TrackClip
 #[tauri::command()]
 pub async fn stop_midi_recording(
     midi_store: State<'_, Mutex<MIDIStore>>,
@@ -441,7 +437,7 @@ pub async fn stop_midi_recording(
     midi_cache: State<'_, Mutex<MidiCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
-) -> Result<(), String> {
+) -> Result<MIDIInputEventCache, String> {
     let mut store = midi_store
         .try_lock()
         .map_err(|_| "Couldn't lock MIDI store")?;
@@ -482,7 +478,7 @@ pub async fn stop_midi_recording(
     let mut midi_cache = midi_cache
         .try_lock()
         .map_err(|_| "Couldn't lock MIDI cache")?;
-    midi_cache.insert(id.clone(), midi_input_data);
+    midi_cache.insert(id.clone(), midi_input_data.clone());
 
     // Create MIDI clip in timeline
     let mut composition = composition
@@ -506,5 +502,5 @@ pub async fn stop_midi_recording(
     // Stop playback
     stop_audio(messaging).await;
 
-    Ok(())
+    Ok(midi_input_data)
 }

@@ -6,6 +6,7 @@ use crate::{
     cache::media_cache::AudioCache,
     composition::composition::CompositionStore,
     engine::{audio_engine::AudioEngine, audio_engine_messaging::AudioEngineMessaging},
+    math::seconds_to_frames,
 };
 
 #[tauri::command(async)]

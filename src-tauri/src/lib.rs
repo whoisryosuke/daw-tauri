@@ -48,7 +48,7 @@ use crate::engine::shared::audio_buffer::AudioBuffer;
 use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
-    MIDIStore,
+    start_midi_recording, stop_midi_recording, MIDIStore,
 };
 
 use crate::vst::vst_cache::VstCache;
@@ -288,6 +288,8 @@ pub fn run() {
             start_midi_connection,
             connect_to_midi_input_device,
             play_midi_key,
+            start_midi_recording,
+            stop_midi_recording,
             // VST
             create_vst,
             test_vst,
