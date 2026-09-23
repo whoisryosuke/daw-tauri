@@ -30,7 +30,7 @@ use std::sync::Arc;
 use tauri::async_runtime::Mutex;
 
 use crate::asset_store::{get_assets, AssetStore, MediaAsset, MediaAssetType};
-use crate::cache::media_cache::AudioCache;
+use crate::cache::media_cache::{AudioCache, MidiCache};
 use crate::cache::media_cache_commands::get_sample_waveform;
 use crate::composition::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
@@ -240,15 +240,17 @@ pub fn run() {
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
             let mut audio_cache = AudioCache::new();
-            let mut asset_store = AssetStore::new(Mutex::new(HashMap::new()));
+            let mut midi_cache = MidiCache::new();
+            let mut asset_store = AssetStore::new();
             let composition_store = Mutex::new(CompositionStore::new());
             let vst_store = Mutex::new(VstCache::new());
 
             // DEBUG: Load a test sample
             load_assets(app.handle(), &mut asset_store, &mut audio_cache);
 
-            app.manage(audio_cache);
-            app.manage(asset_store);
+            app.manage(Mutex::new(audio_cache));
+            app.manage(Mutex::new(midi_cache));
+            app.manage(Mutex::new(asset_store));
             app.manage(composition_store);
             app.manage(midi_store);
             app.manage(vst_store);

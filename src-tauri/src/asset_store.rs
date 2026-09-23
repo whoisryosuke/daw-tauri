@@ -48,39 +48,39 @@ impl MediaAsset {
 /// This only contains the file path for reference (to load into a specific store like `AudioCache`)
 /// and other metadata that can be shared between all media types.
 pub struct AssetStore {
-    assets: Mutex<HashMap<String, Arc<MediaAsset>>>,
+    assets: HashMap<String, Arc<MediaAsset>>,
 }
 
 impl AssetStore {
-    pub fn new(assets: Mutex<HashMap<String, Arc<MediaAsset>>>) -> Self {
+    pub fn new() -> Self {
+        let assets: HashMap<String, Arc<MediaAsset>> = HashMap::new();
+
         Self { assets }
     }
-    pub fn insert(&mut self, id: String, asset: MediaAsset) {
-        let buffer_lock = self.assets.try_lock();
-        match buffer_lock {
-            Ok(mut assets) => {
-                assets.insert(id, Arc::new(asset));
-            }
-            Err(error) => {
-                eprintln!("{}", error);
-            }
+
+    pub fn create_asset(
+        name: String,
+        path: String,
+        duration: f64,
+        asset_type: MediaAssetType,
+    ) -> MediaAsset {
+        MediaAsset {
+            name,
+            path,
+            duration,
+            asset_type,
         }
     }
+
+    pub fn insert(&mut self, id: String, asset: MediaAsset) {
+        self.assets.insert(id, Arc::new(asset));
+    }
     pub fn get_buffer_by_id(&self, id: String) -> Option<Arc<MediaAsset>> {
-        let buffer = {
-            let asset_store = self
-                .assets
-                .try_lock()
-                .expect("Couldn't lock asset store buffer");
-            asset_store.get(&id).cloned()
-        };
+        let buffer = self.assets.get(&id).cloned();
+
         buffer
     }
     pub fn get_assets(&self) -> Vec<Arc<MediaAsset>> {
-        let asset_store = self
-            .assets
-            .try_lock()
-            .expect("Couldn't lock asset store buffer");
-        asset_store.values().cloned().collect()
+        self.assets.values().cloned().collect()
     }
 }

@@ -5,9 +5,9 @@ use tauri::State;
 
 use crate::{
     composition::{
-        clip::Clip,
+        clip::{Clip, ClipType},
         track::{Track, TrackEffect, TrackEffects, TrackType},
-        track_clips::{TrackClip, TrackClipRange, TrackClips},
+        track_clips::{TrackClip, TrackClipRange, TrackClipType, TrackClips},
     },
     engine::{
         audio_engine_messaging::AudioEngineMessaging,
@@ -16,6 +16,7 @@ use crate::{
             effects::gain_node::GainNode,
         },
     },
+    utils::uuid::generate_uuid,
 };
 
 /// The user's current composition (aka "timeline") of audio.
@@ -122,6 +123,40 @@ impl CompositionStore {
         }
 
         Ok(duration)
+    }
+
+    pub fn insert_clip(
+        &mut self,
+        id: String,
+        name: String,
+        duration: f64,
+        clip_type: ClipType,
+        clip_id: String,
+    ) {
+        let new_clip = Clip::new(name, duration, clip_type, clip_id);
+        self.clips.insert(id, new_clip);
+    }
+
+    pub fn insert_track_clip(
+        &mut self,
+        track_id: String,
+        clip_id: String,
+        start_time: f64,
+        enabled: bool,
+        track_clip_type: TrackClipType,
+    ) {
+        let id = generate_uuid();
+        let new_track_clip = TrackClip::new(id, clip_id, start_time, enabled, track_clip_type);
+        let track_clips_result = self.track_clips.get_mut(&track_id);
+
+        match track_clips_result {
+            Some(track_clips) => {
+                track_clips.push(new_track_clip);
+            }
+            None => {
+                eprintln!("Couldn't find track to insert clip");
+            }
+        }
     }
 }
 

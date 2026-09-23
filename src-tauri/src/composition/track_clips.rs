@@ -7,7 +7,9 @@ use crate::composition::track::TrackId;
 #[derive(Clone, Serialize, Deserialize)]
 pub enum TrackClipType {
     Sample,
+    // @TODO: Remove in favor of MIDI
     Synthesizer,
+    Midi,
 }
 
 pub type TrackClipRange = Option<(f64, f64)>;
