@@ -24,7 +24,7 @@ use crate::{
     math::seconds_to_frames,
 };
 
-pub struct Exporter {
+pub struct AudioExporter {
     buffer_size: usize,
     mixer: Mixer,
     playback_time: Arc<AtomicU64>,
@@ -32,7 +32,7 @@ pub struct Exporter {
     exporting: Arc<AtomicBool>,
 }
 
-impl Exporter {
+impl AudioExporter {
     pub fn new() -> Self {
         // Create the Mixer
         let buffer_size = 512;
@@ -251,7 +251,7 @@ pub async fn export_file(
     let duration = store.get_composition_duration()?;
 
     // Initialize the exporter
-    let mut exporter = Exporter::new();
+    let mut exporter = AudioExporter::new();
     exporter.export_audio_file(app, &store, &asset_store, sample_rate, duration, save_path)?;
 
     Ok(())
