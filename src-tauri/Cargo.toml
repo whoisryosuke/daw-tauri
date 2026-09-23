@@ -36,6 +36,7 @@ hound = "3.5.1"
 tauri-plugin-dialog = "2"
 thiserror = "2.0.20"
 uuid = {version = "1.26.1", features = ["v7", "serde"]}
+midly = "0.5.3"
 
 [dev-dependencies]
 approx = "0.5.1"

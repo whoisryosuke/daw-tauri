@@ -1,3 +1,5 @@
+pub mod midi_exporter;
+
 use crossbeam::channel::{Receiver, Sender};
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiInputPort};
 use serde::{Deserialize, Serialize};
@@ -5,17 +7,24 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use tauri::async_runtime::Mutex;
+use tauri::path::PathResolver;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::asset_store::AssetStore;
-use crate::cache::media_cache::AudioCache;
+use crate::asset_store::{AssetStore, MediaAssetType};
+use crate::cache::media_cache::{AudioCache, MidiCache};
+use crate::composition::clip::ClipType;
 use crate::composition::composition::CompositionStore;
+use crate::composition::track_clips::TrackClipType;
 use crate::engine::audio_commands::{play_audio, stop_audio};
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
+use crate::math::{frames_to_seconds, seconds_to_frames};
+use crate::utils::uuid::generate_uuid;
 
 pub struct MIDIRecordingState {
-    start_time: u64,
+    /// Start time in "samples" (not seconds)
+    pub start_time: u64,
+    pub track_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +42,8 @@ pub struct MIDIInputEvent {
     pub velocity: u8,
     pub time: u64,
 }
+
+pub type MIDIInputEventCache = Vec<MIDIInputEvent>;
 
 impl MIDIInputEvent {
     /// Parse a raw MIDI byte slice into a MIDIInputEvent
@@ -103,6 +114,9 @@ pub struct MIDIStore {
     /// Enables/disables saving MIDI events to cache.
     recording: Arc<AtomicBool>,
 
+    /// Properties used for recording (like "start time")
+    pub recording_state: MIDIRecordingState,
+
     /// Cache for MIDI events used for saving into a timeline `Clip` later.
     playback_cache: Arc<Mutex<Vec<MIDIInputEvent>>>,
 }
@@ -113,6 +127,11 @@ impl MIDIStore {
 
         let playback_cache: Arc<Mutex<Vec<MIDIInputEvent>>> = Arc::new(Mutex::new(Vec::new()));
         let recording = Arc::new(AtomicBool::new(false));
+
+        let recording_state = MIDIRecordingState {
+            start_time: 0,
+            track_id: None,
+        };
 
         Self::spawn_sync_thread(
             app.clone(),
@@ -127,8 +146,9 @@ impl MIDIStore {
             selected_input_device: "".into(),
             input_producer,
             playback_time: playback_time.clone(),
-            recording: recording,
-            playback_cache: playback_cache,
+            recording,
+            recording_state,
+            playback_cache,
         };
 
         store
@@ -257,12 +277,17 @@ impl MIDIStore {
         Ok(())
     }
 
-    async fn start_recording(&mut self) {
+    async fn start_recording(&mut self, track_id: String) {
         // Empty cache
         let mut playback_cache = self.playback_cache.lock().await;
         playback_cache.clear();
 
         self.recording.store(true, Ordering::SeqCst);
+
+        // Save current time as start of recording
+        let time = self.get_current_time();
+        self.recording_state.start_time = time;
+        self.recording_state.track_id = Some(track_id);
     }
 
     async fn stop_recording(&mut self) -> Vec<MIDIInputEvent> {
@@ -271,6 +296,10 @@ impl MIDIStore {
         // Return cache
         let playback_cache = self.playback_cache.lock().await;
         playback_cache.clone()
+    }
+
+    fn get_current_time(&self) -> u64 {
+        self.playback_time.load(Ordering::Relaxed)
     }
 
     fn spawn_sync_thread(
@@ -295,6 +324,10 @@ impl MIDIStore {
             }
         });
     }
+}
+
+pub fn create_midi_file() {
+    let base_path = PathResolver::app_local_data_dir(&self)
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -368,13 +401,32 @@ pub async fn start_midi_recording(
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<(), String> {
+    // Start MIDI recording in the MIDI store
     let mut store = midi_store
         .try_lock()
         .map_err(|_| "Couldn't lock MIDI store")?;
 
-    store.start_recording().await;
+    // We do this in a block because we require composition again later
+    {
+        let composition_store = composition
+            .try_lock()
+            .map_err(|_| "Couldn't lock MIDI store")?;
 
-    // Start playback
+        // Clone the track ID to appease our Mutex overlords
+        let play_midi_track = composition_store.play_midi_track.clone();
+        match play_midi_track {
+            Some(track_id) => {
+                // Finally start recording on selected track
+                store.start_recording(track_id).await;
+            }
+            None => {
+                // Ideally UI won't allow user to record without a selected track
+                return Err("Select a MIDI track first".to_string());
+            }
+        }
+    }
+
+    // Start playback (to progress `playback_time` and let user preview audio while recording)
     play_audio(messaging, asset_store, composition, engine).await?;
 
     Ok(())
@@ -385,7 +437,8 @@ pub async fn start_midi_recording(
 pub async fn stop_midi_recording(
     midi_store: State<'_, Mutex<MIDIStore>>,
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, AssetStore>,
+    asset_store: State<'_, Mutex<AssetStore>>,
+    midi_cache: State<'_, Mutex<MidiCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<(), String> {
@@ -396,10 +449,59 @@ pub async fn stop_midi_recording(
     // Stop recording and get MIDI data to store
     let midi_input_data = store.stop_recording().await;
 
+    let track_id = store
+        .recording_state
+        .track_id
+        .clone()
+        .ok_or("No MIDI track selected".to_string())?;
+
+    // Get sample rate from engine
+    let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
+    let sample_rate = engine.config.sample_rate();
+
+    // Get current time
+    let current_time = store.get_current_time();
+    let start_time = store.recording_state.start_time;
+    let start_time_seconds = frames_to_seconds(start_time, sample_rate)?;
+    let duration_frames = current_time - start_time;
+
+    // Calculate duration
+    let duration = frames_to_seconds(duration_frames, sample_rate)?;
+
     // Create asset in AssetStore
-    asset_store.insert(id, asset);
+    let mut asset_store = asset_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock asset store")?;
+    let id = generate_uuid();
+    let name = "New Recording".to_string();
+    let path = "".to_string();
+    let asset = AssetStore::create_asset(name.clone(), path, duration, MediaAssetType::Midi);
+    asset_store.insert(id.clone(), asset);
+
     // Store actual MIDI data in MidiCache
+    let mut midi_cache = midi_cache
+        .try_lock()
+        .map_err(|_| "Couldn't lock MIDI cache")?;
+    midi_cache.insert(id.clone(), midi_input_data);
+
     // Create MIDI clip in timeline
+    let mut composition = composition
+        .try_lock()
+        .map_err(|_| "Couldn't lock composition")?;
+    composition.insert_clip(
+        id.clone(),
+        name.clone(),
+        duration,
+        ClipType::Midi,
+        id.clone(),
+    );
+    composition.insert_track_clip(
+        track_id,
+        id.clone(),
+        start_time_seconds,
+        true,
+        TrackClipType::Midi,
+    );
 
     // Stop playback
     stop_audio(messaging).await;
