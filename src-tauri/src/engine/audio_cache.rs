@@ -1,10 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 use tauri::async_runtime::Mutex;
 
-use serde::Serialize;
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
-use crate::{engine::shared::audio_buffer::AudioBuffer, math::map_range};
+use crate::engine::shared::audio_buffer::AudioBuffer;
 
 /// The filename of the audio sample
 type AssetId = String;

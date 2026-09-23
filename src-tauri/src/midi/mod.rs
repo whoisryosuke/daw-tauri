@@ -7,7 +7,6 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use tauri::async_runtime::Mutex;
-use tauri::path::PathResolver;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::asset_store::{AssetStore, MediaAssetType};
@@ -18,7 +17,7 @@ use crate::composition::track_clips::TrackClipType;
 use crate::engine::audio_commands::{play_audio, stop_audio};
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
-use crate::math::{frames_to_seconds, seconds_to_frames};
+use crate::math::frames_to_seconds;
 use crate::utils::uuid::generate_uuid;
 
 pub struct MIDIRecordingState {
@@ -192,7 +191,7 @@ impl MIDIStore {
     /// Initialize the MIDI input library. Used for getting devices or connecting and receiving input.
     fn init_input_connection(&mut self) -> Result<MidiInput, String> {
         let mut midi_in =
-            MidiInput::new("midir reading input").map_err(|op| "Couldn't init MIDI input")?;
+            MidiInput::new("midir reading input").map_err(|_op| "Couldn't init MIDI input")?;
         midi_in.ignore(Ignore::None);
 
         Ok(midi_in)
@@ -234,7 +233,7 @@ impl MIDIStore {
         println!("\nOpening connection");
         let in_port_name = midi_in
             .port_name(&in_port)
-            .map_err(|op| "Couldn't get port name")?;
+            .map_err(|_op| "Couldn't get port name")?;
 
         // Establish MIDI input connection
         // This is where input actually comes in and gets stored
@@ -264,7 +263,7 @@ impl MIDIStore {
                 },
                 (),
             )
-            .map_err(|op| "MIDI connection error")?;
+            .map_err(|_op| "MIDI connection error")?;
 
         // Store the connection for use later + persistence
         self.input_connection = Some(_conn_in);

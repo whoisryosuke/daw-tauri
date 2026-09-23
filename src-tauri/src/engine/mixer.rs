@@ -120,7 +120,7 @@ impl Mixer {
                         .remove_node_handles
                         .iter()
                         .enumerate()
-                        .find(|(id, handle)| **handle != None);
+                        .find(|(_id, handle)| **handle != None);
 
                     // Got one? Add this node ID to it
                     if let Some((handle_id, _)) = handle_id_result {
@@ -206,7 +206,7 @@ impl Mixer {
 
                 AudioCommand::StopPlaybackNode(id) => {
                     if let Some(&key) = self.playback_map.get(&id) {
-                        if let Some(node) = self.playback_nodes.get_mut(key) {
+                        if let Some(_node) = self.playback_nodes.get_mut(key) {
                             // TODO: Start the release phase of envelope.
                         }
                     }
@@ -232,7 +232,7 @@ impl Mixer {
         &mut self,
         output: &mut [f32],
         channels: usize,
-        sample_rate: u32,
+        _sample_rate: u32,
         waveform_producer: &mut Sender<f32>,
         playback_time: Arc<AtomicU64>,
     ) {
@@ -279,7 +279,7 @@ impl Mixer {
                             .remove_node_handles
                             .iter()
                             .enumerate()
-                            .find(|(id, handle)| **handle != None);
+                            .find(|(_id, handle)| **handle != None);
 
                         // Got one? Add this node ID to it
                         if let Some((handle_id, _)) = handle_id_result {
@@ -289,7 +289,7 @@ impl Mixer {
                 }
             }
             // Then I need to loop over fx and provide result from above
-            for (fx_id, fx) in track.fx.iter_mut() {
+            for (_fx_id, fx) in track.fx.iter_mut() {
                 fx.process(&mut scratch_buffer, current_time);
             }
 

@@ -1,5 +1,5 @@
 use rubato::{
-    audioadapter_buffers::direct::InterleavedSlice, Async, Fft, FixedAsync, FixedSync, Resampler,
+    audioadapter_buffers::direct::InterleavedSlice, Async, FixedAsync, Resampler,
     SincInterpolationParameters, SincInterpolationType, WindowFunction,
 };
 

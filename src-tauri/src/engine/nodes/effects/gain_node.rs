@@ -16,8 +16,8 @@ impl GainNode {
 }
 
 impl EffectNode for GainNode {
-    fn process(&mut self, output: &mut [f32], current_frame: u64) {
-        for (i, sample) in output.iter_mut().enumerate() {
+    fn process(&mut self, output: &mut [f32], _current_frame: u64) {
+        for (_i, sample) in output.iter_mut().enumerate() {
             *sample = *sample * self.gain;
         }
     }

@@ -53,7 +53,7 @@ impl VstCache {
     pub fn load_plugin<P: AsRef<Path>>(
         &mut self,
         id: String,
-        path: P,
+        _path: P,
     ) -> Result<VstPluginInstance, String> {
         let plugin =
             vst3_host::simple::load_plugin("C:/Program Files/Common Files/VST3/Analog Lab V.vst3")

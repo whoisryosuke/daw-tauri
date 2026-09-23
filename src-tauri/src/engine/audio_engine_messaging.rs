@@ -76,7 +76,7 @@ impl AudioEngineMessaging {
         composition: &CompositionStore,
         asset_store: &AudioCache,
         sample_rate: u32,
-        channel_count: usize,
+        _channel_count: usize,
     ) {
         println!("Playing timeline audio");
 

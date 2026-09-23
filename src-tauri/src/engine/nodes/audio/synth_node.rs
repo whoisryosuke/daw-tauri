@@ -19,7 +19,7 @@ impl SynthNode {
 }
 
 impl AudioNode for SynthNode {
-    fn process(&mut self, output: &mut [f32], current_frame: u64) {
+    fn process(&mut self, output: &mut [f32], _current_frame: u64) {
         for sample in output.iter_mut() {
             *sample += self.synth.next() as f32;
         }

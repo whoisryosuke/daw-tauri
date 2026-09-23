@@ -1,5 +1,5 @@
 use tauri::State;
-use vst3_host::{PluginInfo, Vst3Host};
+use vst3_host::PluginInfo;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -8,7 +8,6 @@ use tauri::async_runtime::Mutex;
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::vst::vst_cache::VstCache;
-use crate::vst::vst_messaging::VstMessaging;
 
 thread_local! {
     pub static PLUGIN_WINDOW_MAP: RefCell<HashMap<String, vst3_host::PluginWindow>> = RefCell::new(HashMap::new());
@@ -58,7 +57,7 @@ pub fn test_vst(vst_cache: State<'_, Mutex<VstCache>>) -> Result<(), String> {
                 note: 60,
                 velocity: 100,
             };
-            plugin.send_midi_event(event);
+            let _ = plugin.send_midi_event(event);
             Ok(())
         }
         None => Err("Couldn't find that plugin".into()),
@@ -91,14 +90,14 @@ pub async fn open_vst_window(
     let plugin = plugin.ok_or("Plugin isn't loaded".to_string())?;
 
     // Create a cross-thread communication to send the result when window is done (or error)
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (_tx, rx) = std::sync::mpsc::channel();
 
     // We need to open the plugin window on the main thread.
     // The underlying window open function for Windows and Mac check for main thread
     // and will crash app if requirement isn't met.
     app.run_on_main_thread(move || {
         // Lock the plugin window "cache", create the window, open it, and store it
-        let result = PLUGIN_WINDOW_MAP.with(|plugin_windows| {
+        let _result = PLUGIN_WINDOW_MAP.with(|plugin_windows| {
             let mut window = vst3_host::PluginWindow::new(plugin.clone());
             let r = window.open().map_err(|e| e.to_string());
             plugin_windows.borrow_mut().insert(id, window);

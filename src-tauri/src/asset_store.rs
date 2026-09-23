@@ -2,9 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 use tauri::async_runtime::Mutex;
 
 use serde::Serialize;
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
+use tauri::{Manager, State};
 
-use crate::{engine::shared::audio_buffer::AudioBuffer, midi::MIDIInputEvent};
 
 #[derive(Clone, Serialize)]
 pub enum MediaAssetType {

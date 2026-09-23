@@ -234,7 +234,7 @@ pub async fn export_file(
     app: AppHandle,
     composition_store: State<'_, Mutex<CompositionStore>>,
     asset_store: State<'_, AudioCache>,
-    track_id: Option<String>,
+    _track_id: Option<String>,
     engine: State<'_, Mutex<AudioEngine>>,
     save_path: std::path::PathBuf,
 ) -> Result<(), String> {
@@ -245,7 +245,7 @@ pub async fn export_file(
     let sample_rate = engine.config.sample_rate();
 
     // Grab composition
-    let mut store = composition_store
+    let store = composition_store
         .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
     let duration = store.get_composition_duration()?;

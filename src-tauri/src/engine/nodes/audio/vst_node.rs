@@ -34,9 +34,9 @@ impl VstNode {
 }
 
 impl AudioNode for VstNode {
-    fn process(&mut self, output: &mut [f32], current_frame: u64) {
+    fn process(&mut self, output: &mut [f32], _current_frame: u64) {
         // @TODO: AudioNode process trait needs Result for error handling
-        let mut result = self.plugin.try_lock();
+        let result = self.plugin.try_lock();
 
         match result {
             Ok(mut plugin) => {

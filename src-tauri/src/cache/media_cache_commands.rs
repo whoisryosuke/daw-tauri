@@ -28,7 +28,7 @@ pub async fn get_sample_waveform(
         let mut waveform = Vec::with_capacity(size);
 
         // Reduce to necessary size (aka "sample" the samples)
-        for index in (0..size) {
+        for index in 0..size {
             let float_index =
                 (index as f64 * step * buffer.channel_count as f64) + (channel_index as f64);
             let buffer_index = float_index.floor() as usize;

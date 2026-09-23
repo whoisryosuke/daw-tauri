@@ -13,7 +13,7 @@ impl WavEncoder {
             sample_format: hound::SampleFormat::Int,
         };
 
-        let mut writer = hound::WavWriter::create(save_path, spec).unwrap();
+        let writer = hound::WavWriter::create(save_path, spec).unwrap();
 
         Self { writer }
     }

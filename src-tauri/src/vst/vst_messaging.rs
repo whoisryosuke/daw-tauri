@@ -22,7 +22,8 @@ impl VstMessaging {
     }
 
     pub fn send_message(&self, msg: VstCommand) {
-        self.producer.send(msg);
+        // @TODO: Bubble up errors
+        let _ = self.producer.send(msg);
     }
 
     pub fn spawn_thread(consumer: Receiver<VstCommand>) {
@@ -48,7 +49,8 @@ impl VstMessaging {
                         VstCommand::OpenWindow(id) => {
                             if let Some(window) = window_map.get_mut(&id) {
                                 if !window.is_open() {
-                                    window.open();
+                                    // @TODO: Bubble up these errors!
+                                    let _ = window.open();
                                 }
                             }
                         }

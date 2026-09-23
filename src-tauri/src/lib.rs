@@ -13,20 +13,15 @@ pub mod vst;
 #[cfg(test)]
 pub mod testing;
 
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use serde::Serialize;
-use symphonia::core::audio::{AudioBufferRef, Signal, SignalSpec};
+use cpal::traits::DeviceTrait;
+use symphonia::core::audio::{AudioBufferRef, Signal};
 use symphonia::core::codecs::DecoderOptions;
-use symphonia::core::formats::{FormatOptions, Track};
+use symphonia::core::formats::FormatOptions;
 use symphonia::core::meta::MetadataOptions;
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Builder, Emitter, Manager, State};
+use tauri::{AppHandle, Manager};
 
-use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
 use std::fs::{self, File};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
 use tauri::async_runtime::Mutex;
 
 use crate::asset_store::{get_assets, AssetStore, MediaAsset, MediaAssetType};
@@ -42,10 +37,8 @@ use crate::engine::audio_commands::{
     set_playback_time, stop_audio,
 };
 use crate::engine::audio_engine::AudioEngine;
-use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::engine::exporter::export_file;
 use crate::engine::shared::audio_buffer::AudioBuffer;
-use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
     start_midi_recording, stop_midi_recording, MIDIStore,
@@ -218,7 +211,7 @@ pub fn run() {
             // Setup additional global state
             // Create the asset store to contain any samples cached in memory
             let mut audio_cache = AudioCache::new();
-            let mut midi_cache = MidiCache::new();
+            let midi_cache = MidiCache::new();
             let mut asset_store = AssetStore::new();
             let composition_store = Mutex::new(CompositionStore::new());
             let vst_store = Mutex::new(VstCache::new());

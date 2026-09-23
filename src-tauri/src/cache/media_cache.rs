@@ -2,11 +2,10 @@ use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use thiserror::Error;
 
-use tauri::async_runtime::Mutex;
 
 use crate::{
     engine::shared::audio_buffer::AudioBuffer,
-    midi::{MIDIInputEvent, MIDIInputEventCache},
+    midi::MIDIInputEventCache,
 };
 
 #[derive(Serialize, Error, Debug)]
