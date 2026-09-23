@@ -47,3 +47,18 @@ pub fn seconds_to_frames(seconds: f64, sample_rate: u32) -> Result<u64, String> 
 
     Ok(frame_count)
 }
+
+/// Convert frames to seconds based on sample rate
+pub fn frames_to_seconds(frames: u64, sample_rate: u32) -> Result<f64, String> {
+    if frames < 0 {
+        return Err("Seconds cannot be negative".to_string());
+    }
+    if sample_rate == 0 {
+        return Err("Sample rate cannot be zero".to_string());
+    }
+
+    let sample_rate = sample_rate as u64;
+    let seconds = (frames / sample_rate) as f64;
+
+    Ok(seconds)
+}
