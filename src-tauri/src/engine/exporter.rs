@@ -71,6 +71,9 @@ impl Exporter {
                     sample_rate,
                 ),
                 TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
+                TrackClipType::Midi => {
+                    // @TODO: Export MIDI track
+                }
             }
         }
 
@@ -161,6 +164,7 @@ impl Exporter {
             println!("Couldn't get the clip {}", track_clip.clip_id);
             return;
         };
+
         let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
             println!("Couldn't get clip's asset from cache {}", clip.clip_id);
             return;
