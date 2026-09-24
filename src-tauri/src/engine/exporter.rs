@@ -233,7 +233,7 @@ impl AudioExporter {
 pub async fn export_file(
     app: AppHandle,
     composition_store: State<'_, Mutex<CompositionStore>>,
-    asset_store: State<'_, AudioCache>,
+    asset_store: State<'_, Mutex<AudioCache>>,
     _track_id: Option<String>,
     engine: State<'_, Mutex<AudioEngine>>,
     save_path: std::path::PathBuf,
@@ -249,6 +249,10 @@ pub async fn export_file(
         .try_lock()
         .map_err(|_| "Couldn't lock composition store")?;
     let duration = store.get_composition_duration()?;
+
+    let asset_store = asset_store
+        .try_lock()
+        .map_err(|_| "Couldn't lock asset store")?;
 
     // Initialize the exporter
     let mut exporter = AudioExporter::new();
