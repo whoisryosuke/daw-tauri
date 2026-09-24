@@ -179,26 +179,22 @@ pub async fn add_track(
     name: String,
     track_type: TrackType,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
     println!("Adding track...");
 
-    if let Ok(mut store) = store_result {
-        let index = store.tracks.len();
-        if index > 20 {
-            return Err("Max 20 tracks".to_string());
-        }
-
-        let new_track = Track::new(name, false, index, track_type);
-        store.tracks.insert(track_id.clone(), new_track);
-        store.track_clips.insert(track_id, Vec::new());
-
-        println!("Added new track!");
-
-        return Ok(true);
+    let index = store.tracks.len();
+    if index > 20 {
+        return Err("Max 20 tracks".to_string());
     }
 
-    Err("Couldn't lock composition store".to_string())
+    let new_track = Track::new(name, false, index, track_type);
+    store.tracks.insert(track_id.clone(), new_track);
+    store.track_clips.insert(track_id, Vec::new());
+
+    println!("Added new track!");
+
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -208,21 +204,19 @@ pub async fn update_track_gain(
     track_id: String,
     gain: f32,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        if let Some(track) = store.tracks.get_mut(&track_id) {
-            // Update value in Composition store ("Track")
-            track.gain = gain;
+    let track = store
+        .tracks
+        .get_mut(&track_id)
+        .ok_or("Couldn't find that track".to_string())?;
+    // Update value in Composition store ("Track")
+    track.gain = gain;
 
-            // Sync value to the audio backend ("MixerTrack")
-            messaging.update_mixer_track_gain(track.pool_index, gain);
+    // Sync value to the audio backend ("MixerTrack")
+    messaging.update_mixer_track_gain(track.pool_index, gain);
 
-            return Ok(true);
-        }
-    }
-
-    Err("Couldn't lock composition store".to_string())
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -232,22 +226,18 @@ pub async fn add_track_effect(
     effect_id: String,
     effect_data: EffectNodePayload,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        let node;
-        match effect_data {
-            EffectNodePayload::Gain { gain } => node = EffectNodeTypes::Gain(GainNode::new(gain)),
-        }
-
-        let track_effect = TrackEffect::new(track_id, node);
-
-        store.track_effects.insert(effect_id, track_effect);
-
-        return Ok(true);
+    let node;
+    match effect_data {
+        EffectNodePayload::Gain { gain } => node = EffectNodeTypes::Gain(GainNode::new(gain)),
     }
 
-    Err("Couldn't lock composition store".to_string())
+    let track_effect = TrackEffect::new(track_id, node);
+
+    store.track_effects.insert(effect_id, track_effect);
+
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -256,30 +246,24 @@ pub async fn update_track_effect(
     effect_id: String,
     effect_data: EffectNodePayload,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        // Find the track effect in store
-        let effect_result = store.track_effects.get_mut(&effect_id);
+    // Find the track effect in store
+    let track_effect = store
+        .track_effects
+        .get_mut(&effect_id)
+        .ok_or("Couldn't find that effect".to_string())?;
 
-        match effect_result {
-            Some(track_effect) => {
-                // Update the node based on data provided by user
-                match effect_data {
-                    EffectNodePayload::Gain { gain } => {
-                        // Update the existing gain node
-                        let EffectNodeTypes::Gain(ref mut gain_node) = track_effect.effect;
-                        gain_node.set_gain(gain);
-                    }
-                }
-            }
-            None => todo!(),
+    // Update the node based on data provided by user
+    match effect_data {
+        EffectNodePayload::Gain { gain } => {
+            // Update the existing gain node
+            let EffectNodeTypes::Gain(ref mut gain_node) = track_effect.effect;
+            gain_node.set_gain(gain);
         }
-
-        return Ok(true);
     }
 
-    Err("Couldn't lock composition store".to_string())
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -288,19 +272,15 @@ pub async fn add_track_clip(
     track_id: String,
     track_data: TrackClip,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        store
-            .track_clips
-            .entry(track_id)
-            .or_insert_with(Vec::new)
-            .push(track_data);
+    store
+        .track_clips
+        .entry(track_id)
+        .or_insert_with(Vec::new)
+        .push(track_data);
 
-        return Ok(true);
-    }
-
-    Err("Couldn't lock composition store".to_string())
+    return Ok(true);
 }
 
 /// Update track clip start time by provided time (in seconds)
@@ -311,21 +291,19 @@ pub async fn update_track_clip_time(
     id: String,
     time: f64,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
-            if let Some(current_clip) = track_clips
-                .iter_mut()
-                .find(|track_clip| &track_clip.id == &id)
-            {
-                current_clip.start_time = time;
-                return Ok(true);
-            }
-        }
-    }
+    let track_clips = store
+        .track_clips
+        .get_mut(&track_id)
+        .ok_or("Couldn't find track clips by that track ID")?;
+    let current_clip = track_clips
+        .iter_mut()
+        .find(|track_clip| &track_clip.id == &id)
+        .ok_or("Couldn't find that track clip")?;
 
-    return Err("Couldn't update clip time".to_string());
+    current_clip.start_time = time;
+    return Ok(true);
 }
 
 /// Update track clip range (in seconds)
@@ -336,22 +314,20 @@ pub async fn update_track_clip_range(
     id: String,
     range: TrackClipRange,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        if let Some(track_clips) = store.track_clips.get_mut(&track_id) {
-            if let Some(current_clip) = track_clips
-                .iter_mut()
-                .find(|track_clip| &track_clip.id == &id)
-            {
-                current_clip.range = range;
+    let track_clips = store
+        .track_clips
+        .get_mut(&track_id)
+        .ok_or("Couldn't find track clips by that track ID")?;
+    let current_clip = track_clips
+        .iter_mut()
+        .find(|track_clip| &track_clip.id == &id)
+        .ok_or("Couldn't find that track clip")?;
 
-                return Ok(true);
-            }
-        }
-    }
+    current_clip.range = range;
 
-    return Err("Couldn't update clip time".to_string());
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -360,14 +336,10 @@ pub async fn add_clip(
     clip_id: String,
     clip_data: Clip,
 ) -> Result<bool, String> {
-    let store_result = composition_store.try_lock();
+    let mut store = composition_store.lock().await;
 
-    if let Ok(mut store) = store_result {
-        store.clips.insert(clip_id, clip_data);
-        return Ok(true);
-    }
-
-    Err("Couldn't lock composition store".to_string())
+    store.clips.insert(clip_id, clip_data);
+    return Ok(true);
 }
 
 #[tauri::command()]
@@ -376,9 +348,7 @@ pub async fn update_midi_track_clip(
     track_id: String,
     clip_id: String,
 ) -> Result<bool, String> {
-    let mut store = composition_store
-        .try_lock()
-        .map_err(|_| "Couldn't lock composition store")?;
+    let mut store = composition_store.lock().await;
 
     if let Some(track) = store.tracks.get_mut(&track_id) {
         // Update value in Composition store ("Track")
@@ -397,9 +367,7 @@ pub async fn set_midi_track_as_playable(
     composition_store: State<'_, Mutex<CompositionStore>>,
     track_id: Option<String>,
 ) -> Result<(), String> {
-    let mut store = composition_store
-        .try_lock()
-        .map_err(|_| "Couldn't lock composition store")?;
+    let mut store = composition_store.lock().await;
 
     store.play_midi_track = track_id;
 
