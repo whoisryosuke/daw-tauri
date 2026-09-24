@@ -26,7 +26,7 @@ import { EFFECT_LIST } from "../constants/effects";
 import { MediaBrowserDragData, TrackClipDragData } from "../constants/drag";
 import {
   createMediaClip,
-  createMidiMediaClip,
+  createMidiSequence,
   getOrCreateClip,
   loadMedia,
 } from "./media";
@@ -344,13 +344,21 @@ export async function startRecording() {
 
   // Create a new Clip to contain the MIDI data
   const clipId = crypto.randomUUID();
-  const media: MediaBase = {
+  const newItem: MediaBrowserDragData = {
     id: clipId,
     name: "New MIDI Recording",
-    path: clipId,
-    duration: 1,
+    data: {
+      duration: 1,
+      type: "Midi",
+    },
+    action: "CLIP",
   };
-  const newMidiClip = await createMediaClip(media, "Midi");
+  const newMidiClip = await getOrCreateClip(newItem);
+  if (!newMidiClip) {
+    console.error("Failed to create clip or media");
+    return;
+  }
+
   addClipToTrack(selectedTrackId, "Midi", newMidiClip, playbackTime);
 
   console.log("newMidiClip", clipId, newMidiClip);

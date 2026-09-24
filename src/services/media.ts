@@ -11,7 +11,7 @@ import {
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
 
-export const createMidiMediaClip = (newMidiSequence: MIDISequence) => {
+export const createMidiSequence = (newMidiSequence: MIDISequence) => {
   store.set(midiSequencesAtom, (prev) => [...prev, newMidiSequence]);
 };
 
@@ -61,7 +61,7 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
         notes: [],
       };
 
-      createMidiMediaClip(newMidiSequence);
+      createMidiSequence(newMidiSequence);
 
       return newMidiSequence;
   }
