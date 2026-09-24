@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { store } from "../store/store";
 import {
   AddTrackPayload,
+  Clip,
   clipsAtom,
   compositionAtom,
   generateCompositionDefaultData,
@@ -23,8 +24,14 @@ import mapRange from "../utils/map";
 import { TIMELINE_DEFAULT_SPACING } from "../constants/composition";
 import { EFFECT_LIST } from "../constants/effects";
 import { MediaBrowserDragData, TrackClipDragData } from "../constants/drag";
-import { getOrCreateClip } from "./media";
+import {
+  createMediaClip,
+  createMidiMediaClip,
+  getOrCreateClip,
+  loadMedia,
+} from "./media";
 import { sendNotification } from "./notifications";
+import { MediaBase, MIDISequence } from "../store/media";
 
 // --- Shared ---
 export type DragPositionData = {
@@ -108,6 +115,7 @@ export function addTrack(name: string, trackTypeKey: TrackType) {
     name,
     muted: false,
     trackType: trackTypeKey,
+    color: "gray",
   };
 
   // The backend uses an `enum` with the associated MIDI clip inside
@@ -167,6 +175,7 @@ export const addEffectToTrack = (
 export async function addClipToMidiTrack(
   trackId: string,
   item: MediaBrowserDragData,
+  skipBackend?: boolean,
 ) {
   // Create a clip if necessary
   const clip = await getOrCreateClip(item);
@@ -188,7 +197,8 @@ export async function addClipToMidiTrack(
   );
 
   // Update backend
-  invoke("update_midi_track_clip", { trackId, clipId: clip.id });
+  if (!skipBackend)
+    invoke("update_midi_track_clip", { trackId, clipId: clip.id });
 }
 
 // --- Track Clips ---
@@ -209,6 +219,32 @@ export function deleteTrackClip(id: string) {
 }
 
 export const addClipToTrack = async (
+  trackId: string,
+  trackClipType: TrackClipData["track_clip_type"],
+  clip: Clip,
+  startTime: number,
+) => {
+  // Create a track clip using the ID of cache
+  const newId = generateSimpleHash();
+  const newTrackClip: TrackClipData = {
+    id: newId,
+    track_id: trackId,
+    track_clip_type: trackClipType,
+    clip_id: clip.id,
+    start_time: startTime,
+    enabled: true,
+  };
+  console.log("created new clip", newTrackClip);
+
+  // Send to Rust backend
+  const { track_id: _, ...track_data } = newTrackClip;
+  invoke("add_track_clip", { trackId, trackData: track_data });
+
+  // Add to store
+  store.set(trackClipsAtom, (prev) => [...prev, newTrackClip]);
+};
+
+export const addMediaToTrackFromDrag = async (
   id: string,
   item: MediaBrowserDragData,
   dragPosition: DragPositionData,
@@ -286,6 +322,7 @@ export const moveTrackClip = async (
 };
 
 export async function startRecording() {
+  console.log("trying to start recording...");
   // Are we recording? Don't do anything
   const recordingState = store.get(recordingAtom);
   if (recordingState.recording) return;
@@ -305,12 +342,26 @@ export async function startRecording() {
     return;
   }
 
+  // Create a new Clip to contain the MIDI data
+  const clipId = crypto.randomUUID();
+  const media: MediaBase = {
+    id: clipId,
+    name: "New MIDI Recording",
+    path: clipId,
+    duration: 1,
+  };
+  const newMidiClip = await createMediaClip(media, "Midi");
+  addClipToTrack(selectedTrackId, "Midi", newMidiClip, playbackTime);
+
+  console.log("newMidiClip", clipId, newMidiClip);
+
   // Set frontend state
   store.set(recordingAtom, {
     recording: true,
     startTime: playbackTime,
     trackId: selectedTrackId,
     trackType: currentTrack.trackType,
+    clipId,
   });
 
   // Set backend state + trigger playback
@@ -323,6 +374,8 @@ export async function startRecording() {
       await invoke("start_midi_recording", { trackId: selectedTrackId });
       break;
   }
+
+  console.log("recording started!");
 }
 
 export async function stopRecording() {
@@ -336,6 +389,7 @@ export async function stopRecording() {
     startTime: 0,
     trackId: "",
     trackType: "Sample",
+    clipId: "",
   });
 
   // Set backend state + trigger playback

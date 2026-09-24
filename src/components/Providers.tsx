@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import {
   addClipToMidiTrack,
-  addClipToTrack,
+  addMediaToTrackFromDrag,
   addEffectToTrack,
   DragPositionData,
   moveTrackClip,
@@ -141,7 +141,11 @@ const Providers = ({ children }: PropsWithChildren<Props>) => {
             y: relativeY,
             width: containerRect.width,
           };
-          addClipToTrack(trackData.id, mediaBrowserDragData, dragPosition);
+          addMediaToTrackFromDrag(
+            trackData.id,
+            mediaBrowserDragData,
+            dragPosition,
+          );
           break;
         }
 

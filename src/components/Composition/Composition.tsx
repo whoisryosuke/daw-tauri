@@ -11,6 +11,7 @@ import { compositionAtom } from "../../store/composition";
 import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
 import Panel from "../ui/Panel/Panel";
 import MusicalGrid from "./MusicalGrid/MusicalGrid";
+import MIDIRecording from "./Recording/MIDIRecording";
 
 const timelineWindowStyle = css({
   "&::-webkit-scrollbar": {
@@ -80,6 +81,7 @@ const Composition = (props: Props) => {
           </Stack>
         </Box>
       </Stack>
+      <MIDIRecording />
     </Panel>
   );
 };

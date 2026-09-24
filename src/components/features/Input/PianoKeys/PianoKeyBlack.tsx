@@ -47,7 +47,7 @@ const blackKeyStyle = css({
 
 type Props = {
   note: WhiteNotes;
-  play: (midi: number) => void;
+  play: (note: number, pressed: boolean) => void;
   selected: boolean;
 };
 
@@ -56,11 +56,20 @@ const PianoKeyBlack = ({ note, play, selected }: Props) => {
   const midi = noteToMidi(blackNote, 4);
 
   const handlePlay = () => {
-    play(midi);
+    play(midi, true);
+  };
+
+  const handleRelease = () => {
+    play(midi, false);
   };
 
   return (
-    <div className={blackKeyStyle} data-pressed={selected} onClick={handlePlay}>
+    <div
+      className={blackKeyStyle}
+      data-pressed={selected}
+      onMouseDown={handlePlay}
+      onMouseUp={handleRelease}
+    >
       {blackNote}
     </div>
   );

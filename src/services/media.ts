@@ -11,6 +11,10 @@ import {
 import { store } from "../store/store";
 import { generateSimpleHash } from "../utils/hash";
 
+export const createMidiMediaClip = (newMidiSequence: MIDISequence) => {
+  store.set(midiSequencesAtom, (prev) => [...prev, newMidiSequence]);
+};
+
 export const loadMedia = async (item: MediaBrowserDragData) => {
   console.log("item", item);
   // Check if it exists in cache first
@@ -49,7 +53,17 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
       return newSample;
 
     case "Midi":
-      break;
+      const newMidiSequence: MIDISequence = {
+        id: item.id,
+        name: item.name,
+        path: item.id,
+        duration: item.data.duration,
+        notes: [],
+      };
+
+      createMidiMediaClip(newMidiSequence);
+
+      return newMidiSequence;
   }
 };
 
@@ -66,6 +80,7 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
     name: media.name,
     duration: media.duration,
     type,
+    // @TODO: Change this to use ID
     clip_id: media.path,
   };
 

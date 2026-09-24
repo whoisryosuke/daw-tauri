@@ -54,7 +54,7 @@ export type TrackClipType = "Sample" | "Synthesizer";
 export type TrackClipData = {
   id: string;
   track_id: string;
-  track_clip_type: TrackClipType;
+  track_clip_type: TrackType;
   clip_id: string;
   start_time: number;
   enabled: boolean;
@@ -163,10 +163,12 @@ export type RecordingState = {
   startTime: number;
   trackId: string;
   trackType: TrackType;
+  clipId: string;
 };
 export const recordingAtom = atom<RecordingState>({
   recording: false,
   startTime: 0,
   trackId: "",
   trackType: "Sample",
+  clipId: "",
 });

@@ -2,13 +2,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useSetAtom } from "jotai";
 import React, { useEffect, useRef } from "react";
 import { inputStore } from "../../../store/input";
-
-type MIDIInputPayload = {
-  command: string;
-  channel: number;
-  note: number;
-  velocity: number;
-};
+import { MIDIInputPayload } from "../../../services/midi";
 
 const MIDISync = () => {
   const updateStore = useSetAtom(inputStore);

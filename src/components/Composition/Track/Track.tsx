@@ -1,4 +1,5 @@
 import {
+  recordingAtom,
   selectedTrackAtom,
   selectedTrackClipAtom,
   trackClipsAtom,
@@ -13,6 +14,7 @@ import { css, cx } from "../../../../styled-system/css";
 import { MouseEventHandler } from "react";
 import { getTimeBasedOnTimelinePosition } from "../../../services/composition";
 import { invoke } from "@tauri-apps/api/core";
+import MIDIRecordingTrackClip from "../TrackClip/MIDIRecordingTrackClip";
 
 const MIN_HEIGHT = 129; // 125 + 4 = gap for border clip
 
@@ -82,6 +84,8 @@ const Track = ({ id, name, trackType, width, color }: Props) => {
 
     invoke("set_playback_time", { time });
   };
+
+  console.log("track clips in track", localClips);
 
   return (
     <Stack

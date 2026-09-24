@@ -61,7 +61,7 @@ const pianoWhiteKeyRecipe = sva({
 
 type Props = {
   note: WhiteNotes;
-  play: (midi: number) => void;
+  play: (note: number, pressed: boolean) => void;
 };
 
 const PianoKeyWhite = ({ note, play }: Props) => {
@@ -77,12 +77,20 @@ const PianoKeyWhite = ({ note, play }: Props) => {
   );
 
   const handlePlay = () => {
-    play(midi);
+    play(midi, true);
+  };
+
+  const handleRelease = () => {
+    play(midi, false);
   };
 
   return (
     <div className={styles.container}>
-      <div className={styles.whiteKey} onClick={handlePlay}>
+      <div
+        className={styles.whiteKey}
+        onMouseDown={handlePlay}
+        onMouseUp={handleRelease}
+      >
         {note}
       </div>
       {showBlackKey && (
