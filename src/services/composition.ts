@@ -32,6 +32,7 @@ import {
 } from "./media";
 import { sendNotification } from "./notifications";
 import { MediaBase, MIDISequence } from "../store/media";
+import { MIDIInputPayload } from "./midi";
 
 // --- Shared ---
 export type DragPositionData = {
@@ -342,14 +343,14 @@ export async function startRecording() {
     return;
   }
 
-  // Create a new Clip to contain the MIDI data
+  // Create a new MIDI Sequence + Clip to contain the MIDI data
   const clipId = crypto.randomUUID();
   const newItem: MediaBrowserDragData = {
     id: clipId,
-    name: "New MIDI Recording",
+    name: `New ${currentTrack.trackType} Recording`,
     data: {
       duration: 1,
-      type: "Midi",
+      type: currentTrack.trackType,
     },
     action: "CLIP",
   };
@@ -359,11 +360,10 @@ export async function startRecording() {
     return;
   }
 
+  // Add clip to track as TrackClip
   addClipToTrack(selectedTrackId, "Midi", newMidiClip, playbackTime);
 
-  console.log("newMidiClip", clipId, newMidiClip);
-
-  // Set frontend state
+  // Set frontend recording state
   store.set(recordingAtom, {
     recording: true,
     startTime: playbackTime,
@@ -372,7 +372,7 @@ export async function startRecording() {
     clipId,
   });
 
-  // Set backend state + trigger playback
+  // Set backend recording state + trigger playback
   // Is this a Audio or MIDI track? Start appropriate recording process for track type.
   switch (currentTrack.trackType) {
     case "Sample":
@@ -407,7 +407,10 @@ export async function stopRecording() {
       // @TODO: Add audio recording flow
       break;
     case "Midi":
-      await invoke("stop_midi_recording");
+      const result = (await invoke(
+        "stop_midi_recording",
+      )) as MIDIInputPayload[];
+      console.log("stopped recording, got notes back", result);
       break;
   }
 }
