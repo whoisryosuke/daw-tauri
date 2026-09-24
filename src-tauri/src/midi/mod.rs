@@ -276,6 +276,35 @@ impl MIDIStore {
         Ok(())
     }
 
+    fn simulate_note_playback(
+        &self,
+        command: MidiCommand,
+        channel: u8,
+        note: u8,
+        velocity: u8,
+        time: u64,
+    ) {
+        let event = MIDIInputEvent {
+            command,
+            channel,
+            note,
+            velocity,
+            time,
+        };
+        let note = event.note.clone();
+
+        // Play sound associated with MIDI track
+        let messaging = self.app.state::<AudioEngineMessaging>();
+        match event.command {
+            MidiCommand::NoteOn => messaging.play_midi_input(note),
+            MidiCommand::NoteOff => messaging.stop_midi_input(note),
+            MidiCommand::Unknown => {}
+        };
+
+        // Broadcast MIDI note to UI
+        let _ = self.input_producer.send(event);
+    }
+
     async fn start_recording(&mut self, track_id: String) {
         // Empty cache
         let mut playback_cache = self.playback_cache.lock().await;
@@ -379,10 +408,17 @@ pub async fn connect_to_midi_input_device(
 /// Simulates MIDI playback from frontend
 #[tauri::command()]
 pub async fn play_midi_key(
-    messaging: State<'_, AudioEngineMessaging>,
-    midi: u8,
+    midi_store: State<'_, Mutex<MIDIStore>>,
+    note: u8,
+    command: MidiCommand,
+    channel: u8,
+    velocity: u8,
+    time: u64,
 ) -> Result<(), String> {
-    messaging.play_midi_input(midi);
+    // Start MIDI recording in the MIDI store
+    let store = midi_store.lock().await;
+
+    store.simulate_note_playback(command, channel, note, velocity, time);
 
     Ok(())
 }
@@ -398,9 +434,7 @@ pub async fn start_midi_recording(
     track_id: String,
 ) -> Result<(), String> {
     // Start MIDI recording in the MIDI store
-    let mut store = midi_store
-        .try_lock()
-        .map_err(|_| "Couldn't lock MIDI store")?;
+    let mut store = midi_store.lock().await;
 
     store.start_recording(track_id).await;
 
