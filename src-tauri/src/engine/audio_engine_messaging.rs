@@ -147,7 +147,12 @@ impl AudioEngineMessaging {
         };
 
         // Get audio buffer from cache
-        let audio_cache = self.app.state::<AudioCache>();
+        let audio_cache = self.app.state::<Mutex<AudioCache>>();
+
+        let Ok(audio_cache) = audio_cache.try_lock() else {
+            println!("Couldn't lock composition");
+            return;
+        };
 
         let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
             // TODO: Handle error "Couldn't find that asset"
