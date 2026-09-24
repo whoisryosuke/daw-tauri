@@ -1,6 +1,11 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import React, { useEffect, useRef } from "react";
-import { clipsAtom, recordingAtom } from "../../../store/composition";
+import {
+  clipsAtom,
+  playbackTimeAtom,
+  recordingAtom,
+  sampleRateAtom,
+} from "../../../store/composition";
 import {
   generateDefaultUserMap,
   inputStore,
@@ -9,12 +14,14 @@ import {
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { MIDIInputPayload } from "../../../services/midi";
 import { MIDINote, midiSequencesAtom } from "../../../store/media";
+import { store } from "../../../store/store";
+import { framesToSeconds } from "../../../utils/music";
 
 type Props = {};
 
 const MIDIRecording = (props: Props) => {
   // const localKeyCache = useRef(generateDefaultUserMap() as UserInputMap);
-  const { recording, clipId } = useAtomValue(recordingAtom);
+  const { recording, clipId, startTime } = useAtomValue(recordingAtom);
   console.log("clipId", clipId);
   const clips = useAtomValue(clipsAtom);
   const setMidiSequences = useSetAtom(midiSequencesAtom);
@@ -22,31 +29,8 @@ const MIDIRecording = (props: Props) => {
   console.log("currentClip", currentClip);
   const midiSequenceId = currentClip ? currentClip.clip_id : null;
   console.log("midiSequenceId", clipId, midiSequenceId);
-  // const input = useAtomValue(inputStore);
-
-  // useEffect(() => {
-  //     if(!recording) return;
-
-  //     Object.entries(input).forEach(([key, keyState]) => {
-  //         if (localKeyCache.current[key].pressed !== keyState.pressed) {
-  //           // Sync
-  //           localKeyCache.current[key].pressed = keyState.pressed;
-
-  //           switch (keyState.pressed) {
-  //             // Add new note
-  //             case true:
-  //                 addNote(key);
-  //                 break;
-  //             // End existing note
-  //             case false:
-  //                 break;
-  //           }
-  //         }
-  //     });
-
-  // }, [recording, input]);
-
   const listenerRef = useRef<UnlistenFn>(null);
+  const timerRef = useRef<ReturnType<typeof requestAnimationFrame>>(0);
 
   const addNoteToClip = (input: MIDIInputPayload) => {
     if (!midiSequenceId) return;
@@ -57,7 +41,7 @@ const MIDIRecording = (props: Props) => {
       midi: input.note,
       velocity: input.velocity,
       time: input.time,
-      duration: 0.1,
+      duration: null,
     };
     setMidiSequences((prevSequences) =>
       prevSequences.map((prevSequence) => {
@@ -84,25 +68,64 @@ const MIDIRecording = (props: Props) => {
           (n) => n.midi === input.note && n.duration == null,
         );
         if (idx === -1) return prevSequence; // stray NoteOff, nothing to close
-        let deltaTime = 0;
+
+        // Find the last note and update its duration
         const notes = prevSequence.notes.map((n, i) => {
           if (i === idx) {
             const newDuration = input.time - n.time;
-            deltaTime = newDuration;
             return { ...n, duration: newDuration };
           } else {
             return n;
           }
         });
 
-        // Update duration of specific note
         return {
           ...prevSequence,
-          duration: prevSequence.duration + deltaTime,
           notes,
         };
       }),
     );
+  };
+
+  const syncDuration = () => {
+    if (!currentClip) {
+      console.error("No clip, can't sync duration");
+      return;
+    }
+    // We grab stores here to ensure latest data
+    const sampleRate = store.get(sampleRateAtom);
+    const currentTime = store.get(playbackTimeAtom);
+    const localRecordingState = store.get(recordingAtom);
+
+    // Increment duration
+    const durationInFrames = currentTime - localRecordingState.startTime;
+    // Convert frames to seconds (since Clip uses seconds)
+    const duration = framesToSeconds(durationInFrames, sampleRate);
+
+    // Update MIDI sequence
+    store.set(midiSequencesAtom, (prevSequences) =>
+      prevSequences.map((prevSequence) =>
+        prevSequence.id == midiSequenceId
+          ? {
+              ...prevSequence,
+              duration,
+            }
+          : prevSequence,
+      ),
+    );
+
+    // Update clip (the primary source of duration)
+    store.set(clipsAtom, (prevClips) =>
+      prevClips.map((prevClip) =>
+        prevClip.id == currentClip.id ? { ...prevClip, duration } : prevClip,
+      ),
+    );
+
+    timerRef.current = requestAnimationFrame(syncDuration);
+  };
+
+  const startDurationSync = () => {
+    timerRef.current = requestAnimationFrame(syncDuration);
   };
 
   useEffect(() => {
@@ -124,10 +147,14 @@ const MIDIRecording = (props: Props) => {
       );
     };
 
-    if (recording) attachEvents();
+    if (recording) {
+      attachEvents();
+      startDurationSync();
+    }
 
     return () => {
       if (listenerRef.current) listenerRef.current();
+      cancelAnimationFrame(timerRef.current);
     };
   }, [recording]);
 

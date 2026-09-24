@@ -30,3 +30,11 @@ export function getMusicalTime(
 
   return [barNumber, beatInBar, ticks];
 }
+
+export function framesToSeconds(frames: number, sampleRate: number) {
+  return frames / sampleRate;
+}
+
+export function secondsToFrames(seconds: number, sampleRate: number) {
+  return seconds * sampleRate;
+}

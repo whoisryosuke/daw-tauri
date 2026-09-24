@@ -22,7 +22,8 @@ export type MIDINote = {
   midi: number;
   velocity: number;
   time: number;
-  duration: number;
+  // Duration in frames. Null if note hasn't finished.
+  duration: number | null;
 };
 
 export type MIDISequence = MediaBase & {
