@@ -2,8 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 use tauri::async_runtime::Mutex;
 
 use serde::Serialize;
-use tauri::{Manager, State};
-
+use tauri::State;
 
 #[derive(Clone, Serialize)]
 pub enum MediaAssetType {

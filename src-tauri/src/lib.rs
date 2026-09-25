@@ -13,7 +13,6 @@ pub mod vst;
 #[cfg(test)]
 pub mod testing;
 
-use cpal::traits::DeviceTrait;
 use symphonia::core::audio::{AudioBufferRef, Signal};
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::FormatOptions;
