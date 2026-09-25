@@ -248,7 +248,7 @@ impl MIDIStore {
                     // Get current time
                     let current_time = playback_time.load(Ordering::Relaxed);
 
-                    println!("{}: {:?} (len = {})", stamp, message, message.len());
+                    // println!("{}: {:?} (len = {})", stamp, message, message.len());
                     if let Some(event) = MIDIInputEvent::from_bytes(message, current_time) {
                         let command = event.command.clone();
                         let note = event.note.clone();
@@ -339,7 +339,7 @@ impl MIDIStore {
         thread::spawn(move || {
             loop {
                 // Handle commands
-                while let Ok(input_data) = receiver.try_recv() {
+                while let Ok(input_data) = receiver.recv() {
                     let _ = app.emit("midi-input", input_data.clone());
 
                     let is_recording = recording.load(Ordering::Relaxed);
