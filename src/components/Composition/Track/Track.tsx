@@ -85,8 +85,6 @@ const Track = ({ id, name, trackType, width, color }: Props) => {
     invoke("set_playback_time", { time });
   };
 
-  console.log("track clips in track", localClips);
-
   return (
     <Stack
       width="100%"

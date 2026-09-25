@@ -31,7 +31,12 @@ import {
   loadMedia,
 } from "./media";
 import { sendNotification } from "./notifications";
-import { MediaBase, MIDISequence } from "../store/media";
+import {
+  MediaBase,
+  MIDINote,
+  MIDISequence,
+  midiSequencesAtom,
+} from "../store/media";
 import { MIDIInputPayload } from "./midi";
 
 // --- Shared ---
@@ -391,6 +396,9 @@ export async function stopRecording() {
   const recordingState = store.get(recordingAtom);
   if (!recordingState.recording) return;
 
+  const clipId = recordingState.clipId;
+  const trackType = recordingState.trackType;
+
   // Set frontend state
   store.set(recordingAtom, {
     recording: false,
@@ -411,6 +419,45 @@ export async function stopRecording() {
         "stop_midi_recording",
       )) as MIDIInputPayload[];
       console.log("stopped recording, got notes back", result);
+
+      if (!Array.isArray(result)) {
+        console.error(result);
+        return;
+      }
+
+      let newNotes: MIDINote[] = [];
+      result.forEach((midiEvent) => {
+        switch (midiEvent.command) {
+          case "NoteOn":
+            const newItem: MIDINote = {
+              midi: midiEvent.note,
+              velocity: midiEvent.velocity,
+              time: midiEvent.time,
+              duration: null,
+            };
+            newNotes.push(newItem);
+            break;
+          case "NoteOff":
+            newNotes = newNotes.map((newNote) =>
+              newNote.midi == midiEvent.note && newNote.duration == null
+                ? { ...newNote, duration: midiEvent.time - newNote.time }
+                : newNote,
+            );
+            break;
+        }
+      });
+
+      console.log("new notes", newNotes);
+
+      // Update clip with more accurate data
+      store.set(midiSequencesAtom, (prevSequences) =>
+        prevSequences.map((prevSequence) =>
+          prevSequence.id == clipId
+            ? { ...prevSequence, notes: newNotes }
+            : prevSequence,
+        ),
+      );
+
       break;
   }
 }

@@ -22,20 +22,15 @@ type Props = {};
 const MIDIRecording = (props: Props) => {
   // const localKeyCache = useRef(generateDefaultUserMap() as UserInputMap);
   const { recording, clipId, startTime } = useAtomValue(recordingAtom);
-  console.log("clipId", clipId);
   const clips = useAtomValue(clipsAtom);
   const setMidiSequences = useSetAtom(midiSequencesAtom);
   const currentClip = clips.find((clip) => clip.clip_id == clipId);
-  console.log("currentClip", currentClip);
   const midiSequenceId = currentClip ? currentClip.clip_id : null;
-  console.log("midiSequenceId", clipId, midiSequenceId);
   const listenerRef = useRef<UnlistenFn>(null);
   const timerRef = useRef<ReturnType<typeof requestAnimationFrame>>(0);
 
   const addNoteToClip = (input: MIDIInputPayload) => {
     if (!midiSequenceId) return;
-
-    console.log("adding note to midi sequence");
 
     const midiNote: MIDINote = {
       midi: input.note,
@@ -108,7 +103,7 @@ const MIDIRecording = (props: Props) => {
         prevSequence.id == midiSequenceId
           ? {
               ...prevSequence,
-              duration,
+              duration: durationInFrames,
             }
           : prevSequence,
       ),
