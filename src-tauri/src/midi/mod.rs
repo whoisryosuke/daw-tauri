@@ -18,12 +18,12 @@ use crate::engine::audio_commands::{play_audio, stop_audio};
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::math::frames_to_seconds;
-use crate::utils::uuid::generate_uuid;
 
 pub struct MIDIRecordingState {
     /// Start time in "samples" (not seconds)
     pub start_time: u64,
     pub track_id: Option<String>,
+    pub clip_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,6 +130,7 @@ impl MIDIStore {
         let recording_state = MIDIRecordingState {
             start_time: 0,
             track_id: None,
+            clip_id: None,
         };
 
         Self::spawn_sync_thread(
@@ -244,7 +245,7 @@ impl MIDIStore {
             .connect(
                 &in_port,
                 "midir-read-input",
-                move |stamp, message, _| {
+                move |_, message, _| {
                     // Get current time
                     let current_time = playback_time.load(Ordering::Relaxed);
 
@@ -305,7 +306,7 @@ impl MIDIStore {
         let _ = self.input_producer.send(event);
     }
 
-    async fn start_recording(&mut self, track_id: String) {
+    async fn start_recording(&mut self, track_id: String, time: u64, clip_id: String) {
         // Empty cache
         let mut playback_cache = self.playback_cache.lock().await;
         playback_cache.clear();
@@ -313,9 +314,9 @@ impl MIDIStore {
         self.recording.store(true, Ordering::SeqCst);
 
         // Save current time as start of recording
-        let time = self.get_current_time();
         self.recording_state.start_time = time;
         self.recording_state.track_id = Some(track_id);
+        self.recording_state.clip_id = Some(clip_id);
     }
 
     async fn stop_recording(&mut self) -> Vec<MIDIInputEvent> {
@@ -432,11 +433,13 @@ pub async fn start_midi_recording(
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
     track_id: String,
+    time: u64,
+    clip_id: String,
 ) -> Result<(), String> {
     // Start MIDI recording in the MIDI store
     let mut store = midi_store.lock().await;
 
-    store.start_recording(track_id).await;
+    store.start_recording(track_id, time, clip_id).await;
 
     // Start playback (to progress `playback_time` and let user preview audio while recording)
     play_audio(messaging, asset_store, composition, engine).await?;
@@ -453,6 +456,7 @@ pub async fn stop_midi_recording(
     midi_cache: State<'_, Mutex<MidiCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
+    time: u64,
 ) -> Result<MIDIInputEventCache, String> {
     let mut store = midi_store
         .try_lock()
@@ -472,10 +476,9 @@ pub async fn stop_midi_recording(
     let sample_rate = engine.config.sample_rate();
 
     // Get current time
-    let current_time = store.get_current_time();
     let start_time = store.recording_state.start_time;
     let start_time_seconds = frames_to_seconds(start_time, sample_rate)?;
-    let duration_frames = current_time - start_time;
+    let duration_frames = time - start_time;
 
     // Calculate duration
     let duration = frames_to_seconds(duration_frames, sample_rate)?;
@@ -484,7 +487,12 @@ pub async fn stop_midi_recording(
     let mut asset_store = asset_store
         .try_lock()
         .map_err(|_| "Couldn't lock asset store")?;
-    let id = generate_uuid();
+    let id = store
+        .recording_state
+        .clip_id
+        .clone()
+        .ok_or("No MIDI clip ID".to_string())?;
+
     let name = "New Recording".to_string();
     let path = "".to_string();
     let asset = AssetStore::create_asset(name.clone(), path, duration, MediaAssetType::Midi);

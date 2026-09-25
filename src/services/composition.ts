@@ -384,7 +384,11 @@ export async function startRecording() {
       // @TODO: Add audio recording flow
       break;
     case "Midi":
-      await invoke("start_midi_recording", { trackId: selectedTrackId });
+      await invoke("start_midi_recording", {
+        trackId: selectedTrackId,
+        time: playbackTime,
+        clipId,
+      });
       break;
   }
 
@@ -396,17 +400,10 @@ export async function stopRecording() {
   const recordingState = store.get(recordingAtom);
   if (!recordingState.recording) return;
 
+  const playbackTime = store.get(playbackTimeAtom);
+
   const clipId = recordingState.clipId;
   const trackType = recordingState.trackType;
-
-  // Set frontend state
-  store.set(recordingAtom, {
-    recording: false,
-    startTime: 0,
-    trackId: "",
-    trackType: "Sample",
-    clipId: "",
-  });
 
   // Set backend state + trigger playback
   // Is this a Audio or MIDI track? Start appropriate recording process for track type.
@@ -415,9 +412,9 @@ export async function stopRecording() {
       // @TODO: Add audio recording flow
       break;
     case "Midi":
-      const result = (await invoke(
-        "stop_midi_recording",
-      )) as MIDIInputPayload[];
+      const result = (await invoke("stop_midi_recording", {
+        time: playbackTime,
+      })) as MIDIInputPayload[];
       console.log("stopped recording, got notes back", result);
 
       if (!Array.isArray(result)) {
@@ -460,4 +457,13 @@ export async function stopRecording() {
 
       break;
   }
+
+  // Set frontend state
+  store.set(recordingAtom, {
+    recording: false,
+    startTime: 0,
+    trackId: "",
+    trackType: "Sample",
+    clipId: "",
+  });
 }
