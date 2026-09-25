@@ -62,9 +62,9 @@ const MIDISequenceClipViz = ({
       // Draw
       notes.map((note) => {
         const x = (note.time / duration) * canvasWidth;
-        const y = ((note.midi - lowest) / laneCount) * canvasHeight;
+        const y = Math.abs((note.midi - highest) / laneCount) * canvasHeight;
         const noteDuration = note.duration ?? duration - note.time;
-        const width = ((note.time + noteDuration) / duration) * canvasWidth;
+        const width = (noteDuration / duration) * canvasWidth;
         ctx.fillRect(x, y, width, height);
       });
     },
