@@ -1,7 +1,8 @@
-
 use crate::{
     effects::shared::asdr::Adsr,
-    engine::nodes::audio::{sample_node::SampleNode, synth_node::SynthNode, vst_node::VstNode},
+    engine::nodes::audio::{
+        midi_node::MidiNode, sample_node::SampleNode, synth_node::SynthNode, vst_node::VstNode,
+    },
 };
 // use std::fmt;
 
@@ -21,6 +22,7 @@ pub enum AudioNodeTypes {
     Streaming(SampleNode),
     Synthesizer(SynthNode),
     Vst(VstNode),
+    Midi(MidiNode),
 }
 
 impl AudioNodeTypes {
@@ -31,6 +33,7 @@ impl AudioNodeTypes {
             AudioNodeTypes::Streaming(node) => node.process(output, params),
             AudioNodeTypes::Synthesizer(node) => node.process(output, params),
             AudioNodeTypes::Vst(node) => node.process(output, params),
+            AudioNodeTypes::Midi(node) => node.process(output, params),
         }
     }
 }

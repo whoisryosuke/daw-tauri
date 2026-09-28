@@ -62,3 +62,14 @@ pub fn frames_to_seconds(frames: u64, sample_rate: u32) -> Result<f64, String> {
 
     Ok(seconds)
 }
+
+/// Interpolate audio samples using the Hermite algo
+pub fn hermite_interpolate(y0: f32, y1: f32, y2: f32, y3: f32, fractional_part: f32) -> f32 {
+    let c0 = y1;
+    let c1 = 0.5 * (y2 - y0);
+    let c2 = y0 - 2.5 * y1 + 2.0 * y2 - 0.5 * y3;
+    let c3 = 0.5 * (y3 - y0) + 1.5 * (y1 - y2);
+
+    // Multiply out using Horner's method for optimal CPU usage
+    ((c3 * fractional_part + c2) * fractional_part + c1) * fractional_part + c0
+}

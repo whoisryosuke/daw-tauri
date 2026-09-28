@@ -452,7 +452,6 @@ pub async fn start_midi_recording(
 pub async fn stop_midi_recording(
     midi_store: State<'_, Mutex<MIDIStore>>,
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, Mutex<AssetStore>>,
     midi_cache: State<'_, Mutex<MidiCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
@@ -483,20 +482,12 @@ pub async fn stop_midi_recording(
     // Calculate duration
     let duration = frames_to_seconds(duration_frames, sample_rate)?;
 
-    // Create asset in AssetStore
-    let mut asset_store = asset_store
-        .try_lock()
-        .map_err(|_| "Couldn't lock asset store")?;
     let id = store
         .recording_state
         .clip_id
         .clone()
         .ok_or("No MIDI clip ID".to_string())?;
-
     let name = "New Recording".to_string();
-    let path = "".to_string();
-    let asset = AssetStore::create_asset(name.clone(), path, duration, MediaAssetType::Midi);
-    asset_store.insert(id.clone(), asset);
 
     // Store actual MIDI data in MidiCache
     let mut midi_cache = midi_cache

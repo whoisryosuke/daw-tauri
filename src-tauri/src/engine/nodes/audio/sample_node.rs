@@ -1,19 +1,20 @@
 use std::sync::Arc;
 
-use crate::engine::nodes::audio_node::AudioNode;
-
-pub type SampleNodeRange = Option<(usize, usize)>;
+use crate::engine::nodes::{
+    audio::shared::{AudioNodeRange, AudioNodeRangeParam},
+    audio_node::AudioNode,
+};
 
 pub struct SampleNode {
     pub start_frame: u64,
     data: Arc<Vec<f32>>,
     position: usize,
     pub finished: bool,
-    pub range: (usize, usize),
+    pub range: AudioNodeRange,
 }
 
 impl SampleNode {
-    pub fn new(data: Arc<Vec<f32>>, start_frame: u64, node_range: SampleNodeRange) -> Self {
+    pub fn new(data: Arc<Vec<f32>>, start_frame: u64, node_range: AudioNodeRangeParam) -> Self {
         let position = node_range.map_or(0, |(start, _)| start);
         let finished = false;
 

@@ -19,7 +19,10 @@ use crate::{
         track_clips::{TrackClip, TrackClipType},
     },
     engine::nodes::{
-        audio::{sample_node::SampleNode, vst_node::VstNode},
+        audio::{
+            midi_node::MidiNode, sample_node::SampleNode, shared::AudioNodeRangeParam,
+            vst_node::VstNode,
+        },
         audio_node::AudioNodeTypes,
         effect_node::EffectNodeTypes,
     },
@@ -191,6 +194,19 @@ impl AudioEngineMessaging {
     pub fn create_vst_node(&self, track_index: u8, sample_rate: f64, plugin: VstPluginInstance) {
         let inner_node = VstNode::new(plugin, sample_rate);
         let node = AudioNodeTypes::Vst(inner_node);
+        self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
+    }
+
+    pub fn create_midi_node(
+        &self,
+        track_index: u8,
+        data: Arc<Vec<f32>>,
+        node_range: AudioNodeRangeParam,
+        target_note: u8,
+        root_note: u8,
+    ) {
+        let inner_node = MidiNode::new(data, node_range, target_note, root_note);
+        let node = AudioNodeTypes::Midi(inner_node);
         self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
     }
 
