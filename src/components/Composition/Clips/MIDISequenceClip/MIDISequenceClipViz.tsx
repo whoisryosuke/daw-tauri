@@ -15,7 +15,7 @@ type Props = MIDISequence & {
 const MIDISequenceClipViz = ({
   duration,
   notes,
-  colorPalette,
+  colorPalette = "gray",
   ...props
 }: Props) => {
   const colorMode = useAtomValue(colorModeStore);

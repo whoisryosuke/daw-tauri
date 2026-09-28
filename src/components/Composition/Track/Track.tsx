@@ -15,6 +15,7 @@ import { MouseEventHandler } from "react";
 import { getTimeBasedOnTimelinePosition } from "../../../services/composition";
 import { invoke } from "@tauri-apps/api/core";
 import MIDIRecordingTrackClip from "../TrackClip/MIDIRecordingTrackClip";
+import RecordingTrackClip from "../Recording/RecordingTrackClip";
 
 const MIN_HEIGHT = 129; // 125 + 4 = gap for border clip
 
@@ -111,6 +112,7 @@ const Track = ({ id, name, trackType, width, color }: Props) => {
             color={color}
           />
         ))}
+        <RecordingTrackClip width={width} trackId={id} />
       </Stack>
     </Stack>
   );

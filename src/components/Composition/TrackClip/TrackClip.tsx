@@ -1,5 +1,6 @@
 import React, { MouseEventHandler, type JSX } from "react";
 import {
+  Clip,
   clipsAtom,
   compositionAtom,
   selectedTrackClipAtom,
@@ -18,6 +19,7 @@ const DefaultClip = () => <div>Error</div>;
 type Props = TrackClipData & {
   width: number;
   color: TrackData["color"];
+  clip?: Clip;
 };
 
 const TrackClip = ({
@@ -29,13 +31,14 @@ const TrackClip = ({
   range: trackClipRange,
   width,
   color,
+  clip: userClip,
 }: Props) => {
   const [selectedTrackClip, setSelectedTrackClip] = useAtom(
     selectedTrackClipAtom,
   );
   const { range } = useAtomValue(compositionAtom);
   const clips = useAtomValue(clipsAtom);
-  const currentClip = clips.find((clip) => clip.id == clipId);
+  const currentClip = userClip ?? clips.find((clip) => clip.id == clipId);
   const isTrackClipSelected = selectedTrackClip == id;
 
   const handleSelectTrackClip = (e: React.MouseEvent<HTMLButtonElement>) => {

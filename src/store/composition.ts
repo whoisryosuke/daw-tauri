@@ -2,6 +2,7 @@ import { atom } from "jotai";
 import { generateSimpleHash } from "../utils/hash";
 import { invoke } from "@tauri-apps/api/core";
 import { ColorPalette } from "../../styled-system/tokens";
+import { MIDISequence } from "./media";
 
 export type CompositionData = {
   // Start and end range for the composition area (and all tracks inside)
@@ -56,6 +57,9 @@ export type TrackClipData = {
   track_id: string;
   track_clip_type: TrackType;
   clip_id: string;
+  /**
+   * Time in seconds
+   */
   start_time: number;
   enabled: boolean;
   range?: number[];
@@ -164,6 +168,7 @@ export type RecordingState = {
   trackId: string;
   trackType: TrackType;
   clipId: string;
+  data: MIDISequence | {};
 };
 export const recordingAtom = atom<RecordingState>({
   recording: false,
@@ -171,4 +176,5 @@ export const recordingAtom = atom<RecordingState>({
   trackId: "",
   trackType: "Sample",
   clipId: "",
+  data: {},
 });

@@ -81,7 +81,6 @@ const Composition = (props: Props) => {
           </Stack>
         </Box>
       </Stack>
-      <MIDIRecording />
     </Panel>
   );
 };

@@ -9,6 +9,7 @@ import {
   generateTracksDefaultData,
   playbackTimeAtom,
   recordingAtom,
+  sampleRateAtom,
   selectedTrackAtom,
   selectedTrackClipAtom,
   TrackClipData,
@@ -38,6 +39,7 @@ import {
   midiSequencesAtom,
 } from "../store/media";
 import { MIDIInputPayload } from "./midi";
+import { framesToSeconds } from "../utils/music";
 
 // --- Shared ---
 export type DragPositionData = {
@@ -228,6 +230,9 @@ export const addClipToTrack = async (
   trackId: string,
   trackClipType: TrackClipData["track_clip_type"],
   clip: Clip,
+  /**
+   * Time in seconds
+   */
   startTime: number,
 ) => {
   // Create a track clip using the ID of cache
@@ -348,25 +353,25 @@ export async function startRecording() {
     return;
   }
 
-  // Create a new MIDI Sequence + Clip to contain the MIDI data
+  // We create a media asset for each recording type
+  // e.g. MIDI gets a MIDI Sequence
   const clipId = crypto.randomUUID();
-  const newItem: MediaBrowserDragData = {
-    id: clipId,
-    name: `New ${currentTrack.trackType} Recording`,
-    data: {
-      duration: 1,
-      type: currentTrack.trackType,
-    },
-    action: "CLIP",
-  };
-  const newMidiClip = await getOrCreateClip(newItem);
-  if (!newMidiClip) {
-    console.error("Failed to create clip or media");
-    return;
-  }
+  switch (currentTrack.trackType) {
+    case "Midi":
+      const newSequence: MIDISequence = {
+        id: clipId,
+        name: `New ${currentTrack.trackType} Recording`,
+        path: clipId,
+        duration: 1,
+        notes: [],
+      };
+      createMidiSequence(newSequence);
+      break;
 
-  // Add clip to track as TrackClip
-  addClipToTrack(selectedTrackId, "Midi", newMidiClip, playbackTime);
+    // Samples don't need anything - data is stored in backend
+    case "Sample":
+      break;
+  }
 
   // Set frontend recording state
   store.set(recordingAtom, {
@@ -375,6 +380,7 @@ export async function startRecording() {
     trackId: selectedTrackId,
     trackType: currentTrack.trackType,
     clipId,
+    data: {},
   });
 
   // Set backend recording state + trigger playback
@@ -401,35 +407,47 @@ export async function stopRecording() {
   if (!recordingState.recording) return;
 
   const playbackTime = store.get(playbackTimeAtom);
+  const sampleRate = store.get(sampleRateAtom);
 
   const clipId = recordingState.clipId;
   const trackType = recordingState.trackType;
 
-  // Set backend state + trigger playback
-  // Is this a Audio or MIDI track? Start appropriate recording process for track type.
+  // Get duration of the recording (basically start time -> current time)
+  // We could cut it to last note/sound, but most DAWs leave extra room. User can clip away or add more to later.
+  const clipDuration = framesToSeconds(
+    playbackTime - recordingState.startTime,
+    sampleRate,
+  );
+
+  // Stop recording in backend at exact frame time
   switch (recordingState.trackType) {
     case "Sample":
       // @TODO: Add audio recording flow
       break;
     case "Midi":
+      // When we stop MIDI recording we'll get notes back
       const result = (await invoke("stop_midi_recording", {
         time: playbackTime,
       })) as MIDIInputPayload[];
       console.log("stopped recording, got notes back", result);
 
+      // Check for errors
       if (!Array.isArray(result)) {
         console.error(result);
         return;
       }
 
+      // Parse on/off note events into note data with duration
       let newNotes: MIDINote[] = [];
       result.forEach((midiEvent) => {
+        // MIDI events come in as frames so we convert to seconds
+        const time = framesToSeconds(midiEvent.time, sampleRate);
         switch (midiEvent.command) {
           case "NoteOn":
             const newItem: MIDINote = {
               midi: midiEvent.note,
               velocity: midiEvent.velocity,
-              time: midiEvent.time,
+              time,
               duration: null,
             };
             newNotes.push(newItem);
@@ -437,7 +455,7 @@ export async function stopRecording() {
           case "NoteOff":
             newNotes = newNotes.map((newNote) =>
               newNote.midi == midiEvent.note && newNote.duration == null
-                ? { ...newNote, duration: midiEvent.time - newNote.time }
+                ? { ...newNote, duration: time - newNote.time }
                 : newNote,
             );
             break;
@@ -446,11 +464,15 @@ export async function stopRecording() {
 
       console.log("new notes", newNotes);
 
-      // Update clip with more accurate data
+      // Update clip with more accurate data (since sync might miss something)
       store.set(midiSequencesAtom, (prevSequences) =>
         prevSequences.map((prevSequence) =>
           prevSequence.id == clipId
-            ? { ...prevSequence, notes: newNotes }
+            ? {
+                ...prevSequence,
+                notes: newNotes,
+                duration: clipDuration,
+              }
             : prevSequence,
         ),
       );
@@ -458,12 +480,55 @@ export async function stopRecording() {
       break;
   }
 
-  // Set frontend state
+  // End recording in the frontend now that backend is confirmed
   store.set(recordingAtom, {
     recording: false,
     startTime: 0,
     trackId: "",
     trackType: "Sample",
     clipId: "",
+    data: {},
   });
+
+  // Add the MIDI sequence as an "official" TrackClip now that's it's done
+  const selectedTrackId = store.get(selectedTrackAtom);
+
+  const tracks = store.get(tracksAtom);
+  const currentTrack = tracks.find((track) => track.id == selectedTrackId);
+  if (!currentTrack) {
+    sendNotification({
+      title: "No track selected",
+      description: "Select a track before recording",
+      type: "error",
+    });
+    return;
+  }
+
+  // Create a new MIDI Sequence + Clip to contain the MIDI data
+  const newItem: MediaBrowserDragData = {
+    id: clipId,
+    name: `New ${currentTrack.trackType} Recording`,
+    data: {
+      duration: clipDuration,
+      type: currentTrack.trackType,
+    },
+    action: "CLIP",
+  };
+  const newMidiClip = await getOrCreateClip(newItem);
+  if (!newMidiClip) {
+    console.error("Failed to create clip or media");
+    return;
+  }
+
+  // Add clip to track as TrackClip
+  const startTimeInSeconds = framesToSeconds(
+    recordingState.startTime,
+    sampleRate,
+  );
+  addClipToTrack(
+    selectedTrackId,
+    recordingState.trackType,
+    newMidiClip,
+    startTimeInSeconds,
+  );
 }

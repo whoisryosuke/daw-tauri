@@ -16,7 +16,7 @@ export const createMidiSequence = (newMidiSequence: MIDISequence) => {
 };
 
 export const loadMedia = async (item: MediaBrowserDragData) => {
-  console.log("item", item);
+  console.log("loading media", item);
   // Check if it exists in cache first
   let exists: Sample | MIDISequence | null | undefined;
   switch (item.data.type) {
@@ -36,6 +36,8 @@ export const loadMedia = async (item: MediaBrowserDragData) => {
       break;
   }
   if (exists) return exists;
+
+  console.log("media not found, creating new media", item.data.type);
 
   switch (item.data.type) {
     case "Sample":
@@ -76,7 +78,7 @@ export const createMediaClip = async (media: MediaBase, type: ClipType) => {
 
   // Create clip
   const newClip: Clip = {
-    id: generateSimpleHash(),
+    id: crypto.randomUUID(),
     name: media.name,
     duration: media.duration,
     type,

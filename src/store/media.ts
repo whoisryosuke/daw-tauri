@@ -21,8 +21,13 @@ export type Sample = MediaBase & {
 export type MIDINote = {
   midi: number;
   velocity: number;
+  /**
+   * Start time of note in seconds.
+   */
   time: number;
-  // Duration in frames. Null if note hasn't finished.
+  /**
+   * Duration in seconds. Null if note hasn't finished.
+   */
   duration: number | null;
 };
 
