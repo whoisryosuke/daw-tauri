@@ -28,6 +28,7 @@ const MIDISequenceClip = ({
       {midiSequence && (
         <MIDISequenceClipViz
           {...midiSequence}
+          duration={duration}
           sampleRate={sampleRate}
           width={width}
           height={100}
