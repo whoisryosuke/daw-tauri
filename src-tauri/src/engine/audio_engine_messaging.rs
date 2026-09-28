@@ -27,6 +27,7 @@ use crate::{
         effect_node::EffectNodeTypes,
     },
     math::seconds_to_frames,
+    midi::DEFAULT_MIDI_ROOT_NOTE,
     music::sampler::Sampler,
     vst::vst_cache::VstPluginInstance,
 };
@@ -163,14 +164,14 @@ impl AudioEngineMessaging {
             return;
         };
 
-        // Resample audio for playback
-        let buffer = clip_data.samples.clone();
-        let Ok(pitched_buffer) = self.sampler.pitch_shift(&buffer, midi_key) else {
-            return;
-        };
-
-        // Create and queue node
-        let node = AudioNodeTypes::StaticBuffer(SampleNode::new(Arc::new(pitched_buffer), 0, None));
+        // Create and queue MIDI node
+        // This handles resampling/re-pitching to MIDI note in real-time
+        let node = AudioNodeTypes::Midi(MidiNode::new(
+            clip_data.samples.clone(),
+            None,
+            midi_key,
+            DEFAULT_MIDI_ROOT_NOTE,
+        ));
 
         self.send_command(AudioCommand::AddPlaybackSample(midi_key, node));
     }

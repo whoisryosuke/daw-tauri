@@ -19,6 +19,9 @@ use crate::engine::audio_engine::AudioEngine;
 use crate::engine::audio_engine_messaging::AudioEngineMessaging;
 use crate::math::frames_to_seconds;
 
+/// MIDI root note defaults to C4
+pub const DEFAULT_MIDI_ROOT_NOTE: u8 = 60;
+
 pub struct MIDIRecordingState {
     /// Start time in "samples" (not seconds)
     pub start_time: u64,
