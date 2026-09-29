@@ -100,7 +100,15 @@ impl AudioEngineMessaging {
                     sample_rate,
                 ),
                 TrackClipType::Midi => {
-                    self.queue_midi(pool_index, track_clip, track_id, sample_rate);
+                    self.queue_midi(
+                        pool_index,
+                        track_clip,
+                        track_id,
+                        sample_rate,
+                        composition,
+                        asset_store,
+                        midi_cache,
+                    );
                 }
                 TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
             }
@@ -119,20 +127,10 @@ impl AudioEngineMessaging {
     }
 
     pub fn get_audio_buffer_from_midi_track_clip(
-        composition: State<'_, Mutex<CompositionStore>>,
-        audio_cache: State<'_, Mutex<MediaCache<AudioBuffer>>>,
+        composition: &CompositionStore,
+        audio_cache: &AudioCache,
         track_id: Option<&String>,
     ) -> Result<Arc<AudioBuffer>, String> {
-        let Ok(composition) = composition.try_lock() else {
-            println!("Couldn't lock composition");
-            return Err("Couldn't lock composition".to_string());
-        };
-
-        let Ok(audio_cache) = audio_cache.try_lock() else {
-            println!("Couldn't lock audio cache");
-            return Err("Couldn't lock audio cache".to_string());
-        };
-
         let midi_track_id_key = track_id
             .or_else(|| composition.play_midi_track.as_ref()) // Clone so we own the String
             .ok_or_else(|| "No MIDI track set".to_string())?
@@ -173,9 +171,17 @@ impl AudioEngineMessaging {
         let composition = self.app.state::<Mutex<CompositionStore>>();
         let audio_cache = self.app.state::<Mutex<AudioCache>>();
 
+        let Ok(composition) = composition.try_lock() else {
+            return;
+        };
+
+        let Ok(audio_cache) = audio_cache.try_lock() else {
+            return;
+        };
+
         let clip_data = AudioEngineMessaging::get_audio_buffer_from_midi_track_clip(
-            composition,
-            audio_cache,
+            &composition,
+            &audio_cache,
             None,
         );
 
@@ -308,16 +314,10 @@ impl AudioEngineMessaging {
         track_clip: &TrackClip,
         track_id: &String,
         sample_rate: u32,
+        composition: &CompositionStore,
+        audio_cache: &AudioCache,
+        midi_cache: &MidiCache,
     ) {
-        // Get composition state and selected MIDI track
-        let composition = self.app.state::<Mutex<CompositionStore>>();
-        let audio_cache = self.app.state::<Mutex<AudioCache>>();
-        let midi_cache = self.app.state::<Mutex<MidiCache>>();
-        let Ok(midi_cache) = midi_cache.try_lock() else {
-            println!("Couldn't lock midi cache");
-            return;
-        };
-
         let sample_data = AudioEngineMessaging::get_audio_buffer_from_midi_track_clip(
             composition,
             audio_cache,
