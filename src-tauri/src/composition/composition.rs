@@ -55,8 +55,13 @@ impl CompositionStore {
         *self = Self::new();
     }
 
-    pub fn play(&self) -> (Vec<(usize, &TrackClip)>, Vec<(usize, &TrackEffect)>) {
-        let mut track_clips_result: Vec<(usize, &TrackClip)> = Vec::new();
+    pub fn play(
+        &self,
+    ) -> (
+        Vec<(usize, &TrackClip, &String)>,
+        Vec<(usize, &TrackEffect)>,
+    ) {
+        let mut track_clips_result: Vec<(usize, &TrackClip, &String)> = Vec::new();
         let mut effects_result: Vec<(usize, &TrackEffect)> = Vec::new();
 
         // Queue up clips to play
@@ -74,7 +79,7 @@ impl CompositionStore {
             println!("Got track clips {}", track.name);
             // Loop over each "track clip" then find actual audio clip
             for track_clip in track_clips {
-                track_clips_result.push((track.pool_index, track_clip));
+                track_clips_result.push((track.pool_index, track_clip, track_id));
             }
 
             // Handle any effects

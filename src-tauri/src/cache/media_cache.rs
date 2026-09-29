@@ -2,10 +2,9 @@ use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use thiserror::Error;
 
-
 use crate::{
     engine::shared::audio_buffer::AudioBuffer,
-    midi::MIDIInputEventCache,
+    midi::{MIDIInputEventCache, MIDINotes},
 };
 
 #[derive(Serialize, Error, Debug)]
@@ -39,4 +38,4 @@ impl<T> MediaCache<T> {
 }
 
 pub type AudioCache = MediaCache<AudioBuffer>;
-pub type MidiCache = MediaCache<MIDIInputEventCache>;
+pub type MidiCache = MediaCache<MIDINotes>;

@@ -67,17 +67,24 @@ impl AudioNode for MidiNode {
             }
 
             // Fetch the 4 adjacent samples.
+            // Grab previous sample (or assume first)
             let y0 = if index == 0 {
                 self.data[0]
             } else {
                 self.data[index - 1]
             };
             let y1 = self.data[index];
-            let y2 = self.data[index + 1];
+
+            // Check for next samples, if we have none, assume last
+            let y2 = if index + 1 < self.range.1 {
+                self.data[index + 1]
+            } else {
+                self.data[index]
+            };
             let y3 = if index + 2 < self.range.1 {
                 self.data[index + 2]
             } else {
-                0.0
+                self.data[index]
             };
 
             // Calculate the interpolated value

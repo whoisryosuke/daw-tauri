@@ -84,6 +84,15 @@ impl MIDIInputEvent {
     }
 }
 
+pub struct MIDINote {
+    pub midi: u8,
+    pub velocity: u8,
+    pub time: f64,
+    pub duration: Option<f64>,
+}
+
+pub type MIDINotes = Vec<MIDINote>;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct InputDeviceSelection {
     name: String,
@@ -432,7 +441,8 @@ pub async fn play_midi_key(
 pub async fn start_midi_recording(
     midi_store: State<'_, Mutex<MIDIStore>>,
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, Mutex<AudioCache>>,
+    midi_cache: State<'_, Mutex<MidiCache>>,
+    audio_cache: State<'_, Mutex<AudioCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
     track_id: String,
@@ -445,7 +455,7 @@ pub async fn start_midi_recording(
     store.start_recording(track_id, time, clip_id).await;
 
     // Start playback (to progress `playback_time` and let user preview audio while recording)
-    play_audio(messaging, asset_store, composition, engine).await?;
+    play_audio(messaging, midi_cache, audio_cache, composition, engine).await?;
 
     Ok(())
 }
@@ -492,11 +502,42 @@ pub async fn stop_midi_recording(
         .ok_or("No MIDI clip ID".to_string())?;
     let name = "New Recording".to_string();
 
+    // Massage on/off events into "notes"
+    let mut midi_notes: MIDINotes = Vec::new();
+    for midi_event in midi_input_data.iter() {
+        match midi_event.command {
+            MidiCommand::NoteOn => {
+                // Create a new note
+                let new_note = MIDINote {
+                    midi: midi_event.note,
+                    velocity: midi_event.velocity,
+                    time: frames_to_seconds(midi_event.time, sample_rate).unwrap_or(0.0) as f64,
+                    duration: None,
+                };
+                midi_notes.push(new_note);
+            }
+            MidiCommand::NoteOff => {
+                // Find last matching note without a duration
+                for current_note in midi_notes.iter_mut() {
+                    if current_note.duration.is_none() && current_note.midi == midi_event.note {
+                        let event_time =
+                            frames_to_seconds(midi_event.time, sample_rate).unwrap_or(0.0);
+                        let new_duration = (event_time - current_note.time).max(0.0);
+
+                        // Set duration of note
+                        current_note.duration = Some(new_duration);
+                    }
+                }
+            }
+            MidiCommand::Unknown => {}
+        }
+    }
+
     // Store actual MIDI data in MidiCache
     let mut midi_cache = midi_cache
         .try_lock()
         .map_err(|_| "Couldn't lock MIDI cache")?;
-    midi_cache.insert(id.clone(), midi_input_data.clone());
+    midi_cache.insert(id.clone(), midi_notes);
 
     // Create MIDI clip in timeline
     let mut composition = composition

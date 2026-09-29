@@ -61,7 +61,7 @@ impl AudioExporter {
         // Get all track clips and effects
         let (track_clips, effects) = composition.play();
 
-        for (pool_index, track_clip) in track_clips {
+        for (pool_index, track_clip, _) in track_clips {
             match track_clip.track_clip_type {
                 TrackClipType::Sample => self.queue_sample(
                     pool_index,

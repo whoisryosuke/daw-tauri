@@ -3,7 +3,7 @@ use serde::Serialize;
 use tauri::{async_runtime::Mutex, State};
 
 use crate::{
-    cache::media_cache::AudioCache,
+    cache::media_cache::{AudioCache, MidiCache},
     composition::composition::CompositionStore,
     engine::{audio_engine::AudioEngine, audio_engine_messaging::AudioEngineMessaging},
     math::seconds_to_frames,
@@ -12,14 +12,18 @@ use crate::{
 #[tauri::command(async)]
 pub async fn play_audio(
     messaging: State<'_, AudioEngineMessaging>,
-    asset_store: State<'_, Mutex<AudioCache>>,
+    midi_cache: State<'_, Mutex<MidiCache>>,
+    audio_cache: State<'_, Mutex<AudioCache>>,
     composition: State<'_, Mutex<CompositionStore>>,
     engine: State<'_, Mutex<AudioEngine>>,
 ) -> Result<bool, String> {
     let engine = engine.try_lock().map_err(|_| "Couldn't lock engine")?;
-    let asset_store = asset_store
+    let midi_cache = midi_cache
         .try_lock()
-        .map_err(|_| "Couldn't lock asset store")?;
+        .map_err(|_| "Couldn't lock midi cache")?;
+    let asset_store = audio_cache
+        .try_lock()
+        .map_err(|_| "Couldn't lock audio cache")?;
     println!("loading audio from Rust");
 
     let sample_rate = engine.config.sample_rate();
@@ -28,7 +32,7 @@ pub async fn play_audio(
         .try_lock()
         .map_err(|_| "Couldn't lock composition")?;
 
-    messaging.play(store, &asset_store, sample_rate, channel_count);
+    messaging.play(store, &asset_store, &midi_cache, sample_rate, channel_count);
 
     Ok(true)
 }

@@ -6,25 +6,28 @@ use std::{
     thread,
     time::Duration,
 };
-use tauri::async_runtime::Mutex;
+use tauri::{async_runtime::Mutex, State};
 
 use crossbeam::channel::{Receiver, Sender};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
-    cache::media_cache::AudioCache,
+    cache::media_cache::{AudioCache, MediaCache, MidiCache},
     composition::{
         composition::CompositionStore,
         track::TrackType,
         track_clips::{TrackClip, TrackClipType},
     },
-    engine::nodes::{
-        audio::{
-            midi_node::MidiNode, sample_node::SampleNode, shared::AudioNodeRangeParam,
-            vst_node::VstNode,
+    engine::{
+        nodes::{
+            audio::{
+                midi_node::MidiNode, sample_node::SampleNode, shared::AudioNodeRangeParam,
+                vst_node::VstNode,
+            },
+            audio_node::AudioNodeTypes,
+            effect_node::EffectNodeTypes,
         },
-        audio_node::AudioNodeTypes,
-        effect_node::EffectNodeTypes,
+        shared::audio_buffer::AudioBuffer,
     },
     math::seconds_to_frames,
     midi::DEFAULT_MIDI_ROOT_NOTE,
@@ -79,6 +82,7 @@ impl AudioEngineMessaging {
         &self,
         composition: &CompositionStore,
         asset_store: &AudioCache,
+        midi_cache: &MidiCache,
         sample_rate: u32,
         _channel_count: usize,
     ) {
@@ -86,7 +90,7 @@ impl AudioEngineMessaging {
 
         let (track_clips, effects) = composition.play();
 
-        for (pool_index, track_clip) in track_clips {
+        for (pool_index, track_clip, track_id) in track_clips {
             match track_clip.track_clip_type {
                 TrackClipType::Sample => self.queue_sample(
                     pool_index,
@@ -95,9 +99,10 @@ impl AudioEngineMessaging {
                     asset_store,
                     sample_rate,
                 ),
+                TrackClipType::Midi => {
+                    self.queue_midi(pool_index, track_clip, track_id, sample_rate);
+                }
                 TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
-                // @TODO: Handle adding MIDI nodes
-                TrackClipType::Midi => {}
             }
         }
 
@@ -113,54 +118,69 @@ impl AudioEngineMessaging {
         self.send_command(AudioCommand::Play);
     }
 
-    pub fn play_midi_input(&self, midi_key: u8) {
-        // Get composition state and selected MIDI track
-        let composition_handle = self.app.state::<Mutex<CompositionStore>>();
-
-        let Ok(composition) = composition_handle.try_lock() else {
+    pub fn get_audio_buffer_from_midi_track_clip(
+        composition: State<'_, Mutex<CompositionStore>>,
+        audio_cache: State<'_, Mutex<MediaCache<AudioBuffer>>>,
+        track_id: Option<&String>,
+    ) -> Result<Arc<AudioBuffer>, String> {
+        let Ok(composition) = composition.try_lock() else {
             println!("Couldn't lock composition");
-            return;
+            return Err("Couldn't lock composition".to_string());
         };
 
-        let Some(midi_track_id) = &composition.play_midi_track else {
-            println!("No MIDI track set");
-            return;
+        let Ok(audio_cache) = audio_cache.try_lock() else {
+            println!("Couldn't lock audio cache");
+            return Err("Couldn't lock audio cache".to_string());
         };
 
-        let midi_track_id_key = midi_track_id.clone();
+        let midi_track_id_key = track_id
+            .or_else(|| composition.play_midi_track.as_ref()) // Clone so we own the String
+            .ok_or_else(|| "No MIDI track set".to_string())?
+            .clone();
 
         // Get selected the MIDI track for the `clip`
         let Some(track) = composition.tracks.get(&midi_track_id_key) else {
             println!("Can't find MIDI track");
             // TODO: Handle error
-            return;
+            return Err("Can't find MIDI track".to_string());
         };
         let TrackType::Midi(midi_data) = &track.track_type else {
             println!("Can't get MIDI data from track");
-            return;
+            return Err("Can't get MIDI data from track".to_string());
         };
 
         // Get Clip by ID
         let Some(clip_id) = &midi_data.clip else {
-            return;
+            return Err("Can't get clip ID from MIDI track".to_string());
         };
 
         let Some(clip) = composition.clips.get(&clip_id.clone()) else {
             println!("Can't get clip for MIDI");
-            return;
+            return Err("Can't get clip for MIDI".to_string());
         };
-
-        // Get audio buffer from cache
-        let audio_cache = self.app.state::<Mutex<AudioCache>>();
-
-        let Ok(audio_cache) = audio_cache.try_lock() else {
-            println!("Couldn't lock composition");
-            return;
-        };
-
         let Some(clip_data) = audio_cache.get_buffer_by_id(&clip.clip_id) else {
             // TODO: Handle error "Couldn't find that asset"
             println!("Can't find audio cache for MIDI");
+            return Err("Can't find audio cache for MIDI".to_string());
+        };
+
+        // Get audio buffer from cache
+        return Ok(clip_data);
+    }
+
+    pub fn play_midi_input(&self, midi_key: u8) {
+        // Get composition state and selected MIDI track
+        let composition = self.app.state::<Mutex<CompositionStore>>();
+        let audio_cache = self.app.state::<Mutex<AudioCache>>();
+
+        let clip_data = AudioEngineMessaging::get_audio_buffer_from_midi_track_clip(
+            composition,
+            audio_cache,
+            None,
+        );
+
+        let Ok(clip_data) = clip_data else {
+            println!("Couldn't get audio buffer from MIDI track clip");
             return;
         };
 
@@ -200,7 +220,7 @@ impl AudioEngineMessaging {
 
     pub fn create_midi_node(
         &self,
-        track_index: u8,
+        track_index: usize,
         data: Arc<Vec<f32>>,
         node_range: AudioNodeRangeParam,
         target_note: u8,
@@ -208,7 +228,7 @@ impl AudioEngineMessaging {
     ) {
         let inner_node = MidiNode::new(data, node_range, target_note, root_note);
         let node = AudioNodeTypes::Midi(inner_node);
-        self.send_command(AudioCommand::AddPlaybackSample(track_index, node));
+        self.send_command(AudioCommand::AddAudioNode(track_index, node));
     }
 
     pub fn send_command(&self, command: AudioCommand) {
@@ -278,6 +298,66 @@ impl AudioEngineMessaging {
         ));
 
         self.send_command(AudioCommand::AddAudioNode(track_index, node));
+    }
+
+    /// Create audio node from track clip using asset store data,
+    /// then add node to appropriate mixer track via audio command.
+    fn queue_midi(
+        &self,
+        pool_index: usize,
+        track_clip: &TrackClip,
+        track_id: &String,
+        sample_rate: u32,
+    ) {
+        // Get composition state and selected MIDI track
+        let composition = self.app.state::<Mutex<CompositionStore>>();
+        let audio_cache = self.app.state::<Mutex<AudioCache>>();
+        let midi_cache = self.app.state::<Mutex<MidiCache>>();
+        let Ok(midi_cache) = midi_cache.try_lock() else {
+            println!("Couldn't lock midi cache");
+            return;
+        };
+
+        let sample_data = AudioEngineMessaging::get_audio_buffer_from_midi_track_clip(
+            composition,
+            audio_cache,
+            Some(track_id),
+        );
+
+        let Ok(sample_data) = sample_data else {
+            println!("Couldn't get audio buffer from MIDI track clip");
+            return;
+        };
+
+        let Some(midi_clip_data) = midi_cache.get_buffer_by_id(&track_clip.clip_id) else {
+            println!(
+                "Couldn't get clip's asset from MIDI cache {}",
+                track_clip.clip_id
+            );
+            return;
+        };
+
+        for midi_note_event in midi_clip_data.iter() {
+            // Handle clip start/end time
+            let frame_range = track_clip.range.map(|(start, end)| {
+                // Convert seconds to frames
+                // This assumes audio buffer from clip matches sample rate of app
+                let start_frame = seconds_to_frames(start, sample_rate).unwrap_or(0);
+                let end_frame = seconds_to_frames(end, sample_rate).unwrap_or(0);
+
+                return (start_frame as usize, end_frame as usize);
+            });
+
+            println!("Creating MIDI node {}", midi_note_event.midi);
+
+            self.create_midi_node(
+                pool_index,
+                sample_data.samples.clone(),
+                frame_range,
+                midi_note_event.midi,
+                DEFAULT_MIDI_ROOT_NOTE,
+            );
+        }
     }
 
     pub fn add_synth(&self, track_index: usize, sample_rate: u32) {
