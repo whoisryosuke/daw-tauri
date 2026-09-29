@@ -57,8 +57,9 @@ pub fn frames_to_seconds(frames: u64, sample_rate: u32) -> Result<f64, String> {
         return Err("Sample rate cannot be zero".to_string());
     }
 
-    let sample_rate = sample_rate as u64;
-    let seconds = (frames / sample_rate) as f64;
+    let sample_rate = sample_rate as f64;
+    let frames = frames as f64;
+    let seconds = frames / sample_rate;
 
     Ok(seconds)
 }

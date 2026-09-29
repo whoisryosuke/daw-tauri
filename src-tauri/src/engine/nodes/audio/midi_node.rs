@@ -11,6 +11,7 @@ use crate::{
 /// Audio node for playing MIDI notes using samples.
 /// Repitches audio sample in real-time to target MIDI note using Hermite interpolation.
 pub struct MidiNode {
+    pub start_frame: u64,
     data: Arc<Vec<f32>>,
     pub finished: bool,
     pub range: AudioNodeRange,
@@ -23,6 +24,7 @@ pub struct MidiNode {
 impl MidiNode {
     pub fn new(
         data: Arc<Vec<f32>>,
+        start_frame: u64,
         node_range: AudioNodeRangeParam,
         target_note: u8,
         root_note: u8,
@@ -37,6 +39,7 @@ impl MidiNode {
         let pitch_ratio = 2.0_f32.powf(semitone_diff / 12.0);
 
         Self {
+            start_frame,
             data,
             finished,
             range,
@@ -50,8 +53,7 @@ impl MidiNode {
 impl AudioNode for MidiNode {
     fn process(&mut self, output: &mut [f32], current_frame: u64) {
         // Check if node is scheduled to start, if not, do nothing
-        let start_time = self.range.0 as u64;
-        if start_time > current_frame {
+        if self.start_frame > current_frame {
             return;
         }
 

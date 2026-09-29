@@ -194,6 +194,7 @@ impl AudioEngineMessaging {
         // This handles resampling/re-pitching to MIDI note in real-time
         let node = AudioNodeTypes::Midi(MidiNode::new(
             clip_data.samples.clone(),
+            0,
             None,
             midi_key,
             DEFAULT_MIDI_ROOT_NOTE,
@@ -231,8 +232,9 @@ impl AudioEngineMessaging {
         node_range: AudioNodeRangeParam,
         target_note: u8,
         root_note: u8,
+        start_time: u64,
     ) {
-        let inner_node = MidiNode::new(data, node_range, target_note, root_note);
+        let inner_node = MidiNode::new(data, start_time, node_range, target_note, root_note);
         let node = AudioNodeTypes::Midi(inner_node);
         self.send_command(AudioCommand::AddAudioNode(track_index, node));
     }
@@ -342,13 +344,17 @@ impl AudioEngineMessaging {
             let frame_range = track_clip.range.map(|(start, end)| {
                 // Convert seconds to frames
                 // This assumes audio buffer from clip matches sample rate of app
-                let start_frame = seconds_to_frames(start, sample_rate).unwrap_or(0);
-                let end_frame = seconds_to_frames(end, sample_rate).unwrap_or(0);
+                let start_frame =
+                    seconds_to_frames(start, sample_rate).unwrap_or(track_clip.start_time as u64);
+                let end_frame =
+                    seconds_to_frames(end, sample_rate).unwrap_or(sample_data.samples.len() as u64);
 
                 return (start_frame as usize, end_frame as usize);
             });
 
             println!("Creating MIDI node {}", midi_note_event.midi);
+
+            let start_time = seconds_to_frames(midi_note_event.time, sample_rate).unwrap_or(0);
 
             self.create_midi_node(
                 pool_index,
@@ -356,6 +362,7 @@ impl AudioEngineMessaging {
                 frame_range,
                 midi_note_event.midi,
                 DEFAULT_MIDI_ROOT_NOTE,
+                start_time,
             );
         }
     }
