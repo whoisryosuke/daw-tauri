@@ -13,6 +13,8 @@ import {
 import { useAtomValue } from "jotai";
 import { sva } from "../../../styled-system/css";
 import DebugVST from "../debug/DebugVST";
+import OscilloscopeWaveformViz from "../../modules/webgpu/renderer/OscilloscopeWaveform/OscilloscopeWaveformViz";
+import PlaybackWaveformR2 from "../viz/PlaybackWaveformR2";
 
 const styles = sva({
   slots: ["tabRoot", "tabPanelContainer", "tabPanel", "tabList", "tabButton"],
@@ -101,7 +103,8 @@ const ModuleArea = (props: Props) => {
       pb={1}
       alignItems="stretch"
     >
-      <Waveform />
+      {/* <Waveform /> */}
+      <PlaybackWaveformR2 />
       <DebugVST />
       <Tabs.Root className={classes.tabRoot}>
         <div className={classes.tabPanelContainer}>

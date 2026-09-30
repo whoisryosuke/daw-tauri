@@ -5,8 +5,10 @@ import App from "./App.tsx";
 import Providers from "./components/Providers.tsx";
 import AppWrapper from "./components/AppWrapper.tsx";
 import { createDesktopMenu } from "./services/menu.ts";
+import { initWebGPUManagerStore } from "./store/webgpu.ts";
 
 createDesktopMenu();
+initWebGPUManagerStore();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
