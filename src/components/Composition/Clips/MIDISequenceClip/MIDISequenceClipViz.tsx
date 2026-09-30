@@ -38,7 +38,7 @@ const MIDISequenceClipViz = ({
     },
     { highest: -Infinity, lowest: Infinity },
   );
-  const laneCount = highest - lowest;
+  const laneCount = highest - lowest + 1;
 
   const draw = useCallback(
     (now: number) => {
