@@ -8,6 +8,8 @@ interface RenderPipelineConfig {
   vertexBuffers?: GPUVertexBufferLayout[];
 }
 
+type RenderCallback = (deltaTime: number, currentTime: number) => void;
+
 export default class WebGPUManager {
   device!: GPUDevice;
   adapter!: GPUAdapter;
@@ -17,6 +19,11 @@ export default class WebGPUManager {
   shaderCache: Map<string, GPUShaderModule> = new Map();
   // Cache for render pipelines
   #pipelineCache: Map<string, GPURenderPipeline> = new Map();
+
+  // Animation logic
+  #callbacks = new Set<RenderCallback>();
+  #running = false;
+  #lastTime = 0;
 
   /**
    * Initialize the renderer and required dependencies. Run this first.
@@ -98,4 +105,34 @@ export default class WebGPUManager {
   getRenderPipeline(key: string) {
     return this.#pipelineCache.get(key);
   }
+
+  /**
+   * Registers render callback to run during animation loop. Also starts animation loop.
+   * @param fn - Callback (e.g. `const callback = (deltaTime, now) => {}`)
+   * @returns
+   */
+  addAnimation(fn: RenderCallback): () => void {
+    this.#callbacks.add(fn);
+    this.#start();
+    return () => this.#callbacks.delete(fn); // call to unsubscribe
+  }
+
+  #start() {
+    if (this.#running) return;
+    this.#running = true;
+    this.#lastTime = performance.now(); // avoids a huge first dt after idling
+    requestAnimationFrame(this.#frame);
+  }
+
+  #frame = (now: number) => {
+    const dt = (now - this.#lastTime) / 1000;
+    this.#lastTime = now;
+
+    // Loop through render callbacks and run them
+    for (const fn of this.#callbacks) fn(dt, now);
+
+    // Do we have callbacks? Run loop
+    if (this.#callbacks.size) requestAnimationFrame(this.#frame);
+    else this.#running = false; // stop looping when nothing is registered
+  };
 }

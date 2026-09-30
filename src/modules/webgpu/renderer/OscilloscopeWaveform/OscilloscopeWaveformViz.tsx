@@ -4,9 +4,9 @@ import { webGPUManagerStore } from "../../../../store/webgpu";
 import OscilloscopeWaveform from "./OscilloscopeWaveform";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
-type Props = HTMLProps<HTMLCanvasElement> & {};
-
 const INITIAL_SAMPLES = 128;
+
+type Props = HTMLProps<HTMLCanvasElement> & {};
 
 function createFlatLine(samples: number): Float32Array {
   // Flat y=0 line spread across x 0..1 so the first frame is visible
@@ -44,7 +44,6 @@ const OscilloscopeWaveformViz = ({ width, height, ...props }: Props) => {
         // Update vertex buffer with new data
         if (viz.current) {
           viz.current.update(data.current);
-          viz.current.render();
         }
       });
     };

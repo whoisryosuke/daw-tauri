@@ -14,8 +14,7 @@ export default class OscilloscopeWaveform {
   // The actual number of vertices we're rendering (based on flucuating data length)
   vertexCount!: number;
   animated: boolean = false;
-  // @TODO: Lift up to single RAF in WebGPUManager
-  #animationFrame = 0;
+  // #animationRef: () => void | null = null;
 
   constructor(
     manager: WebGPUManager,
@@ -121,20 +120,15 @@ export default class OscilloscopeWaveform {
     this.manager.device.queue.submit([commandEncoder.finish()]);
   };
 
-  startLoop() {
-    this.animated = true;
-    const loop = () => {
-      if (!this.animated) return;
-      this.render();
-      this.#animationFrame = requestAnimationFrame(loop);
-    };
-    loop();
-  }
+  // startLoop() {
+  //   this.animated = true;
+  //   this.#animationRef = this.manager.addAnimation(this.render);
+  // }
 
-  stopLoop() {
-    this.animated = false;
-    cancelAnimationFrame(this.#animationFrame);
-  }
+  // stopLoop() {
+  //   this.animated = false;
+  //   if (this.#animationRef != null) this.#animationRef();
+  // }
 
   /**
    * Re-configure the context after the canvas size changes.
@@ -169,7 +163,7 @@ export default class OscilloscopeWaveform {
    * Cleanup memory
    */
   destroy() {
-    this.stopLoop();
+    // this.stopLoop();
     this.context.unconfigure();
     this.vertexBuffer.destroy();
   }
