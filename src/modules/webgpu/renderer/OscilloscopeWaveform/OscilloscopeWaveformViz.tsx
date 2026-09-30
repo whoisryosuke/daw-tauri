@@ -44,6 +44,7 @@ const OscilloscopeWaveformViz = ({ width, height, ...props }: Props) => {
         // Update vertex buffer with new data
         if (viz.current) {
           viz.current.update(data.current);
+          viz.current.render();
         }
       });
     };
