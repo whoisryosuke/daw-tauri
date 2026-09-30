@@ -52,6 +52,19 @@ export default class WebGPUManager {
       code: shaderCode,
     });
     this.shaderCache.set(name, shaderModule);
+
+    // Shader compilation errors are async — log them so WGSL typos are loud
+    // instead of failing silently with a blank canvas.
+    shaderModule.getCompilationInfo().then((info) => {
+      for (const message of info.messages) {
+        const formatted = `[WebGPU][${name}][${message.type}] line ${message.lineNum}:${message.linePos} ${message.message}`;
+        if (message.type === "error") {
+          console.error(formatted);
+        } else {
+          console.warn(formatted);
+        }
+      }
+    });
   }
 
   createRenderPipeline(shaderKey: string, config: RenderPipelineConfig) {
