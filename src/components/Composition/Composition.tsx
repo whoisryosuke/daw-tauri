@@ -85,14 +85,16 @@ const Composition = (props: Props) => {
           />
           <Stack
             position="relative"
-            style={{ width }}
             mt={"50px"}
             gap={0}
-            // Musical grid
-            backgroundImage={`
+            style={{
+              width,
+              // Musical grid
+              backgroundImage: `
     repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0px, transparent 1px, transparent ${blockWidth * subdivisionLevel}px),
     repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, transparent 1px, transparent ${blockWidth}px)
-  `}
+  `,
+            }}
             backgroundSize={"100px 100%"}
           >
             <PlaybackHead containerWidth={width} />
