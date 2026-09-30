@@ -48,22 +48,30 @@ export type DragPositionData = {
   width: number;
 };
 
+/**
+ * Takes a drag X position on timeline and converts to time (in frames)
+ * @returns startTime (u64 for Rust)
+ */
 function calculateStartTimeFromDrag(dragPosition: DragPositionData) {
   // Get composition range
   const [start, end] = store.get(compositionAtom).range;
+  const sampleRate = store.get(sampleRateAtom);
 
-  // // Convert position from size to percent (0% = left, 100% = right)
-  // const percent = dragPosition.x / dragPosition.width;
-  // // Figure out total time of composition so we can figure what percent we're at
-  // const timeSpan = end - start;
-  // // Make sure to offset by the start to keep it within range
-  // const startTime = timeSpan * percent + start;
+  // Convert range from seconds to frames
+  const startFrame = start * sampleRate;
+  const endFrame = end * sampleRate;
 
-  const startTime = mapRange(dragPosition.x, 0, dragPosition.width, start, end);
+  const startTime = mapRange(
+    dragPosition.x,
+    0,
+    dragPosition.width,
+    startFrame,
+    endFrame,
+  );
 
   console.log("calculated start time", startTime);
 
-  return startTime;
+  return Math.round(startTime);
 }
 
 export function getTimelineWidth() {
@@ -231,7 +239,7 @@ export const addClipToTrack = async (
   trackClipType: TrackClipData["track_clip_type"],
   clip: Clip,
   /**
-   * Time in seconds
+   * Time in frames
    */
   startTime: number,
 ) => {
@@ -414,10 +422,7 @@ export async function stopRecording() {
 
   // Get duration of the recording (basically start time -> current time)
   // We could cut it to last note/sound, but most DAWs leave extra room. User can clip away or add more to later.
-  const clipDuration = framesToSeconds(
-    playbackTime - recordingState.startTime,
-    sampleRate,
-  );
+  const clipDuration = playbackTime - recordingState.startTime;
 
   // Stop recording in backend at exact frame time
   switch (recordingState.trackType) {
@@ -441,13 +446,12 @@ export async function stopRecording() {
       let newNotes: MIDINote[] = [];
       result.forEach((midiEvent) => {
         // MIDI events come in as frames so we convert to seconds
-        const time = framesToSeconds(midiEvent.time, sampleRate);
         switch (midiEvent.command) {
           case "NoteOn":
             const newItem: MIDINote = {
               midi: midiEvent.note,
               velocity: midiEvent.velocity,
-              time,
+              time: midiEvent.time,
               duration: null,
             };
             newNotes.push(newItem);
@@ -455,7 +459,7 @@ export async function stopRecording() {
           case "NoteOff":
             newNotes = newNotes.map((newNote) =>
               newNote.midi == midiEvent.note && newNote.duration == null
-                ? { ...newNote, duration: time - newNote.time }
+                ? { ...newNote, duration: midiEvent.time - newNote.time }
                 : newNote,
             );
             break;
@@ -521,14 +525,10 @@ export async function stopRecording() {
   }
 
   // Add clip to track as TrackClip
-  const startTimeInSeconds = framesToSeconds(
-    recordingState.startTime,
-    sampleRate,
-  );
   addClipToTrack(
     selectedTrackId,
     recordingState.trackType,
     newMidiClip,
-    startTimeInSeconds,
+    recordingState.startTime,
   );
 }

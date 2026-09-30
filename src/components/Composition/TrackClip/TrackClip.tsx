@@ -3,6 +3,7 @@ import {
   Clip,
   clipsAtom,
   compositionAtom,
+  sampleRateAtom,
   selectedTrackClipAtom,
   TrackData,
   type TrackClipData,
@@ -37,6 +38,11 @@ const TrackClip = ({
     selectedTrackClipAtom,
   );
   const { range } = useAtomValue(compositionAtom);
+  const sampleRate = useAtomValue(sampleRateAtom);
+  // Convert range from seconds to frames
+  const startFrame = range[0] * sampleRate;
+  const endFrame = range[1] * sampleRate;
+
   const clips = useAtomValue(clipsAtom);
   const currentClip = userClip ?? clips.find((clip) => clip.id == clipId);
   const isTrackClipSelected = selectedTrackClip == id;
@@ -57,13 +63,13 @@ const TrackClip = ({
         ClipComponent = SampleClip;
         break;
     }
-    const x = mapRange(startTime, range[0], range[1], 0, width);
+    const x = mapRange(startTime, startFrame, endFrame, 0, width);
     const clipWidth = mapRange(
       trackClipRange
         ? trackClipRange[1] - trackClipRange[0]
         : currentClip.duration,
-      range[0],
-      range[1],
+      startFrame,
+      endFrame,
       0,
       width,
     );

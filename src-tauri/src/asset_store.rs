@@ -32,12 +32,12 @@ pub async fn get_assets(
 pub struct MediaAsset {
     name: String,
     path: String,
-    duration: f64,
+    duration: u64,
     asset_type: MediaAssetType,
 }
 
 impl MediaAsset {
-    pub fn new(name: String, path: String, duration: f64, asset_type: MediaAssetType) -> Self {
+    pub fn new(name: String, path: String, duration: u64, asset_type: MediaAssetType) -> Self {
         Self {
             name,
             path,
@@ -64,7 +64,7 @@ impl AssetStore {
     pub fn create_asset(
         name: String,
         path: String,
-        duration: f64,
+        duration: u64,
         asset_type: MediaAssetType,
     ) -> MediaAsset {
         MediaAsset {

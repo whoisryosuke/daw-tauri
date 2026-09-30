@@ -12,7 +12,8 @@ pub enum TrackClipType {
     Midi,
 }
 
-pub type TrackClipRange = Option<(f64, f64)>;
+/// Start and end times in frames (based on project sample rate)
+pub type TrackClipRange = Option<(u64, u64)>;
 
 /// A single "clip" on the track. This associates a `Track` with a `Clip`.
 #[derive(Clone, Serialize, Deserialize)]
@@ -20,7 +21,8 @@ pub struct TrackClip {
     pub id: String,
     pub track_clip_type: TrackClipType,
     pub clip_id: String,
-    pub start_time: f64,
+    /// Time in frames (based on project sample rate)
+    pub start_time: u64,
     pub enabled: bool,
     pub range: TrackClipRange,
 }
@@ -29,7 +31,7 @@ impl TrackClip {
     pub fn new(
         id: String,
         clip_id: String,
-        start_time: f64,
+        start_time: u64,
         enabled: bool,
         track_clip_type: TrackClipType,
     ) -> Self {

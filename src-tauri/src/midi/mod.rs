@@ -87,8 +87,8 @@ impl MIDIInputEvent {
 pub struct MIDINote {
     pub midi: u8,
     pub velocity: u8,
-    pub time: f64,
-    pub duration: Option<f64>,
+    pub time: u64,
+    pub duration: Option<u64>,
 }
 
 pub type MIDINotes = Vec<MIDINote>;
@@ -489,11 +489,7 @@ pub async fn stop_midi_recording(
 
     // Get current time
     let start_time = store.recording_state.start_time;
-    let start_time_seconds = frames_to_seconds(start_time, sample_rate)?;
     let duration_frames = time - start_time;
-
-    // Calculate duration
-    let duration = frames_to_seconds(duration_frames, sample_rate)?;
 
     let id = store
         .recording_state
@@ -511,7 +507,7 @@ pub async fn stop_midi_recording(
                 let new_note = MIDINote {
                     midi: midi_event.note,
                     velocity: midi_event.velocity,
-                    time: frames_to_seconds(midi_event.time, sample_rate).unwrap_or(0.0) as f64,
+                    time: midi_event.time,
                     duration: None,
                 };
                 midi_notes.push(new_note);
@@ -520,9 +516,7 @@ pub async fn stop_midi_recording(
                 // Find last matching note without a duration
                 for current_note in midi_notes.iter_mut() {
                     if current_note.duration.is_none() && current_note.midi == midi_event.note {
-                        let event_time =
-                            frames_to_seconds(midi_event.time, sample_rate).unwrap_or(0.0);
-                        let new_duration = (event_time - current_note.time).max(0.0);
+                        let new_duration = (midi_event.time - current_note.time).max(0);
 
                         // Set duration of note
                         current_note.duration = Some(new_duration);
@@ -546,17 +540,11 @@ pub async fn stop_midi_recording(
     composition.insert_clip(
         id.clone(),
         name.clone(),
-        duration,
+        duration_frames,
         ClipType::Midi,
         id.clone(),
     );
-    composition.insert_track_clip(
-        track_id,
-        id.clone(),
-        start_time_seconds,
-        true,
-        TrackClipType::Midi,
-    );
+    composition.insert_track_clip(track_id, id.clone(), start_time, true, TrackClipType::Midi);
 
     // Stop playback
     let _ = stop_audio(messaging).await;

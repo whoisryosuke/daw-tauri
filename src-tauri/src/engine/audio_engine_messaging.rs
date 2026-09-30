@@ -92,19 +92,14 @@ impl AudioEngineMessaging {
 
         for (pool_index, track_clip, track_id) in track_clips {
             match track_clip.track_clip_type {
-                TrackClipType::Sample => self.queue_sample(
-                    pool_index,
-                    track_clip,
-                    composition,
-                    asset_store,
-                    sample_rate,
-                ),
+                TrackClipType::Sample => {
+                    self.queue_sample(pool_index, track_clip, composition, asset_store)
+                }
                 TrackClipType::Midi => {
                     self.queue_midi(
                         pool_index,
                         track_clip,
                         track_id,
-                        sample_rate,
                         composition,
                         asset_store,
                         midi_cache,
@@ -258,7 +253,6 @@ impl AudioEngineMessaging {
         track_clip: &TrackClip,
         composition: &CompositionStore,
         asset_store: &AudioCache,
-        sample_rate: u32,
     ) {
         let Some(clip) = composition.clips.get(&track_clip.clip_id) else {
             println!("Couldn't get the clip {}", track_clip.clip_id);
@@ -269,16 +263,11 @@ impl AudioEngineMessaging {
             return;
         };
 
-        let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
+        let start_time = track_clip.start_time;
 
         // Handle clip start/end time
         let frame_range = track_clip.range.map(|(start, end)| {
-            // Convert seconds to frames
-            // This assumes audio buffer from clip matches sample rate of app
-            let start_frame = seconds_to_frames(start, sample_rate).unwrap_or(0);
-            let end_frame = seconds_to_frames(end, sample_rate).unwrap_or(0);
-
-            return (start_frame as usize, end_frame as usize);
+            return (start as usize, end as usize);
         });
 
         println!("Creating audio node {}", clip.name);
@@ -315,7 +304,6 @@ impl AudioEngineMessaging {
         pool_index: usize,
         track_clip: &TrackClip,
         track_id: &String,
-        sample_rate: u32,
         composition: &CompositionStore,
         audio_cache: &AudioCache,
         midi_cache: &MidiCache,
@@ -342,19 +330,10 @@ impl AudioEngineMessaging {
         for midi_note_event in midi_clip_data.iter() {
             // Handle clip start/end time
             let frame_range = track_clip.range.map(|(start, end)| {
-                // Convert seconds to frames
-                // This assumes audio buffer from clip matches sample rate of app
-                let start_frame =
-                    seconds_to_frames(start, sample_rate).unwrap_or(track_clip.start_time as u64);
-                let end_frame =
-                    seconds_to_frames(end, sample_rate).unwrap_or(sample_data.samples.len() as u64);
-
-                return (start_frame as usize, end_frame as usize);
+                return (start as usize, end as usize);
             });
 
             println!("Creating MIDI node {}", midi_note_event.midi);
-
-            let start_time = seconds_to_frames(midi_note_event.time, sample_rate).unwrap_or(0);
 
             self.create_midi_node(
                 pool_index,
@@ -362,7 +341,7 @@ impl AudioEngineMessaging {
                 frame_range,
                 midi_note_event.midi,
                 DEFAULT_MIDI_ROOT_NOTE,
-                start_time,
+                midi_note_event.time,
             );
         }
     }

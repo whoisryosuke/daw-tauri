@@ -11,7 +11,8 @@ pub enum ClipType {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Clip {
     pub name: String,
-    pub duration: f64,
+    /// Time in frames (based on project sample rate)
+    pub duration: u64,
     // Clips can reference different types of audio data
     pub clip_type: ClipType,
     // This references the ID on the appropriate cache (e.g. sample cache)
@@ -19,7 +20,7 @@ pub struct Clip {
 }
 
 impl Clip {
-    pub fn new(name: String, duration: f64, clip_type: ClipType, clip_id: String) -> Self {
+    pub fn new(name: String, duration: u64, clip_type: ClipType, clip_id: String) -> Self {
         Self {
             name,
             duration,

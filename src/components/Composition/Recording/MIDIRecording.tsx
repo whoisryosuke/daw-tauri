@@ -94,8 +94,6 @@ const MIDIRecording = (props: Props) => {
 
     // Increment duration
     const durationInFrames = currentTime - localRecordingState.startTime;
-    // Convert frames to seconds (since Clip uses seconds)
-    const duration = framesToSeconds(durationInFrames, sampleRate);
 
     // Update MIDI sequence
     store.set(midiSequencesAtom, (prevSequences) =>
@@ -112,7 +110,9 @@ const MIDIRecording = (props: Props) => {
     // Update clip (the primary source of duration)
     store.set(clipsAtom, (prevClips) =>
       prevClips.map((prevClip) =>
-        prevClip.id == currentClip.id ? { ...prevClip, duration } : prevClip,
+        prevClip.id == currentClip.id
+          ? { ...prevClip, duration: durationInFrames }
+          : prevClip,
       ),
     );
 

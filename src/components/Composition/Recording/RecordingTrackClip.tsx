@@ -29,16 +29,15 @@ const RecordingTrackClip = ({ width, trackId }: Props) => {
   const setMidiSequences = useSetAtom(midiSequencesAtom);
   const listenerRef = useRef<UnlistenFn>(null);
   const timerRef = useRef<ReturnType<typeof requestAnimationFrame>>(0);
-  const sampleRate = useAtomValue(sampleRateAtom);
   const playbackTime = useAtomValue(playbackTimeAtom);
-  const duration = framesToSeconds(playbackTime - startTime, sampleRate);
+  const duration = playbackTime - startTime;
   const shouldRender = recording && currentTrackId == trackId;
 
   const addNoteToClip = (input: MIDIInputPayload) => {
     if (!clipId) return;
     console.log("adding note to clip");
 
-    const time = framesToSeconds(input.time, sampleRate);
+    const time = input.time;
 
     const midiNote: MIDINote = {
       midi: input.note,
@@ -75,7 +74,7 @@ const RecordingTrackClip = ({ width, trackId }: Props) => {
         // Find the last note and update its duration
         const notes = prevSequence.notes.map((n, i) => {
           if (i === idx) {
-            const endTime = framesToSeconds(input.time, sampleRate);
+            const endTime = input.time;
             const newDuration = endTime - n.time;
             return { ...n, duration: newDuration };
           } else {
@@ -118,7 +117,7 @@ const RecordingTrackClip = ({ width, trackId }: Props) => {
       if (listenerRef.current) listenerRef.current();
       cancelAnimationFrame(timerRef.current);
     };
-  }, [recording, sampleRate]);
+  }, [recording]);
 
   const render = shouldRender && (
     <TrackClip
@@ -126,7 +125,7 @@ const RecordingTrackClip = ({ width, trackId }: Props) => {
       track_id={trackId}
       track_clip_type={trackType}
       clip_id={clipId}
-      start_time={framesToSeconds(startTime, sampleRate)}
+      start_time={startTime}
       enabled={true}
       width={width}
       color={"gray"}

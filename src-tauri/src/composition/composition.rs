@@ -9,12 +9,14 @@ use crate::{
         track_clips::{TrackClip, TrackClipRange, TrackClipType, TrackClips},
     },
     engine::{
+        audio_engine::AudioEngine,
         audio_engine_messaging::AudioEngineMessaging,
         nodes::{
             effect_node::{EffectNodePayload, EffectNodeTypes},
             effects::gain_node::GainNode,
         },
     },
+    math::seconds_to_frames,
     utils::uuid::generate_uuid,
 };
 
@@ -96,8 +98,8 @@ impl CompositionStore {
         (track_clips_result, effects_result)
     }
 
-    pub fn get_composition_duration(&self) -> Result<f64, String> {
-        let mut duration: f64 = 0.0;
+    pub fn get_composition_duration(&self) -> Result<u64, String> {
+        let mut duration: u64 = 0;
 
         // Queue up clips to play
         // Loop through each track in the composition
@@ -133,7 +135,7 @@ impl CompositionStore {
         &mut self,
         id: String,
         name: String,
-        duration: f64,
+        duration: u64,
         clip_type: ClipType,
         clip_id: String,
     ) {
@@ -145,7 +147,7 @@ impl CompositionStore {
         &mut self,
         track_id: String,
         clip_id: String,
-        start_time: f64,
+        start_time: u64,
         enabled: bool,
         track_clip_type: TrackClipType,
     ) {
@@ -291,12 +293,16 @@ pub async fn add_track_clip(
 /// Update track clip start time by provided time (in seconds)
 #[tauri::command()]
 pub async fn update_track_clip_time(
+    audio_engine: State<'_, Mutex<AudioEngine>>,
     composition_store: State<'_, Mutex<CompositionStore>>,
     track_id: String,
     id: String,
     time: f64,
 ) -> Result<bool, String> {
     let mut store = composition_store.lock().await;
+    let engine = audio_engine.lock().await;
+
+    let sample_rate = engine.config.sample_rate();
 
     let track_clips = store
         .track_clips
@@ -306,6 +312,8 @@ pub async fn update_track_clip_time(
         .iter_mut()
         .find(|track_clip| &track_clip.id == &id)
         .ok_or("Couldn't find that track clip")?;
+
+    let time = seconds_to_frames(time, sample_rate)?;
 
     current_clip.start_time = time;
     return Ok(true);

@@ -8,7 +8,7 @@ export type MediaBase = {
    */
   path: string;
   /**
-   * Duration in seconds
+   * Time in frames (based on current sample rate)
    */
   duration: number;
 };
@@ -22,11 +22,11 @@ export type MIDINote = {
   midi: number;
   velocity: number;
   /**
-   * Start time of note in seconds.
+   * Start time of note in frames (based on current sample rate)
    */
   time: number;
   /**
-   * Duration in seconds. Null if note hasn't finished.
+   * Duration in frames. Null if note hasn't finished.
    */
   duration: number | null;
 };

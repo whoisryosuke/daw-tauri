@@ -55,7 +55,7 @@ impl AudioExporter {
         composition: &CompositionStore,
         audio_cache: &AudioCache,
         sample_rate: u32,
-        duration: f64,
+        duration: u64,
         save_path: std::path::PathBuf,
     ) -> Result<(), String> {
         // Get all track clips and effects
@@ -63,13 +63,9 @@ impl AudioExporter {
 
         for (pool_index, track_clip, _) in track_clips {
             match track_clip.track_clip_type {
-                TrackClipType::Sample => self.queue_sample(
-                    pool_index,
-                    track_clip,
-                    composition,
-                    audio_cache,
-                    sample_rate,
-                ),
+                TrackClipType::Sample => {
+                    self.queue_sample(pool_index, track_clip, composition, audio_cache)
+                }
                 TrackClipType::Synthesizer => self.add_synth(pool_index, sample_rate),
                 TrackClipType::Midi => {
                     // @TODO: Export MIDI track
@@ -86,12 +82,10 @@ impl AudioExporter {
         let (mut waveform_producer, _) = crossbeam::channel::bounded::<f32>(128);
 
         // Calculate time to frames
-        let frames_per_channel = seconds_to_frames(duration, sample_rate)?;
-        let total_frames = (frames_per_channel as usize) * channels;
+        let total_frames = (duration as usize) * channels;
         let segments = total_frames / self.buffer_size;
 
-        self.total_frames
-            .store(frames_per_channel as u64, Ordering::SeqCst);
+        self.total_frames.store(duration, Ordering::SeqCst);
 
         // Enable exporting flag
         self.exporting.store(true, Ordering::SeqCst);
@@ -158,7 +152,6 @@ impl AudioExporter {
         track_clip: &TrackClip,
         composition: &CompositionStore,
         audio_cache: &AudioCache,
-        sample_rate: u32,
     ) {
         let Some(clip) = composition.clips.get(&track_clip.clip_id) else {
             println!("Couldn't get the clip {}", track_clip.clip_id);
@@ -170,16 +163,12 @@ impl AudioExporter {
             return;
         };
 
-        let start_time = seconds_to_frames(track_clip.start_time, sample_rate).unwrap_or(0);
+        let start_time = track_clip.start_time;
 
         // Handle clip start/end time
         let frame_range = track_clip.range.map(|(start, end)| {
-            // Convert seconds to frames
-            // This assumes audio buffer from clip matches sample rate of app
-            let start_frame = seconds_to_frames(start, sample_rate).unwrap_or(0);
-            let end_frame = seconds_to_frames(end, sample_rate).unwrap_or(0);
-
-            return (start_frame as usize, end_frame as usize);
+            // Convert u64 to usize (for easier indexing)
+            return (start as usize, end as usize);
         });
 
         println!("Creating audio node {}", clip.name);

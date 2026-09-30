@@ -38,6 +38,7 @@ use crate::engine::audio_commands::{
 use crate::engine::audio_engine::AudioEngine;
 use crate::engine::exporter::export_file;
 use crate::engine::shared::audio_buffer::AudioBuffer;
+use crate::math::seconds_to_frames;
 use crate::midi::{
     connect_to_midi_input_device, get_midi_input_devices, play_midi_key, start_midi_connection,
     start_midi_recording, stop_midi_recording, MIDIStore,
@@ -172,10 +173,12 @@ fn load_assets(handle: &AppHandle, asset_store: &mut AssetStore, audio_cache: &m
                 let (sample_data, duration, channel_count, sample_rate) =
                     load_sample_data_from_disk(file_path_str);
 
+                let duration_frames = seconds_to_frames(duration, sample_rate).unwrap_or(0);
+
                 let audio_asset = MediaAsset::new(
                     file_name.to_string(),
                     file_path_str.to_string(),
-                    duration,
+                    duration_frames,
                     MediaAssetType::Audio,
                 );
 

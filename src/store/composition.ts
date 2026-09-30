@@ -58,10 +58,13 @@ export type TrackClipData = {
   track_clip_type: TrackType;
   clip_id: string;
   /**
-   * Time in seconds
+   * Time in frames (based on current sample rate)
    */
   start_time: number;
   enabled: boolean;
+  /**
+   * Start and end time in frames (based on current sample rate)
+   */
   range?: number[];
 };
 
@@ -70,6 +73,9 @@ export type ClipType = "Sample" | "Midi";
 export type Clip = {
   id: string;
   name: string;
+  /**
+   * Time in frames (based on current sample rate)
+   */
   duration: number;
   type: ClipType;
 
