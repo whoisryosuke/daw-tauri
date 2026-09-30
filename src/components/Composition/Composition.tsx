@@ -10,7 +10,7 @@ import { useAtomValue } from "jotai/react";
 import { compositionAtom } from "../../store/composition";
 import { TIMELINE_DEFAULT_SPACING } from "../../constants/composition";
 import Panel from "../ui/Panel/Panel";
-import MusicalGrid from "./MusicalGrid/MusicalGrid";
+import MusicalGrid, { generateMusicalGrid } from "./MusicalGrid/MusicalGrid";
 import MIDIRecording from "./Recording/MIDIRecording";
 
 const timelineWindowStyle = css({
@@ -45,8 +45,17 @@ type Props = {};
 
 const Composition = (props: Props) => {
   const { zoom, range } = useAtomValue(compositionAtom);
-  const timelineDistance = range[1] - range[0];
+  const timelineDistance = range[1] - range[0] + 1;
   const width = zoom * TIMELINE_DEFAULT_SPACING * timelineDistance;
+
+  const subdivisionLevel = 4;
+  const { totalBlocks, blockWidth } = generateMusicalGrid(
+    timelineDistance,
+    subdivisionLevel,
+    width,
+  );
+
+  console.log("blockWidth", blockWidth);
 
   return (
     <Panel flex={1} gap={0} minWidth={0} mr={1} style={{ width }}>
@@ -69,13 +78,23 @@ const Composition = (props: Props) => {
 
         {/* Timeline */}
         <Box flex={1} position="relative" minWidth={0}>
-          <MusicalGrid width={width} duration={timelineDistance} />
           <TimeMarkers
             containerWidth={width}
             range={range}
             duration={timelineDistance}
           />
-          <Stack position="relative" style={{ width }} mt={"50px"} gap={0}>
+          <Stack
+            position="relative"
+            style={{ width }}
+            mt={"50px"}
+            gap={0}
+            // Musical grid
+            backgroundImage={`
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0px, transparent 1px, transparent ${blockWidth * subdivisionLevel}px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, transparent 1px, transparent ${blockWidth}px)
+  `}
+            backgroundSize={"100px 100%"}
+          >
             <PlaybackHead containerWidth={width} />
             <Tracks containerWidth={width} />
           </Stack>

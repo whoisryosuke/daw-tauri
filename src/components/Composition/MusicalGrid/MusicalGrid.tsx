@@ -8,7 +8,7 @@ import { css } from "../../../../styled-system/css";
  * @param totalWidth Total width of container
  * @returns
  */
-function generateMusicalGrid(
+export function generateMusicalGrid(
   duration: number,
   subdivision: number,
   totalWidth: number,
