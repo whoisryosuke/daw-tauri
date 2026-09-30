@@ -84,12 +84,18 @@ export function getTimelineWidth() {
 
 export function getTimeBasedOnTimelinePosition(x: number) {
   const [start, end] = store.get(compositionAtom).range;
+  const sampleRate = store.get(sampleRateAtom);
+
+  // Convert range from seconds to frames
+  const startFrame = start * sampleRate;
+  const endFrame = end * sampleRate;
+
   const width = getTimelineWidth();
 
-  const startTime = mapRange(x, 0, width, start, end);
+  const startTime = mapRange(x, 0, width, startFrame, endFrame);
   console.log("calculated width", x, startTime);
 
-  return startTime;
+  return Math.round(startTime);
 }
 
 export const setSelectedTrack = (trackId: string) => {
