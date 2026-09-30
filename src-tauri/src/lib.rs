@@ -29,7 +29,8 @@ use crate::cache::media_cache_commands::get_sample_waveform;
 use crate::composition::composition::{
     add_clip, add_track, add_track_clip, add_track_effect, reset_composition,
     set_midi_track_as_playable, update_midi_track_clip, update_track_clip_range,
-    update_track_clip_time, update_track_effect, update_track_gain, CompositionStore,
+    update_track_clip_time, update_track_effect, update_track_gain, update_track_name,
+    CompositionStore,
 };
 use crate::engine::audio_commands::{
     add_synth, change_audio_device, get_output_devices, get_sample_rate, play_audio,
@@ -248,6 +249,7 @@ pub fn run() {
             reset_composition,
             set_midi_track_as_playable,
             add_track,
+            update_track_name,
             update_track_gain,
             add_track_effect,
             update_track_effect,

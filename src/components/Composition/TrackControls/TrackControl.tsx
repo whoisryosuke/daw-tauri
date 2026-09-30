@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useSetAtom } from "jotai";
 import { setSelectedTrack } from "../../../services/composition";
 import TrackColor from "./TrackColor";
+import TrackName from "./TrackName";
 
 const trackControlContainer = cva({
   base: {
@@ -54,11 +55,6 @@ const trackControlContainer = cva({
       },
     },
   },
-});
-const headingStyle = css({
-  fontSize: 1,
-
-  userSelect: "none",
 });
 
 type Props = TrackData & {
@@ -107,7 +103,7 @@ const TrackControl = ({
       className={cx(colorStyle, trackControlContainer({ selected }))}
       onClick={handleSelectTrack}
     >
-      <Text className={headingStyle}>{name}</Text>
+      <TrackName id={id} name={name} />
       <TrackColor id={id} color={color} />
       <Box px={1} width="100%">
         <Slider

@@ -205,6 +205,24 @@ pub async fn add_track(
 }
 
 #[tauri::command()]
+pub async fn update_track_name(
+    composition_store: State<'_, Mutex<CompositionStore>>,
+    track_id: String,
+    name: String,
+) -> Result<bool, String> {
+    let mut store = composition_store.lock().await;
+
+    let track = store
+        .tracks
+        .get_mut(&track_id)
+        .ok_or("Couldn't find that track".to_string())?;
+
+    track.name = name;
+
+    return Ok(true);
+}
+
+#[tauri::command()]
 pub async fn update_track_gain(
     messaging: State<'_, AudioEngineMessaging>,
     composition_store: State<'_, Mutex<CompositionStore>>,

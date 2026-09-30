@@ -223,6 +223,17 @@ export async function addClipToMidiTrack(
     invoke("update_midi_track_clip", { trackId, clipId: clip.id });
 }
 
+export async function updateTrackName(id: string, newName: string) {
+  store.set(tracksAtom, (prevTracks) =>
+    prevTracks.map((track) =>
+      track.id == id ? { ...track, name: newName } : track,
+    ),
+  );
+
+  // Update name
+  invoke("update_track_name", { id, name: newName });
+}
+
 // --- Track Clips ---
 
 export function deleteSelectedTrackClip() {
