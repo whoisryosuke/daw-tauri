@@ -8,6 +8,7 @@ import {
 } from "../../../../store/composition";
 import Waveform from "../../../viz/Waveform";
 import { ColorPalette } from "../../../../../styled-system/tokens";
+import MultiChannelWaveformViz from "../../../../modules/webgpu/renderer/MultiChannelWaveform/MultiChannelWaveformViz";
 
 type Props = {
   path: string;
@@ -44,7 +45,7 @@ const SampleClipWaveform = ({
   const bufferRange = clipRange ? clipRange : [0, duration];
 
   return (
-    <Waveform
+    <MultiChannelWaveformViz
       data={buffer}
       width={width}
       height={100}
