@@ -21,6 +21,7 @@ type Props = ComponentPropsWithoutRef<"canvas"> & {
   mirror?: boolean;
 };
 
+// @TODO: Gotta get RGB from Panda CSS somehow...
 function parseHexRgba(hex: string): RgbaFloat {
   let h = hex.trim().replace(/^#/, "");
   if (h.length === 3 || h.length === 4) {
@@ -64,19 +65,19 @@ const MultiChannelWaveformViz = ({
     )?.[colorMode === "dark" ? "_dark" : "base"] ?? "#0090ffff";
   const fillColor = useMemo(() => parseHexRgba(fillCss), [fillCss]);
 
-  // Latest props for lazy init (canvas may be 0x0 on first mount).
-  // const propsRef = useRef({ data, duration, range, fillColor, mirror });
-  // propsRef.current = { data, duration, range, fillColor, mirror };
-
   // Create on first use once manager + non-zero canvas are available.
   // Returns false while init must be deferred (0x0 canvas configures fail).
   const ensureViz = (): boolean => {
+    // Initialize only once
     if (viz.current) return true;
+
+    // Required dependencies
     if (!manager || !canvasRef.current) return false;
+
+    // Can't initialize zero-size
     if (canvasRef.current.width === 0 || canvasRef.current.height === 0) {
       return false;
     }
-    // const p = propsRef.current;
     viz.current = new MultiChannelWaveform(manager, canvasRef.current, {
       mirror: mirror,
       fillColor: fillColor,
@@ -95,7 +96,6 @@ const MultiChannelWaveformViz = ({
       viz.current?.destroy();
       viz.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manager]);
 
   // Props-driven updates: data comes from React, static full-file + range crop.
@@ -106,7 +106,6 @@ const MultiChannelWaveformViz = ({
     viz.current.setData(data);
     viz.current.setRange(range, duration);
     viz.current.render();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, range, duration, fillColor, mirror]);
 
   // Re-configure + re-render when the wrapper resizes the canvas.
@@ -116,7 +115,6 @@ const MultiChannelWaveformViz = ({
     if (!ensureViz() || !viz.current) return;
     viz.current.resize();
     viz.current.render();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
 
   return (
